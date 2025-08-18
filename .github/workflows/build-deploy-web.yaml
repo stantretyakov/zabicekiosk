@@ -1,0 +1,47 @@
+name: Build and Deploy Web
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'web/**'
+      - '.github/workflows/build-deploy-web.yaml'
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install kiosk dependencies
+        run: npm ci
+        working-directory: web/kiosk-pwa
+      - name: Build kiosk
+        run: npm run build
+        working-directory: web/kiosk-pwa
+      - name: Deploy kiosk
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ env.PROJECT_ID }}
+          target: kiosk
+      - name: Install admin dependencies
+        run: npm ci
+        working-directory: web/admin-portal
+      - name: Build admin
+        run: npm run build
+        working-directory: web/admin-portal
+      - name: Deploy admin
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ env.PROJECT_ID }}
+          target: admin
