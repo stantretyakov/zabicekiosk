@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: core-api
+  version: 0.1.0
+paths:
+  /v1/redeem:
+    post:
+      summary: Redeem pass or record drop-in
+      responses:
+        '200':
+          description: OK
+  /v1/card:
+    get:
+      summary: Get public card info
+      responses:
+        '200':
+          description: OK

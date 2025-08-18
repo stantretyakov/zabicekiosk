@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: booking-api
+  version: 0.1.0
+paths:
+  /v1/sessions:
+    get:
+      summary: List sessions
+      responses:
+        '200':
+          description: OK
+  /v1/book:
+    post:
+      summary: Book session
+      responses:
+        '200':
+          description: OK
