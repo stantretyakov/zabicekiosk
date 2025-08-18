@@ -8,6 +8,7 @@ Kiosk + admin app for online accounting and booking of infant swimming exercises
 - `services/core-api/` – Fastify service for core operations.
 - `services/booking-api/` – Fastify service for schedule and bookings (feature-flagged).
 - `.github/workflows/` – GitHub Actions pipelines for building and deploying services.
+- `web/kiosk-pwa/` – Kiosk Progressive Web App for scanning passes.
 
 
 More components will be added as development progresses.
