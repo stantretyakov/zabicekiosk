@@ -7,3 +7,7 @@
 #   project = var.project_id
 #   site_id = "admin-web"
 # }
+# resource "google_firebase_hosting_site" "default" {
+#   project = var.project_id
+#   site_id = "kiosk-web"
+# }
