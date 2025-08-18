@@ -10,4 +10,5 @@ Kiosk + admin app for online accounting and booking of infant swimming exercises
 - `.github/workflows/` – GitHub Actions pipelines for building and deploying services.
 - `web/kiosk-pwa/` – Kiosk Progressive Web App for scanning passes.
 
+
 More components will be added as development progresses.
