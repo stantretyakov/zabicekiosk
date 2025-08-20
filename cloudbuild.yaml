@@ -6,6 +6,7 @@ steps:
       - -c
       - |
         gcloud services enable firestore.googleapis.com
+
   - id: build-and-deploy-core-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -31,6 +32,35 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
+
+  - id: build-kiosk-web
+    name: gcr.io/cloud-builders/npm
+    dir: web/kiosk-pwa
+    args: ['ci']
+
+  - id: build-kiosk-web-build
+    name: gcr.io/cloud-builders/npm
+    dir: web/kiosk-pwa
+    args: ['run', 'build']
+
+  - id: build-admin-web
+    name: gcr.io/cloud-builders/npm
+    dir: web/admin-portal
+    args: ['ci']
+
+  - id: build-admin-web-build
+    name: gcr.io/cloud-builders/npm
+    dir: web/admin-portal
+    args: ['run', 'build']
+
+  - id: deploy-web
+    name: gcr.io/cloud-builders/npm
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        npm install -g firebase-tools
+        firebase deploy --project $PROJECT_ID --only hosting:kiosk,hosting:admin
 
 options:
   logging: CLOUD_LOGGING_ONLY       # или NONE
