@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { getDb } from '../lib/firestore';
+import { getDb } from '../lib/firestore.js';
 
 export default async function adminUsers(app: FastifyInstance) {
   const db = getDb();
