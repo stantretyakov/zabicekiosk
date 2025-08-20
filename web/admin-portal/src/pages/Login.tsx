@@ -1,3 +1,8 @@
 export default function Login() {
-  return <div>Login page</div>;
+  return (
+    <section>
+      <h1>Login</h1>
+      <p>Sign in with Google to continue.</p>
+    </section>
+  );
 }

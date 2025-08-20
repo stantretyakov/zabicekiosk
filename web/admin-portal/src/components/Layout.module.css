@@ -1,0 +1,5 @@
+.app{display:flex;min-height:100vh;font-family:sans-serif;}
+.sidebar{width:200px;background:#222;color:#fff;padding:1rem;}
+.navLink{display:block;color:#fff;margin-bottom:0.5rem;text-decoration:none;}
+.active{font-weight:bold;}
+.main{flex:1;padding:1rem;}
