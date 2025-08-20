@@ -38,4 +38,4 @@ options:
 
 substitutions:
   _REGION: europe-west3
-  _FIRESTORE_DATABASE_ID: "(default)"
+  _FIRESTORE_DATABASE_ID: "zabicedb"
