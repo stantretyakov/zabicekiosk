@@ -64,6 +64,8 @@ steps:
       - -c
       - |
         npm install -g firebase-tools
+        firebase hosting:sites:create kiosk-web --project $PROJECT_ID || true
+        firebase hosting:sites:create admin-web --project $PROJECT_ID || true
         firebase deploy --project $PROJECT_ID --only hosting:kiosk,hosting:admin
 
 options:
