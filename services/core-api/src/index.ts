@@ -14,6 +14,7 @@ export async function buildServer() {
   await app.register(import('./routes/admin.passes.js'), { prefix: '/v1/admin' });
   await app.register(import('./routes/admin.settings.js'), { prefix: '/v1/admin' });
   await app.register(import('./routes/admin.content.js'), { prefix: '/v1/admin' });
+  await app.register(import('./routes/admin.users.js'), { prefix: '/v1/admin' });
 
   return app;
 }

@@ -19,3 +19,31 @@
   border-radius: 10px;
   box-shadow: 0 0 0 9999px rgba(0,0,0,0.35) inset;
 }
+
+.prompt {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+  font-size: 16px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  pointer-events: none;
+}
+
+.switchButton {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.5);
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.switchButton:active {
+  background: rgba(0,0,0,0.7);
+}
