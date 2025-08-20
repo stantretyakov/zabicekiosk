@@ -1,4 +1,11 @@
 steps:
+  - id: enable-firestore-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud services enable firestore.googleapis.com
   - id: build-and-deploy-core-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -9,7 +16,8 @@ steps:
           --source services/core-api \
           --region $_REGION \
           --platform managed \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
 
   - id: build-and-deploy-booking-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -21,7 +29,8 @@ steps:
           --source services/booking-api \
           --region $_REGION \
           --platform managed \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
 
 options:
   logging: CLOUD_LOGGING_ONLY       # или NONE
@@ -29,3 +38,4 @@ options:
 
 substitutions:
   _REGION: europe-west3
+  _FIRESTORE_DATABASE_ID: "(default)"

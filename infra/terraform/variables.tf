@@ -8,3 +8,9 @@ variable "region" {
   type        = string
   default     = "europe-west1"
 }
+
+variable "firestore_database_id" {
+  description = "Firestore database ID"
+  type        = string
+  default     = "(default)"
+}
