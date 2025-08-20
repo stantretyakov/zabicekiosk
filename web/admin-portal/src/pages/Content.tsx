@@ -1,3 +1,8 @@
 export default function Content() {
-  return <div>Content page</div>;
+  return (
+    <section>
+      <h1>Content</h1>
+      <p>Edit public pages and news.</p>
+    </section>
+  );
 }

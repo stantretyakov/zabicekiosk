@@ -1,0 +1,21 @@
+.cameraWrap {
+  width: 360px;
+  height: 360px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.cameraWrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scanBox {
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(0,255,120,0.7);
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.35) inset;
+}

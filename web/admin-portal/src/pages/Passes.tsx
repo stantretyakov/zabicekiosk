@@ -1,3 +1,8 @@
 export default function Passes() {
-  return <div>Passes page</div>;
+  return (
+    <section>
+      <h1>Passes</h1>
+      <p>Manage subscription passes.</p>
+    </section>
+  );
 }

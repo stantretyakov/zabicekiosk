@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { scanStream } from '../lib/barcode';
+import styles from './CameraScanner.module.css';
 
 interface Props {
   onToken(token: string): void;
@@ -10,7 +11,8 @@ export default function CameraScanner({ onToken }: Props) {
 
   useEffect(() => {
     let stop = () => {};
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: 'environment' } })
       .then(stream => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -22,5 +24,10 @@ export default function CameraScanner({ onToken }: Props) {
     return () => stop();
   }, [onToken]);
 
-  return <video ref={videoRef} style={{ width: '100%' }} />;
+  return (
+    <div className={styles.cameraWrap}>
+      <video ref={videoRef} />
+      <div className={styles.scanBox} />
+    </div>
+  );
 }
