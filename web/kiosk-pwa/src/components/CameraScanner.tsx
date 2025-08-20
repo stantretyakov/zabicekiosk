@@ -26,7 +26,7 @@ export default function CameraScanner({ onToken }: Props) {
 
   return (
     <div className={styles.cameraWrap}>
-      <video ref={videoRef} />
+      <video ref={videoRef} playsInline autoPlay muted />
       <div className={styles.scanBox} />
     </div>
   );

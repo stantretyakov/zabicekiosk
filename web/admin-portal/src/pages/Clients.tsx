@@ -3,7 +3,8 @@ import { fetchJSON } from '../lib/api';
 
 interface Client {
   id: string;
-  name: string;
+  parentName: string;
+  childName: string;
 }
 
 export default function Clients() {
@@ -23,13 +24,15 @@ export default function Clients() {
       <table>
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Parent</th>
+            <th>Child</th>
           </tr>
         </thead>
         <tbody>
           {items.map((c) => (
             <tr key={c.id}>
-              <td>{c.name}</td>
+              <td>{c.parentName}</td>
+              <td>{c.childName}</td>
             </tr>
           ))}
         </tbody>
