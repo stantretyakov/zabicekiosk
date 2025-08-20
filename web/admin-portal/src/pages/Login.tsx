@@ -24,6 +24,7 @@ export default function Login() {
   };
 
   useEffect(() => {
+    handleRedirectResult();
     handleLogin();
   }, []);
 
