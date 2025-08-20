@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { scanStream } from '../lib/barcode';
 import styles from './CameraScanner.module.css';
 
@@ -8,26 +8,40 @@ interface Props {
 
 export default function CameraScanner({ onToken }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
   useEffect(() => {
-    let stop = () => {};
+    let localStream: MediaStream | null = null;
+    let stopScan = () => {};
     navigator.mediaDevices
-      .getUserMedia({ video: { facingMode: 'environment' } })
+      .getUserMedia({ video: { facingMode } })
       .then(stream => {
+        localStream = stream;
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
-          stop = scanStream(videoRef.current, onToken);
+          stopScan = scanStream(videoRef.current, onToken);
         }
       })
       .catch(err => console.error(err));
-    return () => stop();
-  }, [onToken]);
+    return () => {
+      stopScan();
+      if (localStream) localStream.getTracks().forEach(t => t.stop());
+    };
+  }, [onToken, facingMode]);
+
+  const toggleCamera = () => {
+    setFacingMode(f => (f === 'user' ? 'environment' : 'user'));
+  };
 
   return (
     <div className={styles.cameraWrap}>
       <video ref={videoRef} playsInline autoPlay muted />
       <div className={styles.scanBox} />
+      <div className={styles.prompt}>Поднесите QR‑код к камере</div>
+      <button type="button" className={styles.switchButton} onClick={toggleCamera}>
+        Сменить камеру
+      </button>
     </div>
   );
 }
