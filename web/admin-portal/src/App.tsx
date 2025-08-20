@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -9,13 +9,26 @@ import Settings from './pages/Settings';
 import Schedule from './pages/Schedule';
 import Content from './pages/Content';
 import Layout from './components/Layout';
+import { onAuthStateChanged, logout } from './lib/auth';
 
 export default function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    return onAuthStateChanged(u => {
+      setUser(u);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) return null;
+
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route element={<Layout />}>
+        <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+        <Route element={user ? <Layout onLogout={logout} /> : <Navigate to="/login" replace />}> 
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/passes" element={<Passes />} />

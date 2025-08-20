@@ -3,3 +3,4 @@
 .navLink{display:block;color:#fff;margin-bottom:0.5rem;text-decoration:none;}
 .active{font-weight:bold;}
 .main{flex:1;padding:1rem;}
+.logout{margin-top:1rem;background:#444;color:#fff;border:none;padding:0.5rem 1rem;cursor:pointer;}
