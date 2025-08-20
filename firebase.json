@@ -5,6 +5,8 @@
       "public": "web/kiosk-pwa/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
+        { "source": "/api/**",     "run": { "serviceId": "core-api",    "region": "europe-west3" } },
+        { "source": "/booking/**", "run": { "serviceId": "booking-api", "region": "europe-west3" } },
         { "source": "**", "destination": "/index.html" }
       ]
     },
@@ -13,6 +15,8 @@
       "public": "web/admin-portal/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
+        { "source": "/api/**",     "run": { "serviceId": "core-api",    "region": "europe-west3" } },
+        { "source": "/booking/**", "run": { "serviceId": "booking-api", "region": "europe-west3" } },
         { "source": "**", "destination": "/index.html" }
       ]
     }
