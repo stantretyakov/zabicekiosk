@@ -26,4 +26,4 @@ steps:
           --allow-unauthenticated
 
 substitutions:
-  _REGION: us-central1
+  _REGION: europe-west3
