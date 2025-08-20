@@ -1,0 +1,29 @@
+steps:
+  # Deploy core-api service
+  - id: build-and-deploy-core-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run deploy core-api \
+          --source services/core-api \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated
+
+  # Deploy booking-api service
+  - id: build-and-deploy-booking-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run deploy booking-api \
+          --source services/booking-api \
+          --region $_REGION \
+          --platform managed \
+          --allow-unauthenticated
+
+substitutions:
+  _REGION: europe-west3
