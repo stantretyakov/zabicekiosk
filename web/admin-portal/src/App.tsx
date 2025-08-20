@@ -22,7 +22,7 @@ export default function App() {
     });
   }, []);
 
-  if (loading) return null;
+  if (loading) return <div style={{padding:16,color:'#888'}}>Loading…</div>;
 
   return (
     <BrowserRouter>
