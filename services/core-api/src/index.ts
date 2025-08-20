@@ -3,7 +3,7 @@ import cors from '@fastify/cors';
 
 export async function buildServer() {
   const app = Fastify({ logger: true });
-  const allowedOrigins = ['https://kiosk-web.web.app', 'https://admin-web.web.app'];
+  const allowedOrigins = ['https://zabice-kiosk-web.web.app', 'https://zabice-admin-web.web.app'];
   await app.register(cors, { origin: allowedOrigins });
 
   app.get('/health', async () => ({ status: 'ok' }));

@@ -5,8 +5,8 @@
   "targets": {
     "zabicekiosk": {
       "hosting": {
-        "kiosk": ["kiosk-web"],
-        "admin": ["admin-web"]
+        "kiosk": ["zabice-kiosk-web"],
+        "admin": ["zabice-admin-web"]
       }
     }
   }
