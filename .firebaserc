@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "YOUR_PROJECT_ID"
+  },
+  "targets": {
+    "YOUR_PROJECT_ID": {
+      "hosting": {
+        "kiosk": ["kiosk-web"],
+        "admin": ["admin-web"]
+      }
+    }
+  }
+}
