@@ -12,7 +12,8 @@
   "dependencies": {
     "fastify": "^4.26.2",
     "@fastify/cors": "^8.3.0",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "@google-cloud/firestore": "^7.7.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
