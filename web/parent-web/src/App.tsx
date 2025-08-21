@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import './App.css';
 
 interface Card {
   name: string;
@@ -25,15 +26,23 @@ export default function App() {
       .catch((e) => setError(e.message));
   }, []);
 
-  if (error) return <p>{error}</p>;
-  if (!card) return <p>Loading...</p>;
+  if (error) return <p className="status">{error}</p>;
+  if (!card) return <p className="status">Loading...</p>;
 
   return (
-    <div>
-      <h1>{card.name}</h1>
-      <p>Plan: {card.planSize}</p>
-      <p>Remaining: {card.remaining}</p>
-      <p>Expires: {new Date(card.expiresAt).toLocaleDateString()}</p>
+    <div className="card-container">
+      <h1 className="card-name">{card.name}</h1>
+      <div className="card-details">
+        <p>
+          <span className="label">Plan:</span> {card.planSize}
+        </p>
+        <p>
+          <span className="label">Remaining:</span> {card.remaining}
+        </p>
+        <p>
+          <span className="label">Expires:</span> {new Date(card.expiresAt).toLocaleDateString()}
+        </p>
+      </div>
     </div>
   );
 }
