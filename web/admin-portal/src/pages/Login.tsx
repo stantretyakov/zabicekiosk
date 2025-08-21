@@ -1,38 +1,39 @@
 import { useEffect, useState } from 'react';
-import { loginWithGoogle, handleRedirectResult } from '../lib/auth';
-import { useEffect, useState } from 'react';
-import { loginWithGoogle } from '../lib/auth';
-import { fetchJSON } from '../lib/api';
 import { useNavigate } from 'react-router-dom';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { loginWithGoogle, handleRedirectResult } from '../lib/auth';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string|null>(null);
 
-  const handleLogin = async () => {
+  useEffect(() => {
+    // Завершаем redirect‑flow (iOS) и подписываемся на Auth
+    handleRedirectResult().catch(() => {});
+    const unsub = onAuthStateChanged(getAuth(), (u) => {
+      if (u) navigate('/', { replace: true });  // редиректим только когда user реально появился
+    });
+    return () => unsub();
+  }, [navigate]);
+
+  const handleClick = async () => {
+    setBusy(true); setError(null);
     try {
-      const user = await loginWithGoogle();
-      await fetchJSON('/v1/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.uid, email: user.email }),
-      });
-      navigate('/');
-    } catch (e) {
-      setError((e as Error).message);
+      await loginWithGoogle();   // popup или redirect; дальше нас перенесёт onAuthStateChanged
+    } catch (e:any) {
+      setError(e.message || String(e));
+      setBusy(false);
     }
   };
 
-  useEffect(() => {
-    handleRedirectResult();
-    handleLogin();
-  }, []);
-
   return (
-    <section>
+    <section style={{ padding: 16 }}>
       <h1>Login</h1>
-      {error && <p>{error}</p>}
-      <button onClick={handleLogin}>Sign in with Google</button>
+      {error && <p style={{ color:'#c00' }}>{error}</p>}
+      <button onClick={handleClick} disabled={busy}>
+        {busy ? 'Signing in…' : 'Sign in with Google'}
+      </button>
     </section>
   );
 }
