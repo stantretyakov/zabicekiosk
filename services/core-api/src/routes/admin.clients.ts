@@ -38,7 +38,18 @@ export default async function adminClients(app: FastifyInstance) {
       .string()
       .trim()
       .optional()
-      .refine(v => !v || /^https?:\/\/([^/]*\.)?instagram\.com\//.test(v), {
+      .transform(v => {
+        if (!v) return undefined;
+        let url = v.trim();
+        if (url.startsWith('@')) {
+          url = url.slice(1);
+        }
+        if (!/^https?:\/\//.test(url)) {
+          url = `https://instagram.com/${url}`;
+        }
+        return url;
+      })
+      .refine(v => !v || /^https?:\/\/([^/]*\.)?instagram\.com\/[A-Za-z0-9._]+\/?$/.test(v), {
         message: 'invalid instagram url',
       }),
   });

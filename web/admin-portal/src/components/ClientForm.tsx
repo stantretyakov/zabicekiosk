@@ -42,7 +42,12 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
     }
     if (values.phone) body.phone = normPhone(values.phone);
     if (values.telegram) body.telegram = values.telegram.replace(/^@/, '');
-    if (values.instagram) body.instagram = values.instagram.trim();
+    if (values.instagram) {
+      let ig = values.instagram.trim();
+      if (ig.startsWith('@')) ig = ig.slice(1);
+      if (!/^https?:\/\//.test(ig)) ig = `https://instagram.com/${ig}`;
+      body.instagram = ig;
+    }
     try {
       setBusy(true);
       await onSubmit(body);
