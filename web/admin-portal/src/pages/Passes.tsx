@@ -1,45 +1,55 @@
-import { useState } from 'react';
-import { fetchJSON } from '../lib/api';
+import { useEffect, useState } from 'react';
+import { listPasses } from '../lib/api';
+import type { PassWithClient } from '../types';
 
 export default function Passes() {
-  const [clientId, setClientId] = useState('');
-  const [planSize, setPlanSize] = useState(4);
-  const [result, setResult] = useState('');
+  const [items, setItems] = useState<PassWithClient[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetchJSON<{ rawToken: string }>('/v1/admin/passes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId,
-          planSize,
-          purchasedAt: new Date().toISOString(),
-        }),
-      });
-      setResult(`Token: ${res.rawToken}`);
-    } catch (e) {
-      setResult((e as Error).message);
-    }
-  };
+  useEffect(() => {
+    setLoading(true);
+    listPasses()
+      .then(res => setItems(res.items))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <section>
       <h1>Passes</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          value={clientId}
-          onChange={e => setClientId(e.target.value)}
-          placeholder="Client ID"
-        />
-        <select value={planSize} onChange={e => setPlanSize(Number(e.target.value))}>
-          <option value={4}>4</option>
-          <option value={8}>8</option>
-        </select>
-        <button type="submit">Create</button>
-      </form>
-      {result && <p>{result}</p>}
+      {error && <p className="error">{error}</p>}
+      {loading ? (
+        <p>Loading...</p>
+      ) : items.length === 0 ? (
+        <p>No passes yet</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Type</th>
+              <th>Remaining</th>
+              <th>Last visit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map(p => (
+              <tr key={p.id}>
+                <td>
+                  {p.client.parentName} / {p.client.childName}
+                </td>
+                <td>{p.type}</td>
+                <td>
+                  {p.remaining}/{p.planSize}
+                </td>
+                <td>{p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : '-'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </section>
   );
 }
+
