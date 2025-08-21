@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { Client } from '../types';
 import { createPass } from '../lib/api';
+import QRCodeStyling from 'qr-code-styling';
+import frog from '../assets/frog.svg';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -29,6 +31,25 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
   const [busy, setBusy] = useState(false);
   const [passPlan, setPassPlan] = useState(4);
   const [passMsg, setPassMsg] = useState('');
+  const [passToken, setPassToken] = useState('');
+  const [passUrl, setPassUrl] = useState('');
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!passUrl || !qrRef.current) return;
+    const qr = new QRCodeStyling({
+      width: 200,
+      height: 200,
+      type: 'svg',
+      data: passUrl,
+      image: frog,
+      dotsOptions: { type: 'rounded' },
+      cornersSquareOptions: { type: 'extra-rounded' },
+      imageOptions: { margin: 4 },
+    });
+    qrRef.current.innerHTML = '';
+    qr.append(qrRef.current);
+  }, [passUrl]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, value, checked } = e.target;
@@ -72,9 +93,17 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
         planSize: passPlan,
         purchasedAt: new Date().toISOString(),
       });
-      setPassMsg(`Token: ${res.rawToken}`);
+      const base =
+        (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
+        window.location.origin + '/card';
+      const url = `${base}?token=${encodeURIComponent(res.rawToken)}`;
+      setPassToken(res.rawToken);
+      setPassUrl(url);
+      setPassMsg('');
     } catch (e: any) {
       setPassMsg(e.message || String(e));
+      setPassToken('');
+      setPassUrl('');
     }
   };
 
@@ -124,7 +153,15 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
               <option value={8}>8</option>
             </select>
             <button type="button" onClick={handleCreatePass}>Generate</button>
-            {passMsg && <p>{passMsg}</p>}
+            {passMsg && <p className="error">{passMsg}</p>}
+            {passToken && (
+              <div className="pass-qr">
+                <div ref={qrRef}></div>
+                <p>
+                  <code>{passToken}</code>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </form>
