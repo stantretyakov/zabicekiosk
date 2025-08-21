@@ -39,6 +39,10 @@ export type Redeem = {
 };
 
 export type Stats = {
-  sales: number;
-  visits: number;
+  activePasses: number;
+  redeems7d: number;
+  dropInRevenue: number;
+  expiring14d: number;
+  redeemsByDay: { date: string; count: number }[];
+  recentRedeems: Redeem[];
 };

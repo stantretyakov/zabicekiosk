@@ -3,6 +3,7 @@ import { listClients, createClient, updateClient, archiveClient } from '../lib/a
 import type { Client } from '../types';
 import ClientForm from '../components/ClientForm';
 import Confirm from '../components/Confirm';
+import DataTable from '../components/DataTable';
 
 export default function Clients() {
   const [items, setItems] = useState<Client[]>([]);
@@ -120,7 +121,7 @@ export default function Clients() {
           <option value="asc">Asc</option>
           <option value="desc">Desc</option>
         </select>
-        <button onClick={openCreate}>Add client</button>
+        <button onClick={openCreate} className="primary">Add client</button>
       </div>
       {error && <p className="error">{error}</p>}
       {loading ? (
@@ -128,7 +129,7 @@ export default function Clients() {
       ) : items.length === 0 ? (
         <p>No clients yet</p>
       ) : (
-        <table>
+        <DataTable>
           <thead>
             <tr>
               <th>Parent</th>
@@ -160,7 +161,7 @@ export default function Clients() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </DataTable>
       )}
       <div className="pagination">
         <button onClick={gotoPrev} disabled={prevTokens.length === 0}>
