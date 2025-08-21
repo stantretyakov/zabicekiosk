@@ -1,6 +1,6 @@
 // web/admin-portal/src/lib/api.ts
 import { getIdToken } from './auth';
-import type { Client, Paginated } from '../types';
+import type { Client, Paginated, PassWithClient, Redeem, Stats } from '../types';
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
@@ -62,4 +62,36 @@ export async function updateClient(id: string, body: Partial<Client>): Promise<C
 
 export async function archiveClient(id: string): Promise<void> {
   await fetchJSON(`/v1/admin/clients/${id}`, { method: 'DELETE' });
+}
+
+export async function createPass(body: {
+  clientId: string;
+  planSize: number;
+  purchasedAt: string;
+}): Promise<{ rawToken: string }> {
+  return fetchJSON(`/v1/admin/passes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listPasses(q?: {
+  pageSize?: number;
+  pageToken?: string;
+}): Promise<Paginated<PassWithClient>> {
+  const params = new URLSearchParams();
+  if (q?.pageSize) params.set('pageSize', String(q.pageSize));
+  if (q?.pageToken) params.set('pageToken', q.pageToken);
+  const qs = params.toString();
+  return fetchJSON(`/v1/admin/passes${qs ? `?${qs}` : ''}`);
+}
+
+export async function listRedeems(): Promise<Redeem[]> {
+  const res = await fetchJSON<{ items: Redeem[] }>(`/v1/admin/redeems`);
+  return res.items;
+}
+
+export async function getStats(): Promise<Stats> {
+  return fetchJSON(`/v1/admin/stats`);
 }

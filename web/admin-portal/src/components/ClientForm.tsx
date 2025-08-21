@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Client } from '../types';
+import { createPass } from '../lib/api';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -22,12 +23,16 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
     phone: initial?.phone ?? '',
     telegram: initial?.telegram ?? '',
     instagram: initial?.instagram ?? '',
+    active: initial?.active ?? true,
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [passPlan, setPassPlan] = useState(4);
+  const [passMsg, setPassMsg] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValues({ ...values, [e.target.name]: e.target.value });
+    const { name, type, value, checked } = e.target;
+    setValues({ ...values, [name]: type === 'checkbox' ? checked : value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +53,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
       if (!/^https?:\/\//.test(ig)) ig = `https://instagram.com/${ig}`;
       body.instagram = ig;
     }
+    body.active = values.active;
     try {
       setBusy(true);
       await onSubmit(body);
@@ -55,6 +61,20 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
     } catch (e: any) {
       setError(e.message || String(e));
       setBusy(false);
+    }
+  };
+
+  const handleCreatePass = async () => {
+    if (!initial?.id) return;
+    try {
+      const res = await createPass({
+        clientId: initial.id,
+        planSize: passPlan,
+        purchasedAt: new Date().toISOString(),
+      });
+      setPassMsg(`Token: ${res.rawToken}`);
+    } catch (e: any) {
+      setPassMsg(e.message || String(e));
     }
   };
 
@@ -83,10 +103,30 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
           Instagram
           <input name="instagram" value={values.instagram} onChange={handleChange} />
         </label>
+        <label>
+          Active
+          <input
+            type="checkbox"
+            name="active"
+            checked={values.active}
+            onChange={handleChange}
+          />
+        </label>
         <div>
           <button type="submit" disabled={busy}>Save</button>
           <button type="button" onClick={onClose}>Cancel</button>
         </div>
+        {mode === 'edit' && initial?.id && (
+          <div className="create-pass">
+            <h3>Create pass</h3>
+            <select value={passPlan} onChange={e => setPassPlan(Number(e.target.value))}>
+              <option value={4}>4</option>
+              <option value={8}>8</option>
+            </select>
+            <button type="button" onClick={handleCreatePass}>Generate</button>
+            {passMsg && <p>{passMsg}</p>}
+          </div>
+        )}
       </form>
     </div>
   );

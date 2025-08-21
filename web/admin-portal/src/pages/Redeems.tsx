@@ -1,22 +1,14 @@
 import { useEffect, useState } from 'react';
-import { fetchJSON } from '../lib/api';
-
-interface Redeem {
-  id: string;
-  ts: string;
-  kind: string;
-  clientId?: string;
-  delta?: number;
-  priceRSD?: number;
-}
+import { listRedeems } from '../lib/api';
+import type { Redeem } from '../types';
 
 export default function Redeems() {
   const [items, setItems] = useState<Redeem[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchJSON<{ items: Redeem[] }>('/v1/admin/redeems')
-      .then(res => setItems(res.items))
+    listRedeems()
+      .then(setItems)
       .catch(e => setError(e.message));
   }, []);
 
