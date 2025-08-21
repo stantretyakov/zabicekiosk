@@ -34,6 +34,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
   const [passToken, setPassToken] = useState('');
   const [passUrl, setPassUrl] = useState('');
   const qrRef = useRef<HTMLDivElement>(null);
+  const qrCode = useRef<QRCodeStyling | null>(null);
 
   useEffect(() => {
     if (!passUrl || !qrRef.current) return;
@@ -49,7 +50,57 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
     });
     qrRef.current.innerHTML = '';
     qr.append(qrRef.current);
+    qrCode.current = qr;
   }, [passUrl]);
+
+  const roundCorners = async (blob: Blob, radius = 20) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.src = url;
+    await new Promise((res, rej) => {
+      img.onload = () => res(null);
+      img.onerror = err => rej(err);
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas not supported');
+    const r = radius;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(canvas.width - r, 0);
+    ctx.quadraticCurveTo(canvas.width, 0, canvas.width, r);
+    ctx.lineTo(canvas.width, canvas.height - r);
+    ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - r, canvas.height);
+    ctx.lineTo(r, canvas.height);
+    ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img, 0, 0);
+    const rounded = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
+    URL.revokeObjectURL(url);
+    if (!rounded) throw new Error('Failed to create image');
+    return rounded;
+  };
+
+  const handleShare = async () => {
+    if (!qrCode.current) return;
+    try {
+      const raw = await qrCode.current.getRawData('png');
+      const rounded = await roundCorners(raw);
+      const file = new File([rounded], 'pass.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Pass QR', text: passUrl });
+      } else {
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(passUrl)}`, '_blank');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, type, value, checked } = e.target;
@@ -160,6 +211,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
                 <p>
                   <code>{passToken}</code>
                 </p>
+                <button type="button" onClick={handleShare}>Send to Telegram</button>
               </div>
             )}
           </div>
