@@ -1,5 +1,6 @@
 // web/admin-portal/src/lib/api.ts
 import { getIdToken } from './auth';
+import type { Client, Paginated } from '../types';
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
@@ -23,4 +24,42 @@ export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T>
     throw new Error(`Expected JSON, got: ${ct || 'unknown'}; first 120 chars: ${text.slice(0,120)}`);
   }
   return res.json() as Promise<T>;
+}
+
+export async function listClients(q: {
+  search?: string;
+  pageSize?: number;
+  pageToken?: string;
+  active?: 'all' | 'true' | 'false';
+  orderBy?: 'createdAt' | 'parentName';
+  order?: 'asc' | 'desc';
+}): Promise<Paginated<Client>> {
+  const params = new URLSearchParams();
+  if (q.search) params.set('search', q.search);
+  if (q.pageSize) params.set('pageSize', String(q.pageSize));
+  if (q.pageToken) params.set('pageToken', q.pageToken);
+  if (q.active) params.set('active', q.active);
+  if (q.orderBy) params.set('orderBy', q.orderBy);
+  if (q.order) params.set('order', q.order);
+  return fetchJSON(`/v1/admin/clients?${params.toString()}`);
+}
+
+export async function createClient(body: Partial<Client>): Promise<Client> {
+  return fetchJSON(`/v1/admin/clients`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateClient(id: string, body: Partial<Client>): Promise<Client> {
+  return fetchJSON(`/v1/admin/clients/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function archiveClient(id: string): Promise<void> {
+  await fetchJSON(`/v1/admin/clients/${id}`, { method: 'DELETE' });
 }
