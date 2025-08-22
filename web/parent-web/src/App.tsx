@@ -20,7 +20,7 @@ export default function App() {
       setError('Missing token');
       return;
     }
-    fetch(`/v1/card?token=${encodeURIComponent(token)}`)
+      fetch(`/api/v1/card?token=${encodeURIComponent(token)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Failed'))))
       .then((data: Card) => setCard(data))
       .catch((e) => setError(e.message));
