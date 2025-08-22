@@ -3,13 +3,13 @@ info:
   title: core-api
   version: 0.1.0
 paths:
-  /v1/redeem:
+  /api/v1/redeem:
     post:
       summary: Redeem pass or record drop-in
       responses:
         '200':
           description: OK
-  /v1/card:
+  /api/v1/card:
     get:
       summary: Get public card info
       parameters:
