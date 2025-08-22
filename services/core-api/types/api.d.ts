@@ -23,3 +23,11 @@ export type RedeemDropin = {
 export type ErrorPayload = { status: 'error'; code: string; message: string };
 
 export type RedeemResponse = RedeemPass | RedeemDropin | ErrorPayload;
+
+export type CardResponse = {
+  name: string;
+  planSize: number;
+  used: number;
+  remaining: number;
+  expiresAt: string;
+};
