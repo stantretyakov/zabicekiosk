@@ -16,14 +16,30 @@ export default async function adminPasses(app: FastifyInstance) {
     });
     const { pageSize, pageToken, clientId } = qsSchema.parse(req.query);
 
-    let query: FirebaseFirestore.Query = db.collection('passes').orderBy('purchasedAt', 'desc');
-    if (clientId) query = query.where('clientId', '==', clientId);
-    if (pageToken) {
-      const snap = await db.collection('passes').doc(pageToken).get();
-      if (snap.exists) query = query.startAfter(snap);
+    let query: FirebaseFirestore.Query = db.collection('passes');
+    if (clientId) {
+      query = query.where('clientId', '==', clientId);
+    } else {
+      query = query.orderBy('purchasedAt', 'desc');
+      if (pageToken) {
+        const snap = await db.collection('passes').doc(pageToken).get();
+        if (snap.exists) query = query.startAfter(snap);
+      }
     }
-    const snap = await query.limit(pageSize + 1).get();
-    const docs = snap.docs;
+
+    const snap = await (clientId
+      ? query.get()
+      : query.limit(pageSize + 1).get());
+    let docs = snap.docs;
+
+    if (clientId) {
+      docs = docs.sort((a, b) => {
+        const aTs = (a.data() as any).purchasedAt?.toMillis?.() || 0;
+        const bTs = (b.data() as any).purchasedAt?.toMillis?.() || 0;
+        return bTs - aTs;
+      });
+    }
+
     const items = await Promise.all(
       docs.slice(0, pageSize).map(async d => {
         const data = d.data() as any;
@@ -54,7 +70,7 @@ export default async function adminPasses(app: FastifyInstance) {
       })
     );
     let nextPageToken: string | undefined;
-    if (docs.length > pageSize) {
+    if (!clientId && docs.length > pageSize) {
       nextPageToken = docs[pageSize].id;
     }
     return { items, nextPageToken };
