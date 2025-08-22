@@ -13,6 +13,7 @@ export async function buildServer() {
 
   const adminClients = (await import('./routes/admin.clients.js')).default;
   const adminPasses = (await import('./routes/admin.passes.js')).default;
+  const adminRedeems = (await import('./routes/admin.redeems.js')).default;
   const adminSettings = (await import('./routes/admin.settings.js')).default;
   const adminContent = (await import('./routes/admin.content.js')).default;
   const adminUsers = (await import('./routes/admin.users.js')).default;
@@ -22,6 +23,9 @@ export async function buildServer() {
 
   await app.register(adminPasses, { prefix: '/v1/admin' });
   await app.register(adminPasses, { prefix: '/api/v1/admin' });
+
+  await app.register(adminRedeems, { prefix: '/v1/admin' });
+  await app.register(adminRedeems, { prefix: '/api/v1/admin' });
 
   await app.register(adminSettings, { prefix: '/v1/admin' });
   await app.register(adminSettings, { prefix: '/api/v1/admin' });
