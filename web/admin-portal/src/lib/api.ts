@@ -2,9 +2,12 @@
 import { getIdToken } from './auth';
 import type { Client, Paginated, PassWithClient, Redeem, Stats } from '../types';
 
-const API_BASE_URL =
-  (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  '/api/v1'; // безопасный дефолт
+const API_BASE_URL = (() => {
+  const env = import.meta.env.VITE_CORE_API_URL as string | undefined;
+  if (!env) return '/api/v1';
+  const base = env.replace(/\/$/, '');
+  return base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+})();
 
 export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
