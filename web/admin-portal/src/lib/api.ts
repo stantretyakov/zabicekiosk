@@ -11,6 +11,7 @@ export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T>
   const headers = new Headers(init?.headers);
   const token = await getIdToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
   const res = await fetch(url, { ...init, headers, credentials: 'include' });
 
   const ct = res.headers.get('content-type') || '';
