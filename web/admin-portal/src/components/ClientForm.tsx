@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Client } from '../types';
-import { createPass } from '../lib/api';
+import { createPass, listPasses } from '../lib/api';
 import QRCodeStyling from 'qr-code-styling';
 import frog from '../assets/frog.svg';
 
@@ -18,45 +18,32 @@ function normPhone(v: string) {
   return '+381' + digits.replace(/^0+/, '');
 }
 
-export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) {
-  const [values, setValues] = useState({
-    parentName: initial?.parentName ?? '',
-    childName: initial?.childName ?? '',
-    phone: initial?.phone ?? '',
-    telegram: initial?.telegram ?? '',
-    instagram: initial?.instagram ?? '',
-    active: initial?.active ?? true,
-  });
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [passPlan, setPassPlan] = useState(4);
-  const [passMsg, setPassMsg] = useState('');
-  const [passToken, setPassToken] = useState('');
-  const [passUrl, setPassUrl] = useState('');
-  const qrRef = useRef<HTMLDivElement>(null);
+function PassDisplay({ token, url }: { token: string; url: string }) {
+  const ref = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
 
   useEffect(() => {
-    if (!passUrl || !qrRef.current) return;
     const qr = new QRCodeStyling({
       width: 200,
       height: 200,
       type: 'svg',
-      data: passUrl,
+      data: url,
       image: frog,
       dotsOptions: { type: 'rounded' },
       cornersSquareOptions: { type: 'extra-rounded' },
       imageOptions: { margin: 4 },
     });
-    qrRef.current.innerHTML = '';
-    qr.append(qrRef.current);
-    qrCode.current = qr;
-  }, [passUrl]);
+    if (ref.current) {
+      ref.current.innerHTML = '';
+      qr.append(ref.current);
+      qrCode.current = qr;
+    }
+  }, [url]);
 
   const roundCorners = async (blob: Blob, radius = 20) => {
     const img = new Image();
-    const url = URL.createObjectURL(blob);
-    img.src = url;
+    const u = URL.createObjectURL(blob);
+    img.src = u;
     await new Promise((res, rej) => {
       img.onload = () => res(null);
       img.onerror = err => rej(err);
@@ -81,7 +68,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
     ctx.clip();
     ctx.drawImage(img, 0, 0);
     const rounded = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(u);
     if (!rounded) throw new Error('Failed to create image');
     return rounded;
   };
@@ -93,13 +80,65 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
       const rounded = await roundCorners(raw);
       const file = new File([rounded], 'pass.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Pass QR', text: passUrl });
+        await navigator.share({ files: [file], title: 'Pass QR', text: url });
       } else {
-        window.open(`https://t.me/share/url?url=${encodeURIComponent(passUrl)}`, '_blank');
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}`, '_blank');
       }
     } catch (e) {
       console.error(e);
     }
+  };
+
+  return (
+    <div className="pass-qr">
+      <div ref={ref}></div>
+      <p>
+        <code>{token}</code>
+      </p>
+      <button type="button" onClick={handleShare}>
+        Send to Telegram
+      </button>
+    </div>
+  );
+}
+
+export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) {
+  const [values, setValues] = useState({
+    parentName: initial?.parentName ?? '',
+    childName: initial?.childName ?? '',
+    phone: initial?.phone ?? '',
+    telegram: initial?.telegram ?? '',
+    instagram: initial?.instagram ?? '',
+    active: initial?.active ?? true,
+  });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [passPlan, setPassPlan] = useState(4);
+  const [passMsg, setPassMsg] = useState('');
+  const [passes, setPasses] = useState<{ id: string; token: string; url: string }[]>([]);
+
+  useEffect(() => {
+    if (mode === 'edit' && initial?.id) {
+      loadPasses();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, initial?.id]);
+
+  const loadPasses = () => {
+    if (!initial?.id) return;
+    listPasses({ clientId: initial.id })
+      .then(res => {
+        const base =
+          (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
+          window.location.origin + '/card';
+        const ps = res.items.map(p => ({
+          id: p.id,
+          token: p.token!,
+          url: `${base}?token=${encodeURIComponent(p.token!)}`,
+        }));
+        setPasses(ps);
+      })
+      .catch(e => setPassMsg(e.message || String(e)));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -139,22 +178,15 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
   const handleCreatePass = async () => {
     if (!initial?.id) return;
     try {
-      const res = await createPass({
+      await createPass({
         clientId: initial.id,
         planSize: passPlan,
         purchasedAt: new Date().toISOString(),
       });
-      const base =
-        (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
-        window.location.origin + '/card';
-      const url = `${base}?token=${encodeURIComponent(res.rawToken)}`;
-      setPassToken(res.rawToken);
-      setPassUrl(url);
       setPassMsg('');
+      loadPasses();
     } catch (e: any) {
       setPassMsg(e.message || String(e));
-      setPassToken('');
-      setPassUrl('');
     }
   };
 
@@ -205,13 +237,11 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
             </select>
             <button type="button" onClick={handleCreatePass}>Generate</button>
             {passMsg && <p className="error">{passMsg}</p>}
-            {passToken && (
-              <div className="pass-qr">
-                <div ref={qrRef}></div>
-                <p>
-                  <code>{passToken}</code>
-                </p>
-                <button type="button" onClick={handleShare}>Send to Telegram</button>
+            {passes.length > 0 && (
+              <div className="pass-list">
+                {passes.map(p => (
+                  <PassDisplay key={p.id} token={p.token} url={p.url} />
+                ))}
               </div>
             )}
           </div>
