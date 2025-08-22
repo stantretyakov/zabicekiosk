@@ -4,7 +4,6 @@ import type { Client, Paginated, PassWithClient, Redeem, Stats } from '../types'
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  (import.meta.env.VITE_API_BASE as string | undefined) ??
   '/api'; // безопасный дефолт
 
 export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {

@@ -27,7 +27,6 @@ export type RedeemResponse =
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  (import.meta.env.VITE_API_BASE as string | undefined) ??
   '/api';
 
 export async function redeem(token: string): Promise<RedeemResponse> {
