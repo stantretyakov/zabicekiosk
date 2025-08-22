@@ -12,6 +12,12 @@ paths:
   /v1/card:
     get:
       summary: Get public card info
+      parameters:
+        - in: query
+          name: token
+          schema:
+            type: string
+          required: true
       responses:
         '200':
           description: OK

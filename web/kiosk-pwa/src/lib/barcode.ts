@@ -1,12 +1,22 @@
-export function scanStream(video: HTMLVideoElement, onToken: (token: string) => void) {
+export function scanStream(
+  video: HTMLVideoElement,
+  onToken: (token: string) => void,
+  cooldownMs = 2000
+) {
   let active = true;
-  const detector = 'BarcodeDetector' in window ? new (window as any).BarcodeDetector({ formats: ['qr_code'] }) : null;
+  const detector =
+    'BarcodeDetector' in window
+      ? new (window as any).BarcodeDetector({ formats: ['qr_code'] })
+      : null;
+  let lastScan = 0;
 
   const scan = async () => {
     if (!active || !detector) return;
     try {
       const codes = await detector.detect(video);
-      if (codes.length) {
+      const now = Date.now();
+      if (codes.length && now - lastScan >= cooldownMs) {
+        lastScan = now;
         onToken(codes[0].rawValue);
       }
     } catch (e) {
