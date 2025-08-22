@@ -79,12 +79,18 @@ export async function createPass(body: {
 export async function listPasses(q?: {
   pageSize?: number;
   pageToken?: string;
+  clientId?: string;
 }): Promise<Paginated<PassWithClient>> {
   const params = new URLSearchParams();
   if (q?.pageSize) params.set('pageSize', String(q.pageSize));
   if (q?.pageToken) params.set('pageToken', q.pageToken);
+  if (q?.clientId) params.set('clientId', q.clientId);
   const qs = params.toString();
   return fetchJSON(`/v1/admin/passes${qs ? `?${qs}` : ''}`);
+}
+
+export async function getPassToken(id: string): Promise<{ token: string }> {
+  return fetchJSON(`/v1/admin/passes/${id}/token`);
 }
 
 export async function listRedeems(): Promise<Redeem[]> {
