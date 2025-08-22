@@ -27,10 +27,10 @@ export type RedeemResponse =
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  '/api';
+  '/api/v1';
 
 export async function redeem(token: string): Promise<RedeemResponse> {
-  const res = await fetch(`${API_BASE_URL}/v1/redeem`, {
+  const res = await fetch(`${API_BASE_URL}/redeem`, {
     method: 'POST',
     mode: 'cors',
     headers: {

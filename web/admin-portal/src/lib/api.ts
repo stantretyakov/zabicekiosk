@@ -4,7 +4,7 @@ import type { Client, Paginated, PassWithClient, Redeem, Stats } from '../types'
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  '/api'; // безопасный дефолт
+  '/api/v1'; // безопасный дефолт
 
 export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
@@ -40,11 +40,11 @@ export async function listClients(q: {
   if (q.active) params.set('active', q.active);
   if (q.orderBy) params.set('orderBy', q.orderBy);
   if (q.order) params.set('order', q.order);
-  return fetchJSON(`/v1/admin/clients?${params.toString()}`);
+  return fetchJSON(`/admin/clients?${params.toString()}`);
 }
 
 export async function createClient(body: Partial<Client>): Promise<Client> {
-  return fetchJSON(`/v1/admin/clients`, {
+  return fetchJSON(`/admin/clients`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -52,7 +52,7 @@ export async function createClient(body: Partial<Client>): Promise<Client> {
 }
 
 export async function updateClient(id: string, body: Partial<Client>): Promise<Client> {
-  return fetchJSON(`/v1/admin/clients/${id}`, {
+  return fetchJSON(`/admin/clients/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -60,7 +60,7 @@ export async function updateClient(id: string, body: Partial<Client>): Promise<C
 }
 
 export async function archiveClient(id: string): Promise<void> {
-  await fetchJSON(`/v1/admin/clients/${id}`, { method: 'DELETE' });
+  await fetchJSON(`/admin/clients/${id}`, { method: 'DELETE' });
 }
 
 export async function createPass(body: {
@@ -68,7 +68,7 @@ export async function createPass(body: {
   planSize: number;
   purchasedAt: string;
 }): Promise<{ rawToken: string }> {
-  return fetchJSON(`/v1/admin/passes`, {
+  return fetchJSON(`/admin/passes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -85,18 +85,18 @@ export async function listPasses(q?: {
   if (q?.pageToken) params.set('pageToken', q.pageToken);
   if (q?.clientId) params.set('clientId', q.clientId);
   const qs = params.toString();
-  return fetchJSON(`/v1/admin/passes${qs ? `?${qs}` : ''}`);
+  return fetchJSON(`/admin/passes${qs ? `?${qs}` : ''}`);
 }
 
 export async function getPassToken(id: string): Promise<{ token: string }> {
-  return fetchJSON(`/v1/admin/passes/${id}/token`);
+  return fetchJSON(`/admin/passes/${id}/token`);
 }
 
 export async function listRedeems(): Promise<Redeem[]> {
-  const res = await fetchJSON<{ items: Redeem[] }>(`/v1/admin/redeems`);
+  const res = await fetchJSON<{ items: Redeem[] }>(`/admin/redeems`);
   return res.items;
 }
 
 export async function getStats(): Promise<Stats> {
-  return fetchJSON(`/v1/admin/stats`);
+  return fetchJSON(`/admin/stats`);
 }
