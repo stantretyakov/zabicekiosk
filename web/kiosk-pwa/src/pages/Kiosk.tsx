@@ -35,8 +35,13 @@ export default function Kiosk() {
     try {
       const payload: { token?: string; clientId?: string } = {};
       const match = data.match(/token=([^&]+)/);
-      if (match) payload.token = decodeURIComponent(match[1]);
-      else payload.clientId = data;
+      if (match) {
+        payload.token = decodeURIComponent(match[1]);
+      } else if (/^[0-9a-f]{32}$/i.test(data)) {
+        payload.token = data;
+      } else {
+        payload.clientId = data;
+      }
       const res = await redeem(payload);
       if (res.status === 'ok') {
         let details: string;
