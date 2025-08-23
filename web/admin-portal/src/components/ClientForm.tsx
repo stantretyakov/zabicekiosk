@@ -77,6 +77,9 @@ function PassDisplay({ url }: { url: string }) {
     if (!qrCode.current) return;
     try {
       const raw = await qrCode.current.getRawData('png');
+      if (!raw || !(raw instanceof Blob)) {
+        throw new Error('Failed to generate QR code');
+      }
       const rounded = await roundCorners(raw);
       const file = new File([rounded], 'pass.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
