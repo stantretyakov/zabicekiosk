@@ -2,7 +2,6 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { getDb } from '../lib/firestore.js';
 import { requireAdmin } from '../lib/auth.js';
-import { generateToken, hashToken } from '../lib/tokens.js';
 import { Timestamp, FieldValue } from '@google-cloud/firestore';
 
 export default async function adminPasses(app: FastifyInstance) {
@@ -47,7 +46,7 @@ export default async function adminPasses(app: FastifyInstance) {
         const data = d.data() as any;
         const clientSnap = await db.collection('clients').doc(data.clientId).get();
         const c = clientSnap.data() || {};
-        const item: any = {
+        return {
           id: d.id,
           clientId: data.clientId,
           planSize: data.planSize,
@@ -67,8 +66,6 @@ export default async function adminPasses(app: FastifyInstance) {
             updatedAt: c.updatedAt?.toDate?.().toISOString(),
           },
         };
-        if (clientId) item.token = data.token;
-        return item;
       })
     );
     let nextPageToken: string | undefined;
@@ -94,12 +91,8 @@ export default async function adminPasses(app: FastifyInstance) {
       .get();
 
     if (!existing.empty) {
-      const data = existing.docs[0].data() as any;
-      return { rawToken: data.token };
+      return { status: 'exists' };
     }
-
-    const rawToken = generateToken();
-    const tokenHash = hashToken(rawToken);
 
     const purchasedAt = Timestamp.fromDate(new Date(body.purchasedAt));
     const expiresAt = Timestamp.fromDate(
@@ -112,30 +105,12 @@ export default async function adminPasses(app: FastifyInstance) {
       used: 0,
       purchasedAt,
       expiresAt,
-      tokenHash,
-      token: rawToken,
       revoked: false,
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    return { rawToken };
+    return { status: 'created' };
   });
-
-  app.get<{ Params: { id: string } }>(
-    '/passes/:id/token',
-    { preHandler: requireAdmin },
-    async req => {
-      const { id } = z.object({ id: z.string() }).parse(req.params);
-      const snap = await db.collection('passes').doc(id).get();
-      if (!snap.exists) {
-        const err: any = new Error('Not Found');
-        err.statusCode = 404;
-        throw err;
-      }
-      const data = snap.data() as any;
-      return { token: data.token };
-    },
-  );
 
   app.delete<{ Params: { id: string } }>(
     '/passes/:id',

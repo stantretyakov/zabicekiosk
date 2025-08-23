@@ -71,8 +71,8 @@ export async function createPass(body: {
   clientId: string;
   planSize: number;
   purchasedAt: string;
-}): Promise<{ rawToken: string }> {
-  return fetchJSON(`/admin/passes`, {
+}): Promise<void> {
+  await fetchJSON(`/admin/passes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -92,8 +92,8 @@ export async function listPasses(q?: {
   return fetchJSON(`/admin/passes${qs ? `?${qs}` : ''}`);
 }
 
-export async function getPassToken(id: string): Promise<{ token: string }> {
-  return fetchJSON(`/admin/passes/${id}/token`);
+export async function getClientToken(id: string): Promise<{ token: string }> {
+  return fetchJSON(`/admin/clients/${id}/token`);
 }
 
 export async function deletePass(id: string): Promise<void> {

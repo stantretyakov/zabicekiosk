@@ -23,7 +23,6 @@ export type Pass = {
   remaining: number;
   type: 'subscription' | 'single';
   lastVisit?: string;
-  token?: string;
 };
 
 export type PassWithClient = Pass & {

@@ -4,6 +4,7 @@ import { getDb } from '../lib/firestore.js';
 import { requireAdmin } from '../lib/auth.js';
 import { FieldValue } from '@google-cloud/firestore';
 import type { Client, Paginated } from '../types.js';
+import { generateToken, hashToken } from '../lib/tokens.js';
 
 function normalizePhone(p?: string) {
   if (!p) return undefined;
@@ -119,6 +120,7 @@ export default async function adminClients(app: FastifyInstance) {
   app.post('/clients', { preHandler: requireAdmin }, async req => {
     const body = clientSchema.parse(req.body);
     const now = FieldValue.serverTimestamp();
+    const rawToken = generateToken();
     const data = {
       parentName: body.parentName.trim(),
       childName: body.childName.trim(),
@@ -129,6 +131,8 @@ export default async function adminClients(app: FastifyInstance) {
       fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
       createdAt: now,
       updatedAt: now,
+      token: rawToken,
+      tokenHash: hashToken(rawToken),
     };
     const ref = await db.collection('clients').add(data);
     const snap = await ref.get();
@@ -145,6 +149,18 @@ export default async function adminClients(app: FastifyInstance) {
       updatedAt: d.updatedAt?.toDate?.().toISOString(),
     };
     return result;
+  });
+
+  app.get<{ Params: { id: string } }>('/clients/:id/token', { preHandler: requireAdmin }, async req => {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const snap = await db.collection('clients').doc(id).get();
+    if (!snap.exists) {
+      const err: any = new Error('Not Found');
+      err.statusCode = 404;
+      throw err;
+    }
+    const data = snap.data() as any;
+    return { token: data.token };
   });
 
   app.patch<{ Params: { id: string } }>('/clients/:id', { preHandler: requireAdmin }, async req => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Client } from '../types';
-import { createPass, listPasses, deletePass } from '../lib/api';
+import { createPass, listPasses, getClientToken } from '../lib/api';
 import QRCodeStyling from 'qr-code-styling';
 import frog from '../assets/frog.svg';
 
@@ -18,7 +18,7 @@ function normPhone(v: string) {
   return '+381' + digits.replace(/^0+/, '');
 }
 
-function PassDisplay({ token, url, onDelete }: { token: string; url: string; onDelete: () => void }) {
+function PassDisplay({ token, url }: { token: string; url: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
 
@@ -98,9 +98,6 @@ function PassDisplay({ token, url, onDelete }: { token: string; url: string; onD
       <button type="button" onClick={handleShare}>
         Send to Telegram
       </button>
-      <button type="button" onClick={onDelete}>
-        Delete
-      </button>
     </div>
   );
 }
@@ -118,7 +115,9 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
   const [busy, setBusy] = useState(false);
   const [passPlan, setPassPlan] = useState(4);
   const [passMsg, setPassMsg] = useState('');
-  const [passes, setPasses] = useState<{ id: string; token: string; url: string }[]>([]);
+  const [passes, setPasses] = useState<{ id: string }[]>([]);
+  const [clientToken, setClientToken] = useState('');
+  const [tokenUrl, setTokenUrl] = useState('');
 
   useEffect(() => {
     if (mode === 'edit' && initial?.id) {
@@ -129,28 +128,16 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
 
   const loadPasses = () => {
     if (!initial?.id) return;
-    listPasses({ clientId: initial.id })
-      .then(res => {
+    Promise.all([listPasses({ clientId: initial.id }), getClientToken(initial.id)])
+      .then(([res, tok]) => {
         const base =
           (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
           window.location.origin + '/card';
-        const ps = res.items.map(p => ({
-          id: p.id,
-          token: p.token!,
-          url: `${base}?token=${encodeURIComponent(p.token!)}`,
-        }));
-        setPasses(ps);
+        setPasses(res.items.map(p => ({ id: p.id })));
+        setClientToken(tok.token);
+        setTokenUrl(`${base}?token=${encodeURIComponent(tok.token)}`);
       })
       .catch(e => setPassMsg(e.message || String(e)));
-  };
-
-  const handleDeletePass = async (id: string) => {
-    try {
-      await deletePass(id);
-      loadPasses();
-    } catch (e: any) {
-      setPassMsg(e.message || String(e));
-    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,16 +236,9 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
             </select>
             <button type="button" onClick={handleCreatePass}>Generate</button>
             {passMsg && <p className="error">{passMsg}</p>}
-            {passes.length > 0 && (
+            {passes.length > 0 && clientToken && (
               <div className="pass-list">
-                {passes.map(p => (
-                  <PassDisplay
-                    key={p.id}
-                    token={p.token}
-                    url={p.url}
-                    onDelete={() => handleDeletePass(p.id)}
-                  />
-                ))}
+                <PassDisplay token={clientToken} url={tokenUrl} />
               </div>
             )}
           </div>
