@@ -35,10 +35,10 @@ export async function redeem(
   const passSnap = await db
     .collection('passes')
     .where('clientId', '==', clientRef.id)
-    .where('revoked', '==', false)
     .get();
 
   const passRefs = passSnap.docs
+    .filter(d => (d.data() as any).revoked !== true)
     .sort((a, b) => {
       const aTs = (a.data() as any).purchasedAt?.toMillis?.() || 0;
       const bTs = (b.data() as any).purchasedAt?.toMillis?.() || 0;

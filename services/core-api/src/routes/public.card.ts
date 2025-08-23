@@ -28,8 +28,6 @@ export default async function publicCard(app: FastifyInstance) {
     const passSnap = await db
       .collection('passes')
       .where('clientId', '==', clientDoc.id)
-      .where('revoked', '==', false)
-      .limit(1)
       .get();
 
     let planSize = 1;
@@ -37,8 +35,16 @@ export default async function publicCard(app: FastifyInstance) {
     let remaining = 1;
     let expiresAt = new Date().toISOString();
 
-    if (!passSnap.empty) {
-      const p = passSnap.docs[0].data() as any;
+    const passes = passSnap.docs
+      .filter(d => (d.data() as any).revoked !== true)
+      .sort((a, b) => {
+        const aTs = (a.data() as any).purchasedAt?.toMillis?.() || 0;
+        const bTs = (b.data() as any).purchasedAt?.toMillis?.() || 0;
+        return bTs - aTs;
+      });
+
+    if (passes.length > 0) {
+      const p = passes[0].data() as any;
       const now = new Date();
       if (p.expiresAt.toDate() > now && p.used < p.planSize) {
         planSize = p.planSize;
