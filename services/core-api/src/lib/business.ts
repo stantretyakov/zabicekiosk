@@ -32,19 +32,12 @@ export async function redeem(
   } else {
     return { status: 'error', code: 'INVALID_REQUEST', message: 'Missing client identifier' };
   }
-  const passSnap = await db
+
+  const passQuery = db
     .collection('passes')
     .where('clientId', '==', clientRef.id)
-    .get();
-
-  const passRefs = passSnap.docs
-    .filter(d => (d.data() as any).revoked !== true)
-    .sort((a, b) => {
-      const aTs = (a.data() as any).purchasedAt?.toMillis?.() || 0;
-      const bTs = (b.data() as any).purchasedAt?.toMillis?.() || 0;
-      return bTs - aTs;
-    })
-    .map(d => d.ref);
+    .where('revoked', '==', false)
+    .orderBy('purchasedAt', 'desc');
 
   let passRef: FirebaseFirestore.DocumentReference | null = null;
   const settingsRef = db.doc('settings/global');
@@ -53,14 +46,14 @@ export async function redeem(
     const settingsDoc = await tx.get(settingsRef);
     const now = Timestamp.now();
 
+    const passSnap = await tx.get(passQuery);
     let passDoc: FirebaseFirestore.DocumentSnapshot | null = null;
-    for (const ref of passRefs) {
-      const doc = await tx.get(ref);
+    for (const doc of passSnap.docs) {
       const data = doc.data() as any;
       const remaining = data.planSize - data.used;
       if (data.expiresAt.toDate() > now.toDate() && remaining > 0) {
         passDoc = doc;
-        passRef = ref;
+        passRef = doc.ref;
         break;
       }
     }
