@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { Client } from '../types';
-import { createPass, listPasses } from '../lib/api';
+import { createPass, listPasses, deletePass } from '../lib/api';
 import QRCodeStyling from 'qr-code-styling';
 import frog from '../assets/frog.svg';
 
@@ -18,7 +18,7 @@ function normPhone(v: string) {
   return '+381' + digits.replace(/^0+/, '');
 }
 
-function PassDisplay({ token, url }: { token: string; url: string }) {
+function PassDisplay({ token, url, onDelete }: { token: string; url: string; onDelete: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
 
@@ -98,6 +98,9 @@ function PassDisplay({ token, url }: { token: string; url: string }) {
       <button type="button" onClick={handleShare}>
         Send to Telegram
       </button>
+      <button type="button" onClick={onDelete}>
+        Delete
+      </button>
     </div>
   );
 }
@@ -139,6 +142,15 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
         setPasses(ps);
       })
       .catch(e => setPassMsg(e.message || String(e)));
+  };
+
+  const handleDeletePass = async (id: string) => {
+    try {
+      await deletePass(id);
+      loadPasses();
+    } catch (e: any) {
+      setPassMsg(e.message || String(e));
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +252,12 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
             {passes.length > 0 && (
               <div className="pass-list">
                 {passes.map(p => (
-                  <PassDisplay key={p.id} token={p.token} url={p.url} />
+                  <PassDisplay
+                    key={p.id}
+                    token={p.token}
+                    url={p.url}
+                    onDelete={() => handleDeletePass(p.id)}
+                  />
                 ))}
               </div>
             )}
