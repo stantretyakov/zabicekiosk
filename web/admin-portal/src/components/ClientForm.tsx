@@ -133,7 +133,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
       .then(res => {
         const base =
           (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
-          window.location.origin + '/card';
+          window.location.origin.replace('admin', 'parent');
         const ps = res.items.map(p => ({
           id: p.id,
           token: p.token!,

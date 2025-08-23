@@ -11,6 +11,23 @@ export default function CameraScanner({ onToken }: Props) {
   const onTokenRef = useRef(onToken);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
+  const extractToken = (raw: string): string => {
+    try {
+      const url = new URL(raw);
+      return (
+        url.searchParams.get('token') ||
+        url.searchParams.get('id') ||
+        url.pathname.split('/').filter(Boolean).pop() ||
+        raw
+      );
+    } catch {
+      const m = raw.match(/(?:token|id)=([^&]+)/);
+      if (m) return decodeURIComponent(m[1]);
+      const parts = raw.split('/');
+      return parts.filter(Boolean).pop() || raw;
+    }
+  };
+
   // keep latest onToken without reinitialising scanner
   useEffect(() => {
     onTokenRef.current = onToken;
@@ -26,7 +43,7 @@ export default function CameraScanner({ onToken }: Props) {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
-          stopScan = scanStream(videoRef.current, token => onTokenRef.current(token));
+          stopScan = scanStream(videoRef.current, raw => onTokenRef.current(extractToken(raw)));
         }
       })
       .catch(err => console.error(err));

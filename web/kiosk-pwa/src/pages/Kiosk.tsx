@@ -30,19 +30,8 @@ export default function Kiosk() {
   const pushHistory = (text: string) => {
     setHistory(h => [{ ts: Date.now(), text }, ...h].slice(0, 5));
   };
-
-  const extractToken = (raw: string): string => {
-    try {
-      const url = new URL(raw);
-      return url.searchParams.get('token') || raw;
-    } catch {
-      const m = raw.match(/token=([^&]+)/);
-      return m ? decodeURIComponent(m[1]) : raw;
-    }
-  };
-
-  const handleToken = async (raw: string) => {
-    const token = extractToken(raw);
+  
+  const handleToken = async (token: string) => {
     try {
       const res = await redeem(token);
       if (res.status === 'ok') {
