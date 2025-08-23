@@ -133,7 +133,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
       .then(([res, tok]) => {
         const base =
           (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
-          window.location.origin + '/card';
+          window.location.origin.replace('admin', 'parent') + '/card';
         setPasses(res.items);
         setTokenUrl(`${base}?token=${encodeURIComponent(tok.token)}`);
       })
