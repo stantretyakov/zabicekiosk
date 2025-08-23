@@ -8,7 +8,13 @@ interface Props {
 
 export default function CameraScanner({ onToken }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const onTokenRef = useRef(onToken);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+
+  // keep latest onToken without reinitialising scanner
+  useEffect(() => {
+    onTokenRef.current = onToken;
+  }, [onToken]);
 
   useEffect(() => {
     let localStream: MediaStream | null = null;
@@ -20,7 +26,7 @@ export default function CameraScanner({ onToken }: Props) {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play();
-          stopScan = scanStream(videoRef.current, onToken);
+          stopScan = scanStream(videoRef.current, token => onTokenRef.current(token));
         }
       })
       .catch(err => console.error(err));
@@ -28,7 +34,7 @@ export default function CameraScanner({ onToken }: Props) {
       stopScan();
       if (localStream) localStream.getTracks().forEach(t => t.stop());
     };
-  }, [onToken, facingMode]);
+  }, [facingMode]);
 
   const toggleCamera = () => {
     setFacingMode(f => (f === 'user' ? 'environment' : 'user'));
