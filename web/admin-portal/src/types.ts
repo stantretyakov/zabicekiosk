@@ -37,6 +37,7 @@ export type Redeem = {
   clientId?: string;
   delta?: number;
   priceRSD?: number;
+  client?: Client;
 };
 
 export type Stats = {
