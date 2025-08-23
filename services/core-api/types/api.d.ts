@@ -1,5 +1,6 @@
 export type RedeemRequest = {
-  token: string;
+  token?: string;
+  clientId?: string;
   kioskId: string;
   ts: string;
 };
@@ -13,16 +14,15 @@ export type RedeemPass = {
   expiresAt: string;
 };
 
-export type RedeemDropin = {
+export type RedeemSingle = {
   status: 'ok';
-  type: 'dropin';
+  type: 'single';
   message: string;
-  priceRSD: number;
 };
 
 export type ErrorPayload = { status: 'error'; code: string; message: string };
 
-export type RedeemResponse = RedeemPass | RedeemDropin | ErrorPayload;
+export type RedeemResponse = RedeemPass | RedeemSingle | ErrorPayload;
 
 export type CardResponse = {
   name: string;

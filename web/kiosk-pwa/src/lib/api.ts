@@ -7,11 +7,10 @@ export interface RedeemPassResponse {
   expiresAt: string;
 }
 
-export interface RedeemDropinResponse {
+export interface RedeemSingleResponse {
   status: 'ok';
-  type: 'dropin';
+  type: 'single';
   message: string;
-  priceRSD: number;
 }
 
 export interface RedeemErrorResponse {
@@ -22,14 +21,17 @@ export interface RedeemErrorResponse {
 
 export type RedeemResponse =
   | RedeemPassResponse
-  | RedeemDropinResponse
+  | RedeemSingleResponse
   | RedeemErrorResponse;
 
 const API_BASE_URL =
   (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
   '/api/v1';
 
-export async function redeem(token: string): Promise<RedeemResponse> {
+export async function redeem(data: {
+  token?: string;
+  clientId?: string;
+}): Promise<RedeemResponse> {
   const res = await fetch(`${API_BASE_URL}/redeem`, {
     method: 'POST',
     mode: 'cors',
@@ -37,7 +39,7 @@ export async function redeem(token: string): Promise<RedeemResponse> {
       'Content-Type': 'application/json',
       'Idempotency-Key': crypto.randomUUID(),
     },
-    body: JSON.stringify({ token, kioskId: 'kiosk-1', ts: new Date().toISOString() }),
+    body: JSON.stringify({ ...data, kioskId: 'kiosk-1', ts: new Date().toISOString() }),
   });
   return res.json();
 }

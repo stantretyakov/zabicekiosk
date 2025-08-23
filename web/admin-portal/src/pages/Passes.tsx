@@ -1,15 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { listPasses, getClientToken } from '../lib/api';
-import QRCodeStyling from 'qr-code-styling';
-import frog from '../assets/frog.svg';
+import { useEffect, useState } from 'react';
+import { listPasses } from '../lib/api';
 import type { PassWithClient } from '../types';
 
 export default function Passes() {
   const [items, setItems] = useState<PassWithClient[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [qr, setQr] = useState<{ token: string; url: string } | null>(null);
-  const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -27,34 +23,7 @@ export default function Passes() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (!qr || !qrRef.current) return;
-    const qrCode = new QRCodeStyling({
-      width: 200,
-      height: 200,
-      type: 'svg',
-      data: qr.url,
-      image: frog,
-      dotsOptions: { type: 'rounded' },
-      cornersSquareOptions: { type: 'extra-rounded' },
-      imageOptions: { margin: 4 },
-    });
-    qrRef.current.innerHTML = '';
-    qrCode.append(qrRef.current);
-  }, [qr]);
-
-  const openQr = async (clientId: string) => {
-    try {
-      const res = await getClientToken(clientId);
-      const base =
-        (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
-        window.location.origin.replace('admin', 'parent');
-      const url = `${base}?token=${encodeURIComponent(res.token)}`;
-      setQr({ token: res.token, url });
-    } catch (e: any) {
-      setError(e.message || String(e));
-    }
-  };
+  // QR codes are shown on client cards only
 
   return (
     <section>
@@ -73,7 +42,7 @@ export default function Passes() {
               <th>Type</th>
               <th>Remaining</th>
               <th>Last visit</th>
-              <th></th>
+              
             </tr>
           </thead>
           <tbody>
@@ -88,26 +57,13 @@ export default function Passes() {
                   {p.remaining}/{p.planSize}
                 </td>
                 <td>{p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : '-'}</td>
-                <td>
-                  <button onClick={() => openQr(p.clientId)}>Get QR Code</button>
-                </td>
+                
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {qr && (
-        <div className="modal">
-          <div className="modal-body">
-            <h3>Pass QR</h3>
-            <div ref={qrRef}></div>
-            <p>
-              <code>{qr.token}</code>
-            </p>
-            <button onClick={() => setQr(null)}>Close</button>
-          </div>
-        </div>
-      )}
+      
     </section>
   );
 }

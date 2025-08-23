@@ -31,15 +31,19 @@ export default function Kiosk() {
     setHistory(h => [{ ts: Date.now(), text }, ...h].slice(0, 5));
   };
   
-  const handleToken = async (token: string) => {
+  const handleToken = async (data: string) => {
     try {
-      const res = await redeem(token);
+      const payload: { token?: string; clientId?: string } = {};
+      const match = data.match(/token=([^&]+)/);
+      if (match) payload.token = decodeURIComponent(match[1]);
+      else payload.clientId = data;
+      const res = await redeem(payload);
       if (res.status === 'ok') {
         let details: string;
         if (res.type === 'pass') {
           details = `Занятие учтено. Осталось ${res.remaining} занятий.`;
         } else {
-          details = `Занятие учтено. К оплате ${res.priceRSD} RSD.`;
+          details = `Разовое занятие.`;
         }
         setSuccessInfo({ greeting: res.message, details });
         pushHistory(details);

@@ -6,7 +6,7 @@ import type { RedeemRequest, RedeemResponse } from '../../types/api.d.js';
 /**
  * Core redeem logic executed within a Firestore transaction. It implements
  * simple subset of business rules from the specification:
- *  - lookup pass by token hash
+ *  - lookup pass by token hash or client id
  *  - check expiration and cooldown
  *  - increment usage or register drop-in with price from settings
  */
@@ -14,18 +14,24 @@ export async function redeem(
   req: RedeemRequest & { eventId: string; ip?: string }
 ): Promise<RedeemResponse> {
   const db = getDb();
-  const tokenHash = hashToken(req.token);
-  const clientSnap = await db
-    .collection('clients')
-    .where('tokenHash', '==', tokenHash)
-    .limit(1)
-    .get();
 
-  if (clientSnap.empty) {
-    return { status: 'error', code: 'INVALID_TOKEN', message: 'Invalid token' };
+  let clientRef: FirebaseFirestore.DocumentReference | null = null;
+  if (req.clientId) {
+    clientRef = db.collection('clients').doc(req.clientId);
+  } else if (req.token) {
+    const tokenHash = hashToken(req.token);
+    const clientSnap = await db
+      .collection('clients')
+      .where('tokenHash', '==', tokenHash)
+      .limit(1)
+      .get();
+    if (clientSnap.empty) {
+      return { status: 'error', code: 'INVALID_TOKEN', message: 'Invalid token' };
+    }
+    clientRef = clientSnap.docs[0].ref;
+  } else {
+    return { status: 'error', code: 'INVALID_REQUEST', message: 'Missing client identifier' };
   }
-
-  const clientRef = clientSnap.docs[0].ref;
   const passSnap = await db
     .collection('passes')
     .where('clientId', '==', clientRef.id)
@@ -126,9 +132,8 @@ export async function redeem(
     }
     return {
       status: 'ok',
-      type: 'dropin',
-      message: 'drop-in',
-      priceRSD,
+      type: 'single',
+      message: 'Разовое занятие',
     };
   });
 }
