@@ -22,17 +22,38 @@ export default async function adminRedeems(app: FastifyInstance) {
     }
     const snap = await query.limit(pageSize + 1).get();
     const docs = snap.docs;
-    const items = docs.slice(0, pageSize).map(d => {
-      const data = d.data() as any;
-      return {
-        id: d.id,
-        ts: data.ts?.toDate?.().toISOString(),
-        kind: data.kind,
-        clientId: data.clientId,
-        delta: data.delta,
-        priceRSD: data.priceRSD,
-      };
-    });
+    const items = await Promise.all(
+      docs.slice(0, pageSize).map(async d => {
+        const data = d.data() as any;
+        let client: any;
+        if (data.clientId) {
+          const clientSnap = await db.collection('clients').doc(data.clientId).get();
+          const c = clientSnap.data();
+          if (c) {
+            client = {
+              id: data.clientId,
+              parentName: c.parentName,
+              childName: c.childName,
+              phone: c.phone,
+              telegram: c.telegram,
+              instagram: c.instagram,
+              active: c.active,
+              createdAt: c.createdAt?.toDate?.().toISOString(),
+              updatedAt: c.updatedAt?.toDate?.().toISOString(),
+            };
+          }
+        }
+        return {
+          id: d.id,
+          ts: data.ts?.toDate?.().toISOString(),
+          kind: data.kind,
+          clientId: data.clientId,
+          delta: data.delta,
+          priceRSD: data.priceRSD,
+          client,
+        };
+      })
+    );
     let nextPageToken: string | undefined;
     if (docs.length > pageSize) {
       nextPageToken = docs[pageSize].id;

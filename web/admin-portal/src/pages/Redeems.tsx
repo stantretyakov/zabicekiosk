@@ -30,7 +30,17 @@ export default function Redeems() {
             <tr key={r.id}>
               <td>{new Date(r.ts).toLocaleString()}</td>
               <td>{r.kind}</td>
-              <td>{r.clientId || '-'}</td>
+              <td>
+                {r.client ? (
+                  <>
+                    {r.client.parentName} / {r.client.childName}
+                    <br />
+                    <small>{r.clientId}</small>
+                  </>
+                ) : (
+                  r.clientId || '-'
+                )}
+              </td>
               <td>{r.delta ?? r.priceRSD ?? ''}</td>
             </tr>
           ))}
