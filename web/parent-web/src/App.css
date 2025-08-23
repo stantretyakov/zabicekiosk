@@ -29,6 +29,12 @@ body {
   font-weight: 600;
 }
 
+.card-qr {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
 .status {
   text-align: center;
   margin-top: 2rem;
