@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import frog from './assets/frog.svg';
 import './App.css';
 
 interface Card {
@@ -45,7 +46,11 @@ export default function App() {
         </p>
       </div>
       <div className="card-qr">
-        <QRCodeCanvas value={token} size={200} />
+        <QRCodeCanvas
+          value={token}
+          size={200}
+          imageSettings={{ src: frog, height: 48, width: 48, excavate: true }}
+        />
       </div>
     </div>
   );
