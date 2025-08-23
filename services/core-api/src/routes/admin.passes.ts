@@ -18,7 +18,9 @@ export default async function adminPasses(app: FastifyInstance) {
 
     let query: FirebaseFirestore.Query = db.collection('passes');
     if (clientId) {
-      query = query.where('clientId', '==', clientId);
+      query = query
+        .where('clientId', '==', clientId)
+        .where('revoked', '==', false);
     } else {
       query = query.orderBy('purchasedAt', 'desc');
       if (pageToken) {
@@ -84,6 +86,18 @@ export default async function adminPasses(app: FastifyInstance) {
     });
     const body = bodySchema.parse(req.body);
 
+    const existing = await db
+      .collection('passes')
+      .where('clientId', '==', body.clientId)
+      .where('revoked', '==', false)
+      .limit(1)
+      .get();
+
+    if (!existing.empty) {
+      const data = existing.docs[0].data() as any;
+      return { rawToken: data.token };
+    }
+
     const rawToken = generateToken();
     const tokenHash = hashToken(rawToken);
 
@@ -120,6 +134,19 @@ export default async function adminPasses(app: FastifyInstance) {
       }
       const data = snap.data() as any;
       return { token: data.token };
+    },
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/passes/:id',
+    { preHandler: requireAdmin },
+    async req => {
+      const { id } = z.object({ id: z.string() }).parse(req.params);
+      await db.collection('passes').doc(id).update({
+        revoked: true,
+        revokedAt: FieldValue.serverTimestamp(),
+      });
+      return { status: 'ok' };
     },
   );
 }

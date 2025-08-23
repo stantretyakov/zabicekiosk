@@ -96,6 +96,10 @@ export async function getPassToken(id: string): Promise<{ token: string }> {
   return fetchJSON(`/admin/passes/${id}/token`);
 }
 
+export async function deletePass(id: string): Promise<void> {
+  await fetchJSON(`/admin/passes/${id}`, { method: 'DELETE' });
+}
+
 export async function listRedeems(): Promise<Redeem[]> {
   const res = await fetchJSON<{ items: Redeem[] }>(`/admin/redeems`);
   return res.items;
