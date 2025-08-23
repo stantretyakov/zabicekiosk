@@ -36,24 +36,40 @@ export async function redeem(
     .collection('passes')
     .where('clientId', '==', clientRef.id)
     .where('revoked', '==', false)
-    .limit(1)
     .get();
 
-  const passRef = passSnap.empty ? null : passSnap.docs[0].ref;
+  const passRefs = passSnap.docs
+    .sort((a, b) => {
+      const aTs = (a.data() as any).purchasedAt?.toMillis?.() || 0;
+      const bTs = (b.data() as any).purchasedAt?.toMillis?.() || 0;
+      return bTs - aTs;
+    })
+    .map(d => d.ref);
+
+  let passRef: FirebaseFirestore.DocumentReference | null = null;
   const settingsRef = db.doc('settings/global');
 
   return db.runTransaction<RedeemResponse>(async tx => {
-    const [settingsDoc, passDoc] = await Promise.all([
-      tx.get(settingsRef),
-      passRef ? tx.get(passRef) : Promise.resolve(null as any),
-    ]);
+    const settingsDoc = await tx.get(settingsRef);
+    const now = Timestamp.now();
+
+    let passDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+    for (const ref of passRefs) {
+      const doc = await tx.get(ref);
+      const data = doc.data() as any;
+      const remaining = data.planSize - data.used;
+      if (data.expiresAt.toDate() > now.toDate() && remaining > 0) {
+        passDoc = doc;
+        passRef = ref;
+        break;
+      }
+    }
 
     const settings = settingsDoc.data() as any;
-    const now = Timestamp.now();
 
     const pass = passDoc?.data() as any | undefined;
 
-    if (pass) {
+    if (pass && passRef) {
       // Idempotency check
       if (pass.lastEventId === req.eventId) {
         const remaining = pass.planSize - pass.used;
