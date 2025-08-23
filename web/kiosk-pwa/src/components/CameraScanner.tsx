@@ -59,7 +59,13 @@ export default function CameraScanner({ onToken }: Props) {
 
   return (
     <div className={styles.cameraWrap}>
-      <video ref={videoRef} playsInline autoPlay muted />
+      <video
+        ref={videoRef}
+        className={facingMode === 'user' ? styles.mirrored : undefined}
+        playsInline
+        autoPlay
+        muted
+      />
       <div className={styles.scanBox} />
       <div className={styles.prompt}>Поднесите QR‑код к камере</div>
       <button type="button" className={styles.switchButton} onClick={toggleCamera}>

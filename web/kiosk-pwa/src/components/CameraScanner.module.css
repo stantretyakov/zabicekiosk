@@ -12,6 +12,10 @@
   object-fit: cover;
 }
 
+.mirrored {
+  transform: scaleX(-1);
+}
+
 .scanBox {
   position: absolute;
   inset: 12px;
