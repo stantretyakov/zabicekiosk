@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
 import './App.css';
 
 interface Card {
@@ -12,19 +13,19 @@ interface Card {
 export default function App() {
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState('');
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token') || '';
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token') || '';
     if (!token) {
       setError('Missing token');
       return;
     }
-      fetch(`/api/v1/card?token=${encodeURIComponent(token)}`)
+    fetch(`/api/v1/card?token=${encodeURIComponent(token)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('Failed'))))
       .then((data: Card) => setCard(data))
       .catch((e) => setError(e.message));
-  }, []);
+  }, [token]);
 
   if (error) return <p className="status">{error}</p>;
   if (!card) return <p className="status">Loading...</p>;
@@ -42,6 +43,9 @@ export default function App() {
         <p>
           <span className="label">Expires:</span> {new Date(card.expiresAt).toLocaleDateString()}
         </p>
+      </div>
+      <div className="card-qr">
+        <QRCodeCanvas value={token} size={200} />
       </div>
     </div>
   );
