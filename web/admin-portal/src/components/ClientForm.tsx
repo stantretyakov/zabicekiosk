@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Client } from '../types';
+import type { Client, Pass } from '../types';
 import { createPass, listPasses, getClientToken } from '../lib/api';
 import QRCodeStyling from 'qr-code-styling';
 import frog from '../assets/frog.svg';
@@ -18,7 +18,7 @@ function normPhone(v: string) {
   return '+381' + digits.replace(/^0+/, '');
 }
 
-function PassDisplay({ token, url }: { token: string; url: string }) {
+function PassDisplay({ url }: { url: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
 
@@ -93,7 +93,9 @@ function PassDisplay({ token, url }: { token: string; url: string }) {
     <div className="pass-qr">
       <div ref={ref}></div>
       <p>
-        <code>{token}</code>
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          {url}
+        </a>
       </p>
       <button type="button" onClick={handleShare}>
         Send to Telegram
@@ -115,26 +117,24 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
   const [busy, setBusy] = useState(false);
   const [passPlan, setPassPlan] = useState(4);
   const [passMsg, setPassMsg] = useState('');
-  const [passes, setPasses] = useState<{ id: string }[]>([]);
-  const [clientToken, setClientToken] = useState('');
+  const [passes, setPasses] = useState<Pass[]>([]);
   const [tokenUrl, setTokenUrl] = useState('');
 
   useEffect(() => {
     if (mode === 'edit' && initial?.id) {
-      loadPasses();
+      loadData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, initial?.id]);
 
-  const loadPasses = () => {
+  const loadData = () => {
     if (!initial?.id) return;
     Promise.all([listPasses({ clientId: initial.id }), getClientToken(initial.id)])
       .then(([res, tok]) => {
         const base =
           (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
           window.location.origin + '/card';
-        setPasses(res.items.map(p => ({ id: p.id })));
-        setClientToken(tok.token);
+        setPasses(res.items);
         setTokenUrl(`${base}?token=${encodeURIComponent(tok.token)}`);
       })
       .catch(e => setPassMsg(e.message || String(e)));
@@ -183,7 +183,7 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
         purchasedAt: new Date().toISOString(),
       });
       setPassMsg('');
-      loadPasses();
+      loadData();
     } catch (e: any) {
       setPassMsg(e.message || String(e));
     }
@@ -227,20 +227,34 @@ export default function ClientForm({ mode, initial, onSubmit, onClose }: Props) 
           <button type="submit" disabled={busy}>Save</button>
           <button type="button" onClick={onClose}>Cancel</button>
         </div>
+        {mode === 'edit' && tokenUrl && (
+          <div className="client-qr">
+            <h3>Client QR</h3>
+            <PassDisplay url={tokenUrl} />
+          </div>
+        )}
         {mode === 'edit' && initial?.id && (
-          <div className="create-pass">
-            <h3>Create pass</h3>
-            <select value={passPlan} onChange={e => setPassPlan(Number(e.target.value))}>
-              <option value={4}>4</option>
-              <option value={8}>8</option>
-            </select>
-            <button type="button" onClick={handleCreatePass}>Generate</button>
-            {passMsg && <p className="error">{passMsg}</p>}
-            {passes.length > 0 && clientToken && (
-              <div className="pass-list">
-                <PassDisplay token={clientToken} url={tokenUrl} />
-              </div>
+          <div className="passes">
+            <h3>Passes</h3>
+            {passes.length > 0 ? (
+              <ul>
+                {passes.map(p => (
+                  <li key={p.id}>
+                    {p.remaining}/{p.planSize}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No passes</p>
             )}
+            <div>
+              <select value={passPlan} onChange={e => setPassPlan(Number(e.target.value))}>
+                <option value={4}>4</option>
+                <option value={8}>8</option>
+              </select>
+              <button type="button" onClick={handleCreatePass}>Add pass</button>
+            </div>
+            {passMsg && <p className="error">{passMsg}</p>}
           </div>
         )}
       </form>

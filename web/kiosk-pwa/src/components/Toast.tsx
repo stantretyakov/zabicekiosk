@@ -1,7 +1,7 @@
 import styles from './Toast.module.css';
 
 interface Props {
-  kind: 'pass' | 'dropin' | 'cooldown' | 'out' | 'error';
+  kind: 'pass' | 'cooldown' | 'out' | 'error';
   message: string;
 }
 
