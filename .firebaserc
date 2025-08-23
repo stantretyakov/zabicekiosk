@@ -6,7 +6,8 @@
     "zabicekiosk": {
       "hosting": {
         "kiosk": ["zabice-kiosk-web"],
-        "admin": ["zabice-admin-web"]
+        "admin": ["zabice-admin-web"],
+        "parent": ["zabice-parent-web"]
       }
     }
   }
