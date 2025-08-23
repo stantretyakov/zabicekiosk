@@ -11,28 +11,49 @@ export default async function publicCard(app: FastifyInstance) {
     const { token } = qsSchema.parse(req.query);
 
     const tokenHash = hashToken(token);
-    const snap = await db
-      .collection('passes')
+    const clientSnap = await db
+      .collection('clients')
       .where('tokenHash', '==', tokenHash)
-      .where('revoked', '==', false)
       .limit(1)
       .get();
 
-    if (snap.empty) {
+    if (clientSnap.empty) {
       reply.code(404);
       return { status: 'error', message: 'Not found' };
     }
 
-    const pass = snap.docs[0].data() as any;
-    const clientSnap = await db.collection('clients').doc(pass.clientId).get();
-    const client = clientSnap.data() as any;
+    const clientDoc = clientSnap.docs[0];
+    const client = clientDoc.data() as any;
+
+    const passSnap = await db
+      .collection('passes')
+      .where('clientId', '==', clientDoc.id)
+      .where('revoked', '==', false)
+      .limit(1)
+      .get();
+
+    let planSize = 1;
+    let used = 0;
+    let remaining = 1;
+    let expiresAt = new Date().toISOString();
+
+    if (!passSnap.empty) {
+      const p = passSnap.docs[0].data() as any;
+      const now = new Date();
+      if (p.expiresAt.toDate() > now && p.used < p.planSize) {
+        planSize = p.planSize;
+        used = p.used;
+        remaining = p.planSize - p.used;
+        expiresAt = p.expiresAt.toDate().toISOString();
+      }
+    }
 
     return {
       name: client?.childName || client?.parentName || '',
-      planSize: pass.planSize,
-      used: pass.used,
-      remaining: pass.planSize - pass.used,
-      expiresAt: pass.expiresAt.toDate().toISOString(),
+      planSize,
+      used,
+      remaining,
+      expiresAt,
     };
   });
 }

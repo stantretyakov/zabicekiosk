@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { listPasses, getPassToken } from '../lib/api';
+import { listPasses, getClientToken } from '../lib/api';
 import QRCodeStyling from 'qr-code-styling';
 import frog from '../assets/frog.svg';
 import type { PassWithClient } from '../types';
@@ -43,9 +43,9 @@ export default function Passes() {
     qrCode.append(qrRef.current);
   }, [qr]);
 
-  const openQr = async (id: string) => {
+  const openQr = async (clientId: string) => {
     try {
-      const res = await getPassToken(id);
+      const res = await getClientToken(clientId);
       const base =
         (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
         window.location.origin.replace('admin', 'parent');
@@ -89,7 +89,7 @@ export default function Passes() {
                 </td>
                 <td>{p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : '-'}</td>
                 <td>
-                  <button onClick={() => openQr(p.id)}>Get QR Code</button>
+                  <button onClick={() => openQr(p.clientId)}>Get QR Code</button>
                 </td>
               </tr>
             ))}
