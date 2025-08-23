@@ -1,8 +1,7 @@
 .toast {
   position: fixed;
   top: 1rem;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 1rem;
   padding: 0.75rem 1.25rem;
   border-radius: var(--radius);
   display: flex;
@@ -10,6 +9,37 @@
   gap: 0.5rem;
   box-shadow: var(--shadow);
   z-index: 100;
+  font-family: var(--font);
+  font-weight: 500;
+  min-width: 200px;
+  max-width: 400px;
+  animation: toastEnter 0.3s ease-out;
+}
+
+@keyframes toastEnter {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.toast.exiting {
+  animation: toastExit 0.2s ease-in forwards;
+}
+
+@keyframes toastExit {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
 }
 
 .ok {
@@ -30,8 +60,78 @@
 .close {
   background: transparent;
   border: none;
-  font-size: 1rem;
+  font-size: 1.25rem;
   line-height: 1;
   color: inherit;
   cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.close:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.close:active {
+  transform: scale(0.95);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .toast {
+    top: 0.5rem;
+    right: 0.5rem;
+    left: 0.5rem;
+    max-width: none;
+    min-width: auto;
+  }
+  
+  @keyframes toastEnter {
+    from {
+      opacity: 0;
+      transform: translateY(-100%) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .toast.exiting {
+    animation: toastExitMobile 0.2s ease-in forwards;
+  }
+  
+  @keyframes toastExitMobile {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-100%) scale(0.95);
+    }
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .toast {
+    border: 2px solid currentColor;
+  }
+  
+  .close {
+    border: 1px solid currentColor;
+  }
 }
