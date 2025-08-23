@@ -7,6 +7,10 @@ on:
       - 'services/core-api/**'
       - '.github/workflows/build-deploy-core-api.yaml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
