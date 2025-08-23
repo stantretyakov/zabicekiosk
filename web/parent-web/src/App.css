@@ -1,18 +1,10 @@
-body {
-  margin: 0;
-  background-color: #f9fafb;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
-  color: #1a1a1a;
-}
-
 .card-container {
   max-width: 420px;
   margin: 2rem auto;
   padding: 1.5rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--panel);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .card-name {

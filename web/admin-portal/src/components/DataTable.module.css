@@ -1,5 +1,5 @@
 .table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
 .table th{background:var(--panel-2);text-align:left;padding:0.5rem;color:var(--text);}
 .table td{padding:0.5rem;}
-.table tbody tr:nth-child(odd){background:#121820;}
+.table tbody tr:nth-child(odd){background:var(--panel-2);}
 .table tbody tr:nth-child(even){background:var(--panel);}
