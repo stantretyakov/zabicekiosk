@@ -14,7 +14,15 @@ export default function Passes() {
   useEffect(() => {
     setLoading(true);
     listPasses()
-      .then(res => setItems(res.items))
+      .then(res => {
+        const unique = new Map<string, PassWithClient>();
+        for (const p of res.items) {
+          if (p.remaining > 0 && !unique.has(p.clientId)) {
+            unique.set(p.clientId, p);
+          }
+        }
+        setItems(Array.from(unique.values()));
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
