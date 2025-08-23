@@ -14,6 +14,8 @@ export default function Kiosk() {
   const [toast, setToast] = useState<{ kind: string; message: string } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
+  const [showLog, setShowLog] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<{ greeting: string; details: string } | null>(null);
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
@@ -44,15 +46,14 @@ export default function Kiosk() {
     try {
       const res = await redeem(token);
       if (res.status === 'ok') {
+        let details: string;
         if (res.type === 'pass') {
-          const msg = `Учтено. Осталось ${res.remaining} 🐸`;
-          setToast({ kind: 'pass', message: msg });
-          pushHistory(msg);
+          details = `Занятие учтено. Осталось ${res.remaining} занятий.`;
         } else {
-          const msg = `Посещение учтено. К оплате ${res.priceRSD} RSD`;
-          setToast({ kind: 'dropin', message: msg });
-          pushHistory(msg);
+          details = `Занятие учтено. К оплате ${res.priceRSD} RSD.`;
         }
+        setSuccessInfo({ greeting: res.message, details });
+        pushHistory(details);
         beep(true);
       } else {
         let kind: string = 'error';
@@ -60,6 +61,7 @@ export default function Kiosk() {
         if (res.code === 'OUT_OF_HOURS') kind = 'out';
         setToast({ kind, message: res.message });
         pushHistory(res.message);
+        setSuccessInfo(null);
         beep(false);
       }
     } catch (err) {
@@ -67,9 +69,11 @@ export default function Kiosk() {
       const msg = 'Ошибка соединения';
       setToast({ kind: 'error', message: msg });
       pushHistory(msg);
+      setSuccessInfo(null);
       beep(false);
     } finally {
       setTimeout(() => setToast(null), 2000);
+      setTimeout(() => setSuccessInfo(null), 5000);
     }
   };
 
@@ -77,14 +81,27 @@ export default function Kiosk() {
     <div className={styles.root}>
       {!online && <div className={styles.offline}>Нет соединения</div>}
       <CameraScanner onToken={handleToken} />
+      {successInfo && (
+        <div className={styles.successOverlay}>
+          <div>{successInfo.greeting}</div>
+          <div>{successInfo.details}</div>
+        </div>
+      )}
       {toast && <Toast kind={toast.kind as any} message={toast.message} />}
-      {history.length > 0 && (
+      {showLog && history.length > 0 && (
         <ul className={styles.history}>
           {history.map(h => (
             <li key={h.ts}>{new Date(h.ts).toLocaleTimeString()} - {h.text}</li>
           ))}
         </ul>
       )}
+      <button
+        type="button"
+        className={styles.logToggle}
+        onClick={() => setShowLog(s => !s)}
+      >
+        {showLog ? 'Hide scanner log' : 'Show scanner log'}
+      </button>
     </div>
   );
 }
