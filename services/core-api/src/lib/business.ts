@@ -56,12 +56,24 @@ export async function redeem(
       return { status: 'error', code: 'EXPIRED', message: 'Pass expired' };
     }
 
-    const cooldownSec = settings?.cooldownSec ?? 0;
+    const cooldownSec = settings?.cooldownSec ?? 5;
     if (
       pass.lastRedeemTs &&
       now.seconds - pass.lastRedeemTs.seconds < cooldownSec
     ) {
       return { status: 'error', code: 'COOLDOWN', message: 'Try later' };
+    }
+
+    const daySec = 24 * 60 * 60;
+    if (
+      pass.lastRedeemTs &&
+      now.seconds - pass.lastRedeemTs.seconds < daySec
+    ) {
+      return {
+        status: 'error',
+        code: 'DUPLICATE',
+        message: 'Занятие уже учтено',
+      };
     }
 
     const remaining = pass.planSize - pass.used;

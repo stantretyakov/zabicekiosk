@@ -1,7 +1,7 @@
 export function scanStream(
   video: HTMLVideoElement,
   onToken: (token: string) => void,
-  cooldownMs = 2000
+  cooldownMs = 5000
 ) {
   let active = true;
   const detector =
