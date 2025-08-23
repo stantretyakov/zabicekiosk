@@ -48,7 +48,7 @@ export default function Passes() {
       const res = await getClientToken(clientId);
       const base =
         (import.meta.env.VITE_CARD_URL_BASE as string | undefined) ||
-        window.location.origin + '/card';
+        window.location.origin.replace('admin', 'parent');
       const url = `${base}?token=${encodeURIComponent(res.token)}`;
       setQr({ token: res.token, url });
     } catch (e: any) {
