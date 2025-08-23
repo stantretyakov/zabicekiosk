@@ -1,0 +1,12 @@
+.input {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font);
+}
+
+.input::placeholder {
+  color: var(--muted);
+}
