@@ -1,0 +1,16 @@
+.button {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-family: var(--font);
+}
+
+.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+}
+
+.secondary {
+  background: var(--panel);
+  color: var(--text);
+}

@@ -1,0 +1,17 @@
+@import './tokens.css';
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
