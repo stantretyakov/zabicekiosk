@@ -1,4 +1,14 @@
 steps:
+  - id: cancel-previous-builds
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud builds list --ongoing --filter 'tags="zabicekiosk"' --format='value(id)' \
+        | grep -v "$BUILD_ID" \
+        | xargs -r gcloud builds cancel
+
   - id: enable-firestore-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -88,3 +98,6 @@ options:
 substitutions:
   _REGION: europe-west3
   _FIRESTORE_DATABASE_ID: "zabicedb"
+
+tags:
+  - zabicekiosk

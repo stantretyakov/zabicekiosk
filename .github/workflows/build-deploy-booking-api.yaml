@@ -7,6 +7,10 @@ on:
       - 'services/booking-api/**'
       - '.github/workflows/build-deploy-booking-api.yaml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
