@@ -12,6 +12,18 @@ interface LogEntry {
   type: 'success' | 'error' | 'info';
 }
 
+interface PromoContent {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'promotion' | 'announcement' | 'warning';
+  active: boolean;
+  priority: number;
+  createdAt: string;
+  expiresAt?: string;
+  targetAudience: 'all' | 'active' | 'expiring';
+}
+
 type ScannerPosition = 'left' | 'right' | 'top';
 
 export default function Kiosk() {
@@ -27,6 +39,8 @@ export default function Kiosk() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [scannerPosition, setScannerPosition] = useState<ScannerPosition>('left');
   const [showSettings, setShowSettings] = useState(false);
+  const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
+  const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -40,6 +54,80 @@ export default function Kiosk() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    loadPromoContent();
+    // Auto-rotate promo content every 10 seconds
+    const interval = setInterval(() => {
+      setCurrentPromoIndex(prev => 
+        promoContent.length > 0 ? (prev + 1) % promoContent.length : 0
+      );
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [promoContent.length]);
+
+  const loadPromoContent = async () => {
+    try {
+      // In dev mode, use mock data
+      if (import.meta.env.DEV) {
+        const mockContent: PromoContent[] = [
+          {
+            id: '1',
+            title: 'New Swimming Schedule',
+            message: 'We have added new morning sessions starting from Monday! Book your spot now.',
+            type: 'announcement',
+            active: true,
+            priority: 1,
+            createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            targetAudience: 'all'
+          },
+          {
+            id: '2',
+            title: 'Special Discount',
+            message: '20% off on all 10-session passes this month! Limited time offer.',
+            type: 'promotion',
+            active: true,
+            priority: 2,
+            createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+            expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            targetAudience: 'all'
+          },
+          {
+            id: '3',
+            title: 'Pool Maintenance',
+            message: 'Pool will be closed for maintenance on Sunday from 8-10 AM.',
+            type: 'warning',
+            active: true,
+            priority: 3,
+            createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+            targetAudience: 'all'
+          }
+        ];
+        
+        // Filter active content and sort by priority
+        const activeContent = mockContent
+          .filter(content => {
+            if (!content.active) return false;
+            if (content.expiresAt && new Date(content.expiresAt) < new Date()) return false;
+            return true;
+          })
+          .sort((a, b) => a.priority - b.priority);
+        
+        setPromoContent(activeContent);
+        return;
+      }
+      
+      // TODO: Load from API
+      // const response = await fetch('/api/v1/content/active');
+      // const data = await response.json();
+      // setPromoContent(data.items);
+    } catch (error) {
+      console.error('Failed to load promo content:', error);
+      addLog('Failed to load promotional content', 'error');
+    }
+  };
 
   const addLog = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const newLog: LogEntry = {
@@ -148,6 +236,26 @@ export default function Kiosk() {
     });
   };
 
+  const getTypeIcon = (type: PromoContent['type']) => {
+    switch (type) {
+      case 'info': return 'ℹ️';
+      case 'promotion': return '🎉';
+      case 'announcement': return '📢';
+      case 'warning': return '⚠️';
+      default: return 'ℹ️';
+    }
+  };
+
+  const getTypeColor = (type: PromoContent['type']) => {
+    switch (type) {
+      case 'info': return 'var(--accent-2)';
+      case 'promotion': return 'var(--accent)';
+      case 'announcement': return 'var(--warn)';
+      case 'warning': return 'var(--error)';
+      default: return 'var(--accent-2)';
+    }
+  };
+
   return (
     <div className={`${styles.root} ${styles[`position${scannerPosition.charAt(0).toUpperCase() + scannerPosition.slice(1)}`]}`}>
       <div className={styles.header}>
@@ -225,6 +333,53 @@ export default function Kiosk() {
                   Top
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Promo Content Frame */}
+          {promoContent.length > 0 && (
+            <div className={styles.promoFrame}>
+              <div className={styles.promoHeader}>
+                <span className={styles.promoIcon}>📢</span>
+                <span className={styles.promoTitle}>News & Updates</span>
+                {promoContent.length > 1 && (
+                  <div className={styles.promoIndicators}>
+                    {promoContent.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`${styles.promoIndicator} ${
+                          index === currentPromoIndex ? styles.active : ''
+                        }`}
+                        onClick={() => setCurrentPromoIndex(index)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {promoContent[currentPromoIndex] && (
+                <div className={styles.promoContent}>
+                  <div className={styles.promoContentHeader}>
+                    <div 
+                      className={styles.promoTypeIcon}
+                      style={{ color: getTypeColor(promoContent[currentPromoIndex].type) }}
+                    >
+                      {getTypeIcon(promoContent[currentPromoIndex].type)}
+                    </div>
+                    <h3 className={styles.promoContentTitle}>
+                      {promoContent[currentPromoIndex].title}
+                    </h3>
+                  </div>
+                  <p className={styles.promoContentMessage}>
+                    {promoContent[currentPromoIndex].message}
+                  </p>
+                  {promoContent[currentPromoIndex].expiresAt && (
+                    <div className={styles.promoExpiry}>
+                      Valid until: {new Date(promoContent[currentPromoIndex].expiresAt!).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
