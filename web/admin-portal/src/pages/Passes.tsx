@@ -1,226 +1,254 @@
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; }
-::selection { background: rgba(75, 222, 160, .25); }
+import React, { useState, useEffect, useMemo } from 'react';
+import { DataTable } from '../components/DataTable';
+import { api } from '../lib/api';
+import type { Pass, Client } from '../types';
 
-/* Enhanced global styles for better UX */
-.toolbar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-}
+export default function Passes() {
+  const [passes, setPasses] = useState<Pass[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-.toolbar input,
-.toolbar select {
-  background: var(--panel);
-  color: var(--text);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
+  useEffect(() => {
+    loadData();
+  }, []);
 
-.toolbar input:focus,
-.toolbar select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
-  transform: translateY(-1px);
-}
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [passesData, clientsData] = await Promise.all([
+        api.getPasses(),
+        api.getClients()
+      ]);
+      setPasses(passesData);
+      setClients(clientsData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-.toolbar input::placeholder {
-  color: var(--muted);
-  font-style: italic;
-}
+  const getClientName = (clientId: string) => {
+    const client = clients.find(c => c.id === clientId);
+    if (!client) return 'Unknown Client';
+    
+    if (client.type === 'parent') {
+      return `${client.name} (Parent)`;
+    } else {
+      const parent = clients.find(c => c.id === client.parentId);
+      return `${client.name} (Child of ${parent?.name || 'Unknown'})`;
+    }
+  };
 
-.toolbar button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
+  const getPassStatus = (pass: Pass) => {
+    if (pass.expiresAt && new Date(pass.expiresAt) < new Date()) {
+      return 'expired';
+    }
+    if (pass.remainingVisits <= 2) {
+      return 'low';
+    }
+    return 'active';
+  };
 
-.toolbar button.primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return '#4ade80';
+      case 'low': return '#f59e0b';
+      case 'expired': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
 
-.toolbar button.primary:hover::before {
-  left: 100%;
-}
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'monthly': return '#3b82f6';
+      case 'weekly': return '#8b5cf6';
+      case 'daily': return '#06b6d4';
+      default: return '#6b7280';
+    }
+  };
 
-.toolbar button.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
-}
+  const filteredPasses = useMemo(() => {
+    return passes.filter(pass => {
+      const clientName = getClientName(pass.clientId).toLowerCase();
+      const matchesSearch = clientName.includes(searchTerm.toLowerCase());
+      
+      if (statusFilter === 'all') return matchesSearch;
+      
+      const status = getPassStatus(pass);
+      return matchesSearch && status === statusFilter;
+    });
+  }, [passes, clients, searchTerm, statusFilter]);
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+  const paginatedPasses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredPasses.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredPasses, currentPage]);
 
-.pagination button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 100px;
-}
+  const totalPages = Math.ceil(filteredPasses.length / itemsPerPage);
 
-.pagination button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
-}
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-  transform: none;
-  box-shadow: none;
-}
+  const columns = [
+    {
+      key: 'client',
+      label: 'Client',
+      render: (pass: Pass) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-white">
+            {getClientName(pass.clientId)}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (pass: Pass) => (
+        <span 
+          className="px-2 py-1 rounded-full text-xs font-medium text-white"
+          style={{ backgroundColor: getTypeColor(pass.type) }}
+        >
+          {pass.type.charAt(0).toUpperCase() + pass.type.slice(1)}
+        </span>
+      )
+    },
+    {
+      key: 'visits',
+      label: 'Visits',
+      render: (pass: Pass) => {
+        const percentage = (pass.remainingVisits / pass.totalVisits) * 100;
+        return (
+          <div className="flex flex-col gap-1">
+            <span className="text-sm text-white">
+              {pass.remainingVisits} / {pass.totalVisits}
+            </span>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${percentage}%`,
+                  backgroundColor: percentage > 20 ? '#4ade80' : '#ef4444'
+                }}
+              />
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (pass: Pass) => {
+        const status = getPassStatus(pass);
+        return (
+          <span 
+            className="px-2 py-1 rounded-full text-xs font-medium text-white"
+            style={{ backgroundColor: getStatusColor(status) }}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      }
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      render: (pass: Pass) => (
+        <span className="text-sm text-gray-300">
+          {formatDate(pass.createdAt)}
+        </span>
+      )
+    },
+    {
+      key: 'expiresAt',
+      label: 'Expires',
+      render: (pass: Pass) => (
+        <span className="text-sm text-gray-300">
+          {pass.expiresAt ? formatDate(pass.expiresAt) : 'Never'}
+        </span>
+      )
+    }
+  ];
 
-.error {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius);
-  margin: 1rem 0;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow);
-}
-
-.error::before {
-  content: "⚠️";
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-/* Modal overlay improvements */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  animation: modalBackdropEnter 0.3s ease-out;
-}
-
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
+  if (error) {
+    return (
+      <div className="error">
+        {error}
+      </div>
+    );
   }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
 
-.modal-body {
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalEnter 0.3s ease-out;
-  border: 1px solid rgba(43, 224, 144, 0.2);
-  padding: 2rem;
-}
+  return (
+    <section>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-white">Passes</h1>
+      </div>
 
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
+      <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Search by client name..."
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="flex-1"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="low">Low Visits</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
 
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .toolbar input,
-  .toolbar select,
-  .toolbar button {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .pagination button {
-    width: 100%;
-  }
+      <DataTable
+        data={paginatedPasses}
+        columns={columns}
+        loading={loading}
+        emptyMessage="No passes found"
+      />
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span className="text-white">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </section>
+  );
 }
