@@ -1,226 +1,231 @@
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; }
-::selection { background: rgba(75, 222, 160, .25); }
+import React, { useEffect, useState } from 'react';
+import { listRedeems } from '../lib/api';
+import { Redeem } from '../types';
+import DataTable from '../components/DataTable';
 
-/* Enhanced global styles for better UX */
-.toolbar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-}
+export default function Redeems() {
+  const [redeems, setRedeems] = useState<Redeem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
-.toolbar input,
-.toolbar select {
-  background: var(--panel);
-  color: var(--text);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
+  const fetchRedeems = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '20'
+      });
+      
+      if (typeFilter !== 'all') {
+        params.append('type', typeFilter);
+      }
+      
+      if (searchTerm.trim()) {
+        params.append('search', searchTerm.trim());
+      }
 
-.toolbar input:focus,
-.toolbar select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
-  transform: translateY(-1px);
-}
+      const response = await listRedeems(params.toString());
+      setRedeems(response.redeems || []);
+      setTotalPages(Math.ceil((response.total || 0) / 20));
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch redeems');
+      console.error('Error fetching redeems:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-.toolbar input::placeholder {
-  color: var(--muted);
-  font-style: italic;
-}
+  useEffect(() => {
+    fetchRedeems();
+  }, [page, typeFilter, searchTerm]);
 
-.toolbar button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
 
-.toolbar button.primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'pass': return '🎫';
+      case 'single': return '💰';
+      default: return '📋';
+    }
+  };
 
-.toolbar button.primary:hover::before {
-  left: 100%;
-}
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'pass': return 'var(--accent)';
+      case 'single': return 'var(--warning)';
+      default: return 'var(--muted)';
+    }
+  };
 
-.toolbar button.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
-}
+  const columns = [
+    {
+      key: 'type',
+      label: 'Type',
+      render: (redeem: Redeem) => (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem',
+          color: getTypeColor(redeem.type)
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>{getTypeIcon(redeem.type)}</span>
+          <span style={{ 
+            textTransform: 'capitalize',
+            fontWeight: '600'
+          }}>
+            {redeem.type}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'client',
+      label: 'Client',
+      render: (redeem: Redeem) => (
+        <div>
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+            {redeem.clientName}
+          </div>
+          <div style={{ 
+            fontSize: '0.875rem', 
+            color: 'var(--muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <span>{redeem.clientType === 'parent' ? '👨‍👩‍👧‍👦' : '👶'}</span>
+            {redeem.clientType}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'value',
+      label: 'Value',
+      render: (redeem: Redeem) => (
+        <div style={{
+          padding: '0.5rem 1rem',
+          borderRadius: 'var(--radius)',
+          background: redeem.type === 'pass' 
+            ? 'linear-gradient(135deg, rgba(43, 224, 144, 0.1), rgba(43, 224, 144, 0.05))'
+            : 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05))',
+          border: `1px solid ${redeem.type === 'pass' ? 'var(--accent)' : 'var(--warning)'}`,
+          fontWeight: '600',
+          textAlign: 'center'
+        }}>
+          {redeem.type === 'pass' ? `${redeem.visits} visits` : `${redeem.amount} RSD`}
+        </div>
+      )
+    },
+    {
+      key: 'timestamp',
+      label: 'When',
+      render: (redeem: Redeem) => (
+        <div>
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+            {formatTimeAgo(redeem.timestamp)}
+          </div>
+          <div style={{ 
+            fontSize: '0.875rem', 
+            color: 'var(--muted)'
+          }}>
+            {new Date(redeem.timestamp).toLocaleString()}
+          </div>
+        </div>
+      )
+    }
+  ];
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+  return (
+    <div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '2rem'
+      }}>
+        <h1 style={{ 
+          fontSize: '2rem', 
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          margin: 0
+        }}>
+          Redeems
+        </h1>
+      </div>
 
-.pagination button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 100px;
-}
+      <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Search by client name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: 1, minWidth: '200px' }}
+        />
+        
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+        >
+          <option value="all">All Types</option>
+          <option value="pass">Passes</option>
+          <option value="single">Single Payments</option>
+        </select>
+      </div>
 
-.pagination button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
-}
+      {error && (
+        <div className="error">
+          {error}
+        </div>
+      )}
 
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-  transform: none;
-  box-shadow: none;
-}
+      <DataTable
+        data={redeems}
+        columns={columns}
+        loading={loading}
+        emptyMessage="No redeems found"
+      />
 
-.error {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius);
-  margin: 1rem 0;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow);
-}
-
-.error::before {
-  content: "⚠️";
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-/* Modal overlay improvements */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  animation: modalBackdropEnter 0.3s ease-out;
-}
-
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
-
-.modal-body {
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalEnter 0.3s ease-out;
-  border: 1px solid rgba(43, 224, 144, 0.2);
-  padding: 2rem;
-}
-
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .toolbar input,
-  .toolbar select,
-  .toolbar button {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .pagination button {
-    width: 100%;
-  }
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          
+          <span style={{ 
+            color: 'var(--muted)',
+            fontSize: '0.875rem'
+          }}>
+            Page {page} of {totalPages}
+          </span>
+          
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
