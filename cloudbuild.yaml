@@ -61,12 +61,23 @@ steps:
     dir: web/admin-portal
     args: ['ci']
 
+  - id: fetch-firebase-api-key
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud secrets versions access latest --secret=zabicekiosk_firebase_api_key > /workspace/firebase_api_key.txt
+
   - id: build-zabice-admin-web-build
     name: node:20
-    entrypoint: npm
+    entrypoint: bash
     dir: web/admin-portal
-    args: ['run', 'build']
-    secretEnv: ['VITE_FIREBASE_API_KEY']
+    args:
+      - -c
+      - |
+        export VITE_FIREBASE_API_KEY=$(cat /workspace/firebase_api_key.txt)
+        npm run build
 
   - id: build-zabice-parent-web
     name: node:20
@@ -95,11 +106,6 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY       # или NONE
   default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/120039745928/secrets/zabicekiosk_firebase_api_key/versions/1
-      env: VITE_FIREBASE_API_KEY
 
 substitutions:
   _REGION: europe-west3
