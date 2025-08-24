@@ -1,168 +1,271 @@
 import React, { useState, useEffect } from 'react';
-import { getClients, createClient, updateClient, deleteClient } from '../lib/api';
+import { listClients, createClient, updateClient, archiveClient } from '../lib/api';
 import { Client } from '../types';
 import DataTable from '../components/DataTable';
-import ClientForm from '../components/ClientForm';
+import ClientForm from '../components/ui/ClientForm';
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'parent' | 'child'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'true' | 'false'>('all');
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [pageToken, setPageToken] = useState<string | undefined>();
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   useEffect(() => {
     loadClients();
-  }, []);
+  }, [searchTerm, activeFilter]);
 
-  const loadClients = async () => {
+  const loadClients = async (token?: string) => {
     try {
       setLoading(true);
-      const data = await getClients();
-      setClients(data);
-    } catch (err) {
-      setError('Failed to load clients');
+      const data = await listClients({
+        search: searchTerm || undefined,
+        active: activeFilter,
+        pageToken: token,
+        pageSize: 20
+      });
+      setClients(data.items);
+      setHasNextPage(!!data.nextPageToken);
+      setPageToken(data.nextPageToken);
+      setError(null);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load clients');
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCreateClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreateClient = async (clientData: Partial<Client>) => {
     try {
       await createClient(clientData);
       await loadClients();
       setShowForm(false);
-    } catch (err) {
-      setError('Failed to create client');
+    } catch (err: any) {
+      setError(err.message || 'Failed to create client');
       console.error(err);
     }
   };
 
-  const handleUpdateClient = async (id: string, clientData: Partial<Client>) => {
+  const handleUpdateClient = async (clientData: Partial<Client>) => {
+    if (!editingClient) return;
+    
     try {
-      await updateClient(id, clientData);
+      await updateClient(editingClient.id, clientData);
       await loadClients();
       setEditingClient(null);
       setShowForm(false);
-    } catch (err) {
-      setError('Failed to update client');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update client');
       console.error(err);
     }
   };
 
-  const handleDeleteClient = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client?')) return;
+  const handleArchiveClient = async (id: string) => {
+    if (!confirm('Are you sure you want to archive this client?')) return;
     
     try {
-      await deleteClient(id);
+      await archiveClient(id);
       await loadClients();
-    } catch (err) {
-      setError('Failed to delete client');
+    } catch (err: any) {
+      setError(err.message || 'Failed to archive client');
       console.error(err);
     }
   };
 
-  const filteredClients = clients.filter(client => {
-    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || client.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
-
-  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedClients = filteredClients.slice(startIndex, startIndex + itemsPerPage);
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   const columns = [
     {
       key: 'name',
-      label: 'Name',
+      title: 'Client',
       render: (client: Client) => (
-        <div className="flex items-center gap-2">
-          <span className="text-lg">
-            {client.type === 'parent' ? '👨‍👩‍👧‍👦' : '🧒'}
-          </span>
-          <div>
-            <div className="font-medium">{client.name}</div>
-            <div className="text-sm text-gray-500">{client.email}</div>
+        <div>
+          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+            {client.parentName}
+          </div>
+          <div style={{ 
+            fontSize: '0.875rem', 
+            color: 'var(--muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <span>👶</span>
+            {client.childName}
           </div>
         </div>
       )
     },
     {
-      key: 'type',
-      label: 'Type',
+      key: 'contact',
+      title: 'Contact',
       render: (client: Client) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          client.type === 'parent' 
-            ? 'bg-blue-100 text-blue-800' 
-            : 'bg-green-100 text-green-800'
-        }`}>
-          {client.type === 'parent' ? 'Parent' : 'Child'}
+        <div style={{ fontSize: '0.875rem' }}>
+          {client.phone && (
+            <div style={{ marginBottom: '0.25rem' }}>
+              📞 {client.phone}
+            </div>
+          )}
+          {client.telegram && (
+            <div style={{ marginBottom: '0.25rem' }}>
+              📱 @{client.telegram}
+            </div>
+          )}
+          {client.instagram && (
+            <div>
+              📷 {client.instagram}
+            </div>
+          )}
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      title: 'Status',
+      render: (client: Client) => (
+        <span style={{
+          padding: '0.25rem 0.75rem',
+          borderRadius: '12px',
+          fontSize: '0.75rem',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          background: client.active 
+            ? 'linear-gradient(135deg, var(--ok), rgba(43, 224, 144, 0.8))'
+            : 'linear-gradient(135deg, var(--muted), rgba(154, 165, 177, 0.8))',
+          color: 'var(--text)'
+        }}>
+          {client.active ? 'Active' : 'Inactive'}
         </span>
       )
     },
     {
-      key: 'phone',
-      label: 'Phone',
-      render: (client: Client) => client.phone || '-'
-    },
-    {
-      key: 'createdAt',
-      label: 'Created',
-      render: (client: Client) => new Date(client.createdAt).toLocaleDateString()
+      key: 'created',
+      title: 'Created',
+      render: (client: Client) => (
+        <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
+          {formatDate(client.createdAt)}
+        </div>
+      )
     },
     {
       key: 'actions',
-      label: 'Actions',
+      title: 'Actions',
       render: (client: Client) => (
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
             onClick={() => {
               setEditingClient(client);
               setShowForm(true);
             }}
-            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, var(--accent-2), var(--accent))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
           >
             Edit
           </button>
           <button
-            onClick={() => handleDeleteClient(client.id)}
-            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+            onClick={() => handleArchiveClient(client.id)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
           >
-            Delete
+            Archive
           </button>
         </div>
       )
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading clients...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Clients</h1>
+    <div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        marginBottom: '2rem'
+      }}>
+        <h1 style={{ 
+          fontSize: '2rem', 
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          margin: 0
+        }}>
+          Clients
+        </h1>
         <button
           onClick={() => {
             setEditingClient(null);
             setShowForm(true);
           }}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="primary"
+          style={{
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+            color: 'var(--text)',
+            border: 'none',
+            borderRadius: 'var(--radius)',
+            padding: '0.75rem 1.5rem',
+            fontFamily: 'var(--font)',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
         >
           Add Client
         </button>
+      </div>
+
+      <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Search by name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{ flex: 1, minWidth: '200px' }}
+        />
+        
+        <select
+          value={activeFilter}
+          onChange={(e) => setActiveFilter(e.target.value as 'all' | 'true' | 'false')}
+        >
+          <option value="all">All Clients</option>
+          <option value="true">Active Only</option>
+          <option value="false">Inactive Only</option>
+        </select>
       </div>
 
       {error && (
@@ -171,65 +274,25 @@ export default function Clients() {
         </div>
       )}
 
-      <div className="toolbar">
-        <input
-          type="text"
-          placeholder="Search clients..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value as 'all' | 'parent' | 'child')}
-        >
-          <option value="all">All Types</option>
-          <option value="parent">Parents</option>
-          <option value="child">Children</option>
-        </select>
-      </div>
-
       <DataTable
-        data={paginatedClients}
         columns={columns}
-        emptyMessage="No clients found"
+        rows={clients}
+        loading={loading}
+        emptyText="No clients found"
+        onNextPage={hasNextPage ? () => loadClients(pageToken) : undefined}
+        hasNext={hasNextPage}
       />
 
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
-      )}
-
       {showForm && (
-        <div className="modal">
-          <div className="modal-body">
-            <ClientForm
-              client={editingClient}
-              onSubmit={editingClient 
-                ? (data) => handleUpdateClient(editingClient.id, data)
-                : handleCreateClient
-              }
-              onCancel={() => {
-                setShowForm(false);
-                setEditingClient(null);
-              }}
-            />
-          </div>
-        </div>
+        <ClientForm
+          initial={editingClient || undefined}
+          mode={editingClient ? 'edit' : 'create'}
+          onSubmit={editingClient ? handleUpdateClient : handleCreateClient}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingClient(null);
+          }}
+        />
       )}
     </div>
   );

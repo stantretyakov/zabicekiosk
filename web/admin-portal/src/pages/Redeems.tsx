@@ -7,44 +7,39 @@ export default function Redeems() {
   const [redeems, setRedeems] = useState<Redeem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [kindFilter, setKindFilter] = useState<string>('all');
 
-  const fetchRedeems = async () => {
+  useEffect(() => {
+    loadRedeems();
+  }, []);
+
+  const loadRedeems = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20'
-      });
-      
-      if (typeFilter !== 'all') {
-        params.append('type', typeFilter);
-      }
-      
-      if (searchTerm.trim()) {
-        params.append('search', searchTerm.trim());
-      }
-
-      const response = await listRedeems(params.toString());
-      setRedeems(response.redeems || []);
-      setTotalPages(Math.ceil((response.total || 0) / 20));
+      const data = await listRedeems();
+      setRedeems(data);
       setError(null);
-    } catch (err) {
-      setError('Failed to fetch redeems');
-      console.error('Error fetching redeems:', err);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load redeems');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRedeems();
-  }, [page, typeFilter, searchTerm]);
+  const filteredRedeems = redeems.filter(redeem => {
+    const matchesSearch = !searchTerm || 
+      (redeem.client?.parentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       redeem.client?.childName?.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesKind = kindFilter === 'all' || redeem.kind === kindFilter;
+    
+    return matchesSearch && matchesKind;
+  });
 
-  const formatTimeAgo = (dateString: string) => {
+  const formatTimeAgo = (dateString?: string) => {
+    if (!dateString) return '-';
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -55,95 +50,106 @@ export default function Redeems() {
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
+  const getKindIcon = (kind: string) => {
+    switch (kind) {
       case 'pass': return '🎫';
-      case 'single': return '💰';
+      case 'dropin': return '💰';
       default: return '📋';
     }
   };
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
+  const getKindColor = (kind: string) => {
+    switch (kind) {
       case 'pass': return 'var(--accent)';
-      case 'single': return 'var(--warning)';
+      case 'dropin': return 'var(--warn)';
       default: return 'var(--muted)';
     }
   };
 
   const columns = [
     {
-      key: 'type',
-      label: 'Type',
+      key: 'kind',
+      title: 'Type',
       render: (redeem: Redeem) => (
         <div style={{ 
           display: 'flex', 
           alignItems: 'center', 
           gap: '0.5rem',
-          color: getTypeColor(redeem.type)
+          color: getKindColor(redeem.kind)
         }}>
-          <span style={{ fontSize: '1.2rem' }}>{getTypeIcon(redeem.type)}</span>
+          <span style={{ fontSize: '1.2rem' }}>{getKindIcon(redeem.kind)}</span>
           <span style={{ 
             textTransform: 'capitalize',
             fontWeight: '600'
           }}>
-            {redeem.type}
+            {redeem.kind}
           </span>
         </div>
       )
     },
     {
       key: 'client',
-      label: 'Client',
+      title: 'Client',
       render: (redeem: Redeem) => (
         <div>
-          <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-            {redeem.clientName}
-          </div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span>{redeem.clientType === 'parent' ? '👨‍👩‍👧‍👦' : '👶'}</span>
-            {redeem.clientType}
-          </div>
+          {redeem.client ? (
+            <>
+              <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
+                {redeem.client.parentName}
+              </div>
+              <div style={{ 
+                fontSize: '0.875rem', 
+                color: 'var(--muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <span>👶</span>
+                {redeem.client.childName}
+              </div>
+            </>
+          ) : (
+            <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
+              Unknown client
+            </span>
+          )}
         </div>
       )
     },
     {
       key: 'value',
-      label: 'Value',
+      title: 'Value',
       render: (redeem: Redeem) => (
         <div style={{
           padding: '0.5rem 1rem',
           borderRadius: 'var(--radius)',
-          background: redeem.type === 'pass' 
+          background: redeem.kind === 'pass' 
             ? 'linear-gradient(135deg, rgba(43, 224, 144, 0.1), rgba(43, 224, 144, 0.05))'
-            : 'linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05))',
-          border: `1px solid ${redeem.type === 'pass' ? 'var(--accent)' : 'var(--warning)'}`,
+            : 'linear-gradient(135deg, rgba(255, 209, 102, 0.1), rgba(255, 209, 102, 0.05))',
+          border: `1px solid ${redeem.kind === 'pass' ? 'var(--accent)' : 'var(--warn)'}`,
           fontWeight: '600',
           textAlign: 'center'
         }}>
-          {redeem.type === 'pass' ? `${redeem.visits} visits` : `${redeem.amount} RSD`}
+          {redeem.kind === 'pass' 
+            ? `${Math.abs(redeem.delta || 0)} visit${Math.abs(redeem.delta || 0) !== 1 ? 's' : ''}`
+            : `${redeem.priceRSD || 0} RSD`
+          }
         </div>
       )
     },
     {
       key: 'timestamp',
-      label: 'When',
+      title: 'When',
       render: (redeem: Redeem) => (
         <div>
           <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
-            {formatTimeAgo(redeem.timestamp)}
+            {formatTimeAgo(redeem.ts)}
           </div>
           <div style={{ 
             fontSize: '0.875rem', 
             color: 'var(--muted)'
           }}>
-            {new Date(redeem.timestamp).toLocaleString()}
+            {redeem.ts ? new Date(redeem.ts).toLocaleString() : '-'}
           </div>
         </div>
       )
@@ -180,12 +186,12 @@ export default function Redeems() {
         />
         
         <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          value={kindFilter}
+          onChange={(e) => setKindFilter(e.target.value)}
         >
           <option value="all">All Types</option>
-          <option value="pass">Passes</option>
-          <option value="single">Single Payments</option>
+          <option value="pass">Pass Redeems</option>
+          <option value="dropin">Drop-in Payments</option>
         </select>
       </div>
 
@@ -196,36 +202,11 @@ export default function Redeems() {
       )}
 
       <DataTable
-        data={redeems}
         columns={columns}
+        rows={filteredRedeems}
         loading={loading}
-        emptyMessage="No redeems found"
+        emptyText="No redeems found"
       />
-
-      {totalPages > 1 && (
-        <div className="pagination">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </button>
-          
-          <span style={{ 
-            color: 'var(--muted)',
-            fontSize: '0.875rem'
-          }}>
-            Page {page} of {totalPages}
-          </span>
-          
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-          >
-            Next
-          </button>
-        </div>
-      )}
     </div>
   );
 }
