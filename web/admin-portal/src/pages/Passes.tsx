@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { listPasses, deletePass } from '../lib/api';
 import { PassWithClient } from '../types';
-import DataTable from '../components/DataTable';
+import DataTable from '../components/ui/DataTable';
 
 export default function Passes() {
   const [passes, setPasses] = useState<PassWithClient[]>([]);

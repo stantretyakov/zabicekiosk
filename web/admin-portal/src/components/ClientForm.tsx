@@ -45,8 +45,15 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
   const loadPasses = async () => {
     if (!client?.id) return;
     try {
-      const data = await listPasses(client.id);
-      setPasses(data);
+      const data = await listPasses({ clientId: client.id });
+      setPasses(
+        data.items.map(({ client: _c, planSize, ...p }) => ({
+          id: p.id,
+          type: p.type,
+          remaining: p.remaining,
+          total: planSize,
+        }))
+      );
     } catch (error) {
       console.error("Failed to load passes:", error);
     }
@@ -55,9 +62,9 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
   const loadClientToken = async () => {
     if (!client?.id) return;
     try {
-      const token = await getClientToken(client.id);
+      const { token } = await getClientToken(client.id);
       setQrCode(token);
-      
+
       if (qrRef.current) {
         qrRef.current.innerHTML = "";
         const qrCodeStyling = new QRCodeStyling({
@@ -66,19 +73,19 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
           data: token,
           dotsOptions: {
             color: "#2be090",
-            type: "rounded"
+            type: "rounded",
           },
           backgroundOptions: {
             color: "#1a1a1a",
           },
           cornersSquareOptions: {
             color: "#2be090",
-            type: "extra-rounded"
+            type: "extra-rounded",
           },
           cornersDotOptions: {
             color: "#2be090",
-            type: "dot"
-          }
+            type: "dot",
+          },
         });
         qrCodeStyling.append(qrRef.current);
       }
@@ -103,9 +110,13 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
 
   const handleAddPass = async () => {
     if (!client?.id) return;
-    
+
     try {
-      await createPass(client.id, parseInt(newPassType));
+      await createPass({
+        clientId: client.id,
+        planSize: parseInt(newPassType),
+        purchasedAt: new Date().toISOString(),
+      });
       await loadPasses();
     } catch (error) {
       console.error("Failed to add pass:", error);

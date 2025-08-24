@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { listRedeems } from '../lib/api';
 import { Redeem } from '../types';
-import DataTable from '../components/DataTable';
+import DataTable from '../components/ui/DataTable';
 
 export default function Redeems() {
   const [redeems, setRedeems] = useState<Redeem[]>([]);

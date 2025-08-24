@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { listClients, createClient, updateClient, archiveClient } from '../lib/api';
 import { Client } from '../types';
-import DataTable from '../components/DataTable';
+import DataTable from '../components/ui/DataTable';
 import ClientForm from '../components/ui/ClientForm';
 
 export default function Clients() {
