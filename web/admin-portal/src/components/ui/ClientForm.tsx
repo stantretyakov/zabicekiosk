@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
-import { getClientToken } from '../../lib/api';
+import { getClientToken, listPasses } from '../../lib/api';
 import styles from './ClientForm.module.css';
+import type { PassWithClient } from '../../types';
 
 export type Client = {
   id: string;
@@ -40,6 +41,9 @@ export default function ClientForm({
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [passUrl, setPassUrl] = useState<string | null>(null);
+  const [passes, setPasses] = useState<PassWithClient[]>([]);
+  const [loadingPasses, setLoadingPasses] = useState(false);
+  const [loadingToken, setLoadingToken] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
 
@@ -61,12 +65,30 @@ export default function ClientForm({
     if (mode !== 'edit' || !initial?.id) return;
 
     const clientId = initial.id as string;
+    loadClientPasses(clientId);
+    loadClientToken(clientId);
+  }, [mode, initial?.id]);
+
+  const loadClientPasses = async (clientId: string) => {
+    try {
+      setLoadingPasses(true);
+      const data = await listPasses({ clientId });
+      setPasses(data.items);
+    } catch (err) {
+      console.error('Failed to load client passes:', err);
+    } finally {
+      setLoadingPasses(false);
+    }
+  };
+
+  const loadClientToken = async (clientId: string) => {
     async function loadToken() {
       try {
+        setLoadingToken(true);
         const { token } = await getClientToken(clientId);
         const baseUrl =
           import.meta.env.VITE_PARENT_PORTAL_URL ||
-          window.location.origin.replace('admin', 'parent');
+          window.location.origin.replace(/admin[^.]*/, 'parent');
         const url = `${baseUrl}?token=${token}`;
         setPassUrl(url);
 
@@ -96,11 +118,57 @@ export default function ClientForm({
         }
       } catch (err) {
         console.error('Failed to load client token:', err);
+      } finally {
+        setLoadingToken(false);
       }
     }
 
     loadToken();
-  }, [mode, initial?.id]);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // You could add a toast notification here
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+  };
+
+  const shareViaWebShare = async () => {
+    if (!passUrl) return;
+    
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Swimming Pass - ${values.childName}`,
+          text: `Access your swimming pass for ${values.childName}`,
+          url: passUrl,
+        });
+      } else {
+        // Fallback to copying
+        await copyToClipboard(passUrl);
+      }
+    } catch (err) {
+      console.error('Failed to share:', err);
+    }
+  };
+
+  const downloadQR = () => {
+    if (qrInstance.current) {
+      qrInstance.current.download({
+        name: `${values.childName.replace(/\s+/g, '_')}_swimming_pass`,
+        extension: 'png'
+      });
+    }
+  };
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -312,11 +380,150 @@ export default function ClientForm({
           )}
         </div>
 
-        {mode === 'edit' && passUrl && (
-          <div className={styles.qrSection}>
-            <div ref={qrRef} className={styles.qrContainer}></div>
-            <div className={styles.qrLink}>{passUrl}</div>
-            <div className={styles.qrActions}>
+        {mode === 'edit' && initial?.id && (
+          <>
+            <div className={styles.clientQrSection}>
+              <h3 className={styles.sectionTitle}>Client Pass Card</h3>
+              <p className={styles.sectionDescription}>
+                Share this QR code or link with the parent to access their swimming pass
+              </p>
+              
+              {loadingToken ? (
+                <div className={styles.loadingQr}>
+                  <div className={styles.qrSpinner} />
+                  <p>Generating QR code...</p>
+                </div>
+              ) : passUrl ? (
+                <div className={styles.qrContainer}>
+                  <div className={styles.qrCodeWrapper}>
+                    <div ref={qrRef} className={styles.qrCode}></div>
+                    <div className={styles.qrOverlay}>
+                      <span className={styles.qrLabel}>Swimming Pass</span>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.urlSection}>
+                    <label className={styles.urlLabel}>Pass URL:</label>
+                    <div className={styles.urlContainer}>
+                      <input
+                        type="text"
+                        value={passUrl}
+                        readOnly
+                        className={styles.urlInput}
+                        onClick={(e) => e.currentTarget.select()}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(passUrl)}
+                        className={styles.copyButton}
+                        title="Copy link"
+                      >
+                        📋
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.qrActions}>
+                    <button
+                      type="button"
+                      onClick={shareViaWebShare}
+                      className={styles.shareButton}
+                    >
+                      <span className={styles.shareIcon}>📱</span>
+                      <span className={styles.shareText}>
+                        <span className={styles.shareLabel}>Share via Telegram</span>
+                        <span className={styles.shareSubtext}>Send to parent</span>
+                      </span>
+                      <span className={styles.shareArrow}>→</span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={downloadQR}
+                      className={styles.downloadButton}
+                    >
+                      <span className={styles.downloadIcon}>💾</span>
+                      Download QR
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.qrError}>
+                  <span className={styles.errorIcon}>⚠️</span>
+                  Failed to generate QR code
+                </div>
+              )}
+            </div>
+
+            <div className={styles.passesSection}>
+              <h3 className={styles.sectionTitle}>Active Passes</h3>
+              <p className={styles.sectionDescription}>
+                Current swimming passes for this client
+              </p>
+              
+              {loadingPasses ? (
+                <div className={styles.loadingPasses}>
+                  <div className={styles.passSpinner} />
+                  <p>Loading passes...</p>
+                </div>
+              ) : passes.length > 0 ? (
+                <div className={styles.passesList}>
+                  {passes.map((pass) => (
+                    <div key={pass.id} className={styles.passItem}>
+                      <div className={styles.passInfo}>
+                        <span className={styles.passRemaining}>{pass.remaining}</span>
+                        <span className={styles.passSeparator}>/</span>
+                        <span className={styles.passTotal}>{pass.planSize}</span>
+                      </div>
+                      <div className={styles.passDetails}>
+                        <div className={styles.passType}>{pass.type}</div>
+                        <div className={styles.passDate}>
+                          {new Date(pass.purchasedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className={styles.passProgress}>
+                        <div 
+                          className={styles.passProgressBar}
+                          style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.noPasses}>
+                  <span className={styles.noPassesIcon}>🎫</span>
+                  <p>No active passes found</p>
+                  <p className={styles.noPassesHint}>
+                    Create a pass for this client in the Passes section
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className={styles.cancelButton}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={submitting || hasValidationErrors}
+            className={styles.submitButton}
+          >
+            {submitting ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
               <button
                 type="button"
                 className={styles.qrButton}

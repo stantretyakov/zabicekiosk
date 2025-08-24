@@ -247,56 +247,547 @@
 }
 
 /* QR code section */
-.qrSection {
+.clientQrSection,
+.passesSection {
   margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionTitle::before {
+  content: '🎫';
+  font-size: 1.5rem;
+}
+
+.clientQrSection .sectionTitle::before {
+  content: '📱';
+}
+
+.sectionDescription {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0 0 1.5rem 0;
+  line-height: 1.4;
+}
+
+.loadingQr,
+.loadingPasses {
   text-align: center;
+  padding: 2rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.qrSpinner,
+.passSpinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(43, 224, 144, 0.2);
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .qrContainer {
-  margin: 0 auto 1rem;
-  width: 200px;
-  height: 200px;
+  background: var(--panel-2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.qrLink {
-  word-break: break-all;
-  font-size: 0.875rem;
-  margin-bottom: 1rem;
-  color: var(--muted);
+.qrCodeWrapper {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto 1.5rem;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
-.qrActions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
+.qrCode {
+  display: block;
 }
 
-.qrButton {
-  padding: 0.5rem 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  background: var(--panel);
+.qrOverlay {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--text);
-  font-family: var(--font);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(43, 224, 144, 0.3);
+}
+
+.urlSection {
+  margin-bottom: 1.5rem;
+}
+
+.urlLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.qrButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+.urlContainer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-.qrButton:focus {
+.urlInput {
+  flex: 1;
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
+}
+
+.copyButton {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 44px;
+}
+
+.copyButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(74, 214, 255, 0.4);
+}
+
+.qrActions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.shareButton {
+  background: linear-gradient(135deg, #0088cc, #0066aa);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
+}
+
+.shareButton::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.shareButton:hover::before {
+  left: 100%;
+}
+
+.shareButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 136, 204, 0.4);
+  background: linear-gradient(135deg, #0099dd, #0077bb);
+}
+
+.shareIcon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.shareText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.shareLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shareSubtext {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.shareArrow {
+  font-size: 1.25rem;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.shareButton:hover .shareArrow {
+  transform: translateX(4px);
+}
+
+.downloadButton {
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.downloadButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.downloadIcon {
+  font-size: 1rem;
+}
+
+.qrError {
+  text-align: center;
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+  color: var(--error);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.errorIcon {
+  font-size: 2rem;
+}
+
+/* Passes Section */
+.passesList {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.passItem {
+  background: var(--panel-2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.passItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.passItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(43, 224, 144, 0.1);
+}
+
+.passItem:hover::before {
+  opacity: 1;
+}
+
+.passInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  min-width: 80px;
+}
+
+.passRemaining {
+  color: var(--accent);
+  font-size: 1.5rem;
+}
+
+.passSeparator {
+  color: var(--muted);
+}
+
+.passTotal {
+  color: var(--text);
+}
+
+.passDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.passType {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+}
+
+.passDate {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.passProgress {
+  width: 60px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.passProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  position: relative;
+}
+
+.passProgressBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.noPasses {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.noPassesIcon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+.noPasses p {
+  margin: 0.5rem 0;
+}
+
+.noPassesHint {
+  font-size: 0.875rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .qrContainer {
+    padding: 1rem;
+  }
+  
+  .qrCodeWrapper {
+    margin-bottom: 1rem;
+  }
+  
+  .qrActions {
+    gap: 0.75rem;
+  }
+  
+  .shareButton {
+    padding: 0.875rem 1.25rem;
+  }
+  
+  .shareLabel {
+    font-size: 0.9375rem;
+  }
+  
+  .shareSubtext {
+    font-size: 0.8125rem;
+  }
+  
+  .urlContainer {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .copyButton {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .passesList {
+    gap: 0.75rem;
+  }
+  
+  .passItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .passProgress {
+    width: 100%;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .urlInput {
+    border-width: 3px;
+  }
+  
+  .passItem {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .passItem,
+  .shareButton,
+  .downloadButton,
+  .copyButton,
+  .passProgressBar,
+  .passProgressBar::after,
+  .qrSpinner,
+  .passSpinner {
+    transition: none;
+    animation: none;
+  }
+  
+  .shareButton::before {
+    display: none;
+  }
+}
+
+/* Focus visible for better accessibility */
+.shareButton:focus-visible,
+.downloadButton:focus-visible,
+.copyButton:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-.qrButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* Touch Target Optimization for Mobile */
+@media (max-width: 768px) {
+  .shareButton,
+  .downloadButton,
+  .copyButton {
+    min-height: 44px;
+  }
+}
+
+/* Loading states */
+.loadingQr p,
+.loadingPasses p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* URL input selection styling */
+.urlInput::selection {
+  background: rgba(43, 224, 144, 0.3);
+  color: var(--text);
 }
 
 /* Required field indicator */
