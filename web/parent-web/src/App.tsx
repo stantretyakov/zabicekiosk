@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import PassCard, { PassData } from './components/PassCard';
+import PassCard, { PassData, PromoContent } from './components/PassCard';
 import LoadingCard from './components/LoadingCard';
 import ErrorCard from './components/ErrorCard';
 import { getMockDataByToken, getRandomMockData } from './lib/mockData';
@@ -7,6 +7,7 @@ import './App.css';
 
 export default function App() {
   const [passData, setPassData] = useState<PassData | null>(null);
+  const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   
@@ -37,6 +38,44 @@ export default function App() {
               setPassData(getRandomMockData());
             }
           }
+          
+          // Load mock promo content
+          const mockPromo: PromoContent[] = [
+            {
+              id: '1',
+              title: 'New Swimming Schedule',
+              message: 'We have added new morning sessions starting from Monday! Book your spot now.',
+              type: 'announcement',
+              active: true,
+              priority: 1,
+              createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              targetAudience: 'all'
+            },
+            {
+              id: '2',
+              title: 'Special Discount',
+              message: '20% off on all 10-session passes this month! Limited time offer.',
+              type: 'promotion',
+              active: true,
+              priority: 2,
+              createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+              expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+              targetAudience: 'all'
+            },
+            {
+              id: '3',
+              title: 'Pass Renewal Reminder',
+              message: 'Your pass is expiring soon. Renew now to continue enjoying our services!',
+              type: 'info',
+              active: true,
+              priority: 3,
+              createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+              targetAudience: 'expiring'
+            }
+          ];
+          
+          setPromoContent(mockPromo);
           return;
         }
         
@@ -66,6 +105,11 @@ export default function App() {
         };
         
         setPassData(transformedData);
+        
+        // TODO: Load promo content from API
+        // const promoResponse = await fetch('/api/v1/content/active');
+        // const promoData = await promoResponse.json();
+        // setPromoContent(promoData.items);
       } catch (err: any) {
         console.error('Error loading pass data:', err);
         setError(err.message || 'Failed to load pass data');
@@ -91,7 +135,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <PassCard data={passData} />
+      <PassCard data={passData} promoContent={promoContent} />
       {isDev && (
         <div className="dev-info">
           <p>🚧 Development Mode - Using Mock Data</p>

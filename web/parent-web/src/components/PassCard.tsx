@@ -14,11 +14,24 @@ export interface PassData {
   lastVisit?: string;
 }
 
-interface PassCardProps {
-  data: PassData;
+export interface PromoContent {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'promotion' | 'announcement' | 'warning';
+  active: boolean;
+  priority: number;
+  createdAt: string;
+  expiresAt?: string;
+  targetAudience: 'all' | 'active' | 'expiring';
 }
 
-export default function PassCard({ data }: PassCardProps) {
+interface PassCardProps {
+  data: PassData;
+  promoContent?: PromoContent[];
+}
+
+export default function PassCard({ data, promoContent = [] }: PassCardProps) {
   const progressPercentage = data.planSize > 0 ? (data.remaining / data.planSize) * 100 : 0;
   const expiryDate = new Date(data.expiresAt);
   const now = new Date();
@@ -56,6 +69,41 @@ export default function PassCard({ data }: PassCardProps) {
     if (daysUntilExpiry <= 7) return styles.expiringSoon;
     return '';
   };
+
+  const getTypeIcon = (type: PromoContent['type']) => {
+    switch (type) {
+      case 'info': return 'ℹ️';
+      case 'promotion': return '🎉';
+      case 'announcement': return '📢';
+      case 'warning': return '⚠️';
+      default: return 'ℹ️';
+    }
+  };
+
+  const getTypeColor = (type: PromoContent['type']) => {
+    switch (type) {
+      case 'info': return 'var(--accent-2)';
+      case 'promotion': return 'var(--accent)';
+      case 'announcement': return 'var(--warn)';
+      case 'warning': return 'var(--error)';
+      default: return 'var(--accent-2)';
+    }
+  };
+
+  // Filter and sort promo content
+  const relevantPromo = promoContent
+    .filter(content => {
+      if (!content.active) return false;
+      if (content.expiresAt && new Date(content.expiresAt) < new Date()) return false;
+      
+      // Filter by target audience
+      if (content.targetAudience === 'active' && data.remaining === 0) return false;
+      if (content.targetAudience === 'expiring' && daysUntilExpiry > 14) return false;
+      
+      return true;
+    })
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 3); // Show max 3 items
 
   return (
     <div className={styles.card}>
@@ -127,6 +175,39 @@ export default function PassCard({ data }: PassCardProps) {
         )}
       </div>
 
+      {/* Promo and News Section */}
+      {relevantPromo.length > 0 && (
+        <div className={styles.promoSection}>
+          <h3 className={styles.promoTitle}>
+            <span className={styles.promoIcon}>📢</span>
+            News & Updates
+          </h3>
+          <div className={styles.promoList}>
+            {relevantPromo.map((content) => (
+              <div key={content.id} className={styles.promoItem}>
+                <div className={styles.promoHeader}>
+                  <div 
+                    className={styles.promoTypeIcon}
+                    style={{ color: getTypeColor(content.type) }}
+                  >
+                    {getTypeIcon(content.type)}
+                  </div>
+                  <h4 className={styles.promoItemTitle}>{content.title}</h4>
+                  {content.type === 'promotion' && (
+                    <div className={styles.promoBadge}>Special</div>
+                  )}
+                </div>
+                <p className={styles.promoMessage}>{content.message}</p>
+                {content.expiresAt && (
+                  <div className={styles.promoExpiry}>
+                    Valid until {formatDate(content.expiresAt)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className={styles.qrSection}>
         <h3 className={styles.qrTitle}>Scan at Kiosk</h3>
         <div className={styles.qrContainer}>
