@@ -55,12 +55,12 @@ export default function CameraScanner({ onScan, isOnline }: CameraScannerProps) 
 
   return (
     <div className={styles.cameraWrap}>
-      <video 
-        ref={videoRef} 
-        autoPlay 
-        playsInline 
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
         muted
-        className={facingMode === 'user' ? styles.mirrored : ''}
+        style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
       />
       
       <div className={styles.scanBox} />
