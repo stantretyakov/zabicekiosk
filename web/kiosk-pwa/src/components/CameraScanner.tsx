@@ -1,226 +1,88 @@
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; }
-::selection { background: rgba(75, 222, 160, .25); }
+import React, { useRef, useEffect, useState } from 'react';
+import styles from './CameraScanner.module.css';
 
-/* Enhanced global styles for better UX */
-.toolbar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
+interface CameraScannerProps {
+  onScan: (data: string) => void;
+  isOnline: boolean;
 }
 
-.toolbar input,
-.toolbar select {
-  background: var(--panel);
-  color: var(--text);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
+export default function CameraScanner({ onScan, isOnline }: CameraScannerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraReady, setCameraReady] = useState(false);
 
-.toolbar input:focus,
-.toolbar select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
-  transform: translateY(-1px);
-}
+  const startCamera = async () => {
+    try {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
 
-.toolbar input::placeholder {
-  color: var(--muted);
-  font-style: italic;
-}
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      
+      setStream(newStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+        videoRef.current.onloadedmetadata = () => {
+          setCameraReady(true);
+        };
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      setCameraReady(false);
+    }
+  };
 
-.toolbar button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
+  const switchCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    setCameraReady(false);
+  };
 
-.toolbar button.primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
+  useEffect(() => {
+    startCamera();
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [facingMode]);
 
-.toolbar button.primary:hover::before {
-  left: 100%;
-}
-
-.toolbar button.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
-}
-
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pagination button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 100px;
-}
-
-.pagination button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
-}
-
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-  transform: none;
-  box-shadow: none;
-}
-
-.error {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius);
-  margin: 1rem 0;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow);
-}
-
-.error::before {
-  content: "⚠️";
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-/* Modal overlay improvements */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  animation: modalBackdropEnter 0.3s ease-out;
-}
-
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
-
-.modal-body {
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalEnter 0.3s ease-out;
-  border: 1px solid rgba(43, 224, 144, 0.2);
-  padding: 2rem;
-}
-
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .toolbar input,
-  .toolbar select,
-  .toolbar button {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .pagination button {
-    width: 100%;
-  }
+  return (
+    <div className={styles.cameraWrap}>
+      <video 
+        ref={videoRef} 
+        autoPlay 
+        playsInline 
+        muted
+        className={facingMode === 'user' ? styles.mirrored : ''}
+      />
+      
+      <div className={styles.scanBox} />
+      
+      <div className={`${styles.statusIndicator} ${isOnline ? styles.online : styles.offline}`}>
+        <div className={`${styles.statusDot} ${!isOnline ? styles.offline : ''}`} />
+        {isOnline ? 'Online' : 'Offline'}
+      </div>
+      
+      <div className={styles.controls}>
+        <button 
+          onClick={switchCamera}
+          className={styles.switchButton}
+          title="Switch camera"
+        >
+          🔄
+        </button>
+      </div>
+      
+      <div className={styles.prompt}>
+        {cameraReady ? 'Position QR code in the frame' : 'Starting camera...'}
+      </div>
+    </div>
+  );
 }

@@ -163,8 +163,8 @@ export default function Kiosk() {
           
           <div className={styles.scanBox} />
           
-          <div className={styles.statusIndicator + (isOnline ? ' ' + styles.online : ' ' + styles.offline)}>
-            <div className={styles.statusDot + (isOnline ? '' : ' ' + styles.offline)} />
+          <div className={`${styles.statusIndicator} ${isOnline ? styles.online : styles.offline}`}>
+            <div className={`${styles.statusDot} ${!isOnline ? styles.offline : ''}`} />
             {isOnline ? 'Online' : 'Offline'}
           </div>
           
