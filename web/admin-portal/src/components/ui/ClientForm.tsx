@@ -373,179 +373,140 @@ export default function ClientForm({
               placeholder="@username or instagram.com/username"
               aria-describedby={validationErrors.instagram ? 'instagram-error' : undefined}
             />
-          {validationErrors.instagram && (
-            <div id="instagram-error" className={styles.fieldError} role="alert">
-              {validationErrors.instagram}
-            </div>
-          )}
-        </div>
+            {validationErrors.instagram && (
+              <div id="instagram-error" className={styles.fieldError} role="alert">
+                {validationErrors.instagram}
+              </div>
+            )}
+          </div>
 
-        {mode === 'edit' && initial?.id && (
-          <>
-            <div className={styles.clientQrSection}>
-              <h3 className={styles.sectionTitle}>Client Pass Card</h3>
-              <p className={styles.sectionDescription}>
-                Share this QR code or link with the parent to access their swimming pass
-              </p>
-              
-              {loadingToken ? (
-                <div className={styles.loadingQr}>
-                  <div className={styles.qrSpinner} />
-                  <p>Generating QR code...</p>
-                </div>
-              ) : passUrl ? (
-                <div className={styles.qrContainer}>
-                  <div className={styles.qrCodeWrapper}>
-                    <div ref={qrRef} className={styles.qrCode}></div>
-                    <div className={styles.qrOverlay}>
-                      <span className={styles.qrLabel}>Swimming Pass</span>
-                    </div>
+          {mode === 'edit' && initial?.id && (
+            <>
+              <div className={styles.clientQrSection}>
+                <h3 className={styles.sectionTitle}>Client Pass Card</h3>
+                <p className={styles.sectionDescription}>
+                  Share this QR code or link with the parent to access their swimming pass
+                </p>
+                
+                {loadingToken ? (
+                  <div className={styles.loadingQr}>
+                    <div className={styles.qrSpinner} />
+                    <p>Generating QR code...</p>
                   </div>
-                  
-                  <div className={styles.urlSection}>
-                    <label className={styles.urlLabel}>Pass URL:</label>
-                    <div className={styles.urlContainer}>
-                      <input
-                        type="text"
-                        value={passUrl}
-                        readOnly
-                        className={styles.urlInput}
-                        onClick={(e) => e.currentTarget.select()}
-                      />
+                ) : passUrl ? (
+                  <div className={styles.qrContainer}>
+                    <div className={styles.qrCodeWrapper}>
+                      <div ref={qrRef} className={styles.qrCode}></div>
+                      <div className={styles.qrOverlay}>
+                        <span className={styles.qrLabel}>Swimming Pass</span>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.urlSection}>
+                      <label className={styles.urlLabel}>Pass URL:</label>
+                      <div className={styles.urlContainer}>
+                        <input
+                          type="text"
+                          value={passUrl}
+                          readOnly
+                          className={styles.urlInput}
+                          onClick={(e) => e.currentTarget.select()}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(passUrl)}
+                          className={styles.copyButton}
+                          title="Copy link"
+                        >
+                          📋
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.qrActions}>
                       <button
                         type="button"
-                        onClick={() => copyToClipboard(passUrl)}
-                        className={styles.copyButton}
-                        title="Copy link"
+                        onClick={shareViaWebShare}
+                        className={styles.shareButton}
                       >
-                        📋
+                        <span className={styles.shareIcon}>📱</span>
+                        <span className={styles.shareText}>
+                          <span className={styles.shareLabel}>Share via Telegram</span>
+                          <span className={styles.shareSubtext}>Send to parent</span>
+                        </span>
+                        <span className={styles.shareArrow}>→</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={downloadQR}
+                        className={styles.downloadButton}
+                      >
+                        <span className={styles.downloadIcon}>💾</span>
+                        Download QR
                       </button>
                     </div>
                   </div>
-                  
-                  <div className={styles.qrActions}>
-                    <button
-                      type="button"
-                      onClick={shareViaWebShare}
-                      className={styles.shareButton}
-                    >
-                      <span className={styles.shareIcon}>📱</span>
-                      <span className={styles.shareText}>
-                        <span className={styles.shareLabel}>Share via Telegram</span>
-                        <span className={styles.shareSubtext}>Send to parent</span>
-                      </span>
-                      <span className={styles.shareArrow}>→</span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={downloadQR}
-                      className={styles.downloadButton}
-                    >
-                      <span className={styles.downloadIcon}>💾</span>
-                      Download QR
-                    </button>
+                ) : (
+                  <div className={styles.qrError}>
+                    <span className={styles.errorIcon}>⚠️</span>
+                    Failed to generate QR code
                   </div>
-                </div>
-              ) : (
-                <div className={styles.qrError}>
-                  <span className={styles.errorIcon}>⚠️</span>
-                  Failed to generate QR code
-                </div>
-              )}
-            </div>
+                )}
+              </div>
 
-            <div className={styles.passesSection}>
-              <h3 className={styles.sectionTitle}>Active Passes</h3>
-              <p className={styles.sectionDescription}>
-                Current swimming passes for this client
-              </p>
-              
-              {loadingPasses ? (
-                <div className={styles.loadingPasses}>
-                  <div className={styles.passSpinner} />
-                  <p>Loading passes...</p>
-                </div>
-              ) : passes.length > 0 ? (
-                <div className={styles.passesList}>
-                  {passes.map((pass) => (
-                    <div key={pass.id} className={styles.passItem}>
-                      <div className={styles.passInfo}>
-                        <span className={styles.passRemaining}>{pass.remaining}</span>
-                        <span className={styles.passSeparator}>/</span>
-                        <span className={styles.passTotal}>{pass.planSize}</span>
-                      </div>
-                      <div className={styles.passDetails}>
-                        <div className={styles.passType}>{pass.type}</div>
-                        <div className={styles.passDate}>
-                          {new Date(pass.purchasedAt).toLocaleDateString()}
+              <div className={styles.passesSection}>
+                <h3 className={styles.sectionTitle}>Active Passes</h3>
+                <p className={styles.sectionDescription}>
+                  Current swimming passes for this client
+                </p>
+                
+                {loadingPasses ? (
+                  <div className={styles.loadingPasses}>
+                    <div className={styles.passSpinner} />
+                    <p>Loading passes...</p>
+                  </div>
+                ) : passes.length > 0 ? (
+                  <div className={styles.passesList}>
+                    {passes.map((pass) => (
+                      <div key={pass.id} className={styles.passItem}>
+                        <div className={styles.passInfo}>
+                          <span className={styles.passRemaining}>{pass.remaining}</span>
+                          <span className={styles.passSeparator}>/</span>
+                          <span className={styles.passTotal}>{pass.planSize}</span>
+                        </div>
+                        <div className={styles.passDetails}>
+                          <div className={styles.passType}>{pass.type}</div>
+                          <div className={styles.passDate}>
+                            {new Date(pass.purchasedAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div className={styles.passProgress}>
+                          <div 
+                            className={styles.passProgressBar}
+                            style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
+                          />
                         </div>
                       </div>
-                      <div className={styles.passProgress}>
-                        <div 
-                          className={styles.passProgressBar}
-                          style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className={styles.noPasses}>
-                  <span className={styles.noPassesIcon}>🎫</span>
-                  <p>No active passes found</p>
-                  <p className={styles.noPassesHint}>
-                    Create a pass for this client in the Passes section
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                    ))}
+                  </div>
+                ) : (
+                  <div className={styles.noPasses}>
+                    <span className={styles.noPassesIcon}>🎫</span>
+                    <p>No active passes found</p>
+                    <p className={styles.noPassesHint}>
+                      Create a pass for this client in the Passes section
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
-        <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={submitting}
-            className={styles.cancelButton}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={submitting || hasValidationErrors}
-            className={styles.submitButton}
-          >
-            {submitting ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-              <button
-                type="button"
-                className={styles.qrButton}
-                onClick={() => navigator.clipboard.writeText(passUrl)}
-              >
-                Copy Link
-              </button>
-              <button
-                type="button"
-                className={styles.qrButton}
-                onClick={() => qrInstance.current?.download({ name: 'client-pass', extension: 'png' })}
-              >
-                Download QR
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className={styles.actions}>
-          <button
-            type="button"
-            onClick={onCancel}
+          <div className={styles.actions}>
+            <button
+              type="button"
+              onClick={onCancel}
               disabled={submitting}
               className={styles.cancelButton}
             >
