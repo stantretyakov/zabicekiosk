@@ -1,47 +1,226 @@
-import jsQR from 'jsqr';
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a { color: inherit; }
+::selection { background: rgba(75, 222, 160, .25); }
 
-export function scanStream(
-  video: HTMLVideoElement,
-  onToken: (token: string) => void,
-  cooldownMs = 5000
-) {
-  let active = true;
-  const detector =
-    'BarcodeDetector' in window
-      ? new (window as any).BarcodeDetector({ formats: ['qr_code'] })
-      : null;
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  let lastScan = 0;
+/* Enhanced global styles for better UX */
+.toolbar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-wrap: wrap;
+}
 
-  const scan = async () => {
-    if (!active) return;
-    try {
-      const now = Date.now();
-      if (detector) {
-        const codes = await detector.detect(video);
-        if (codes.length && now - lastScan >= cooldownMs) {
-          lastScan = now;
-          onToken(codes[0].rawValue);
-        }
-      } else if (ctx) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-        if (code && now - lastScan >= cooldownMs) {
-          lastScan = now;
-          onToken(code.data);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    requestAnimationFrame(scan);
-  };
-  requestAnimationFrame(scan);
-  return () => {
-    active = false;
-  };
+.toolbar input,
+.toolbar select {
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
+  transform: translateY(-1px);
+}
+
+.toolbar input::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.toolbar button.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar button.primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.toolbar button.primary:hover::before {
+  left: 100%;
+}
+
+.toolbar button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pagination button {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 100px;
+}
+
+.pagination button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.error {
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+  border: 1px solid var(--error);
+  color: var(--error);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius);
+  margin: 1rem 0;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: var(--shadow);
+}
+
+.error::before {
+  content: "⚠️";
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Modal overlay improvements */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  animation: modalBackdropEnter 0.3s ease-out;
+}
+
+@keyframes modalBackdropEnter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.modal-body {
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalEnter 0.3s ease-out;
+  border: 1px solid rgba(43, 224, 144, 0.2);
+  padding: 2rem;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .toolbar input,
+  .toolbar select,
+  .toolbar button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .pagination {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .pagination button {
+    width: 100%;
+  }
 }
