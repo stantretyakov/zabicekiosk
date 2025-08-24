@@ -59,6 +59,8 @@ export async function redeem(
     }
 
     const settings = settingsDoc.data() as any;
+    const cooldownSec = settings?.cooldownSec ?? 5;
+    const daySec = 24 * 60 * 60;
 
     const pass = passDoc?.data() as any | undefined;
 
@@ -76,7 +78,6 @@ export async function redeem(
         };
       }
 
-      const cooldownSec = settings?.cooldownSec ?? 5;
       if (
         pass.lastRedeemTs &&
         now.seconds - pass.lastRedeemTs.seconds < cooldownSec
@@ -84,7 +85,6 @@ export async function redeem(
         return { status: 'error', code: 'COOLDOWN', message: 'Try later' };
       }
 
-      const daySec = 24 * 60 * 60;
       if (
         pass.lastRedeemTs &&
         now.seconds - pass.lastRedeemTs.seconds < daySec
@@ -123,6 +123,31 @@ export async function redeem(
           expiresAt: pass.expiresAt.toDate().toISOString(),
         };
       }
+    }
+
+    const lastRedeemSnap = await tx.get(
+      db
+        .collection('redeems')
+        .where('clientId', '==', clientRef.id)
+        .orderBy('ts', 'desc')
+        .limit(1)
+    );
+    const lastRedeem = lastRedeemSnap.docs[0]?.data() as any | undefined;
+
+    if (lastRedeem?.eventId === req.eventId) {
+      return { status: 'ok', type: 'single', message: 'already redeemed' };
+    }
+
+    if (lastRedeem && now.seconds - lastRedeem.ts.seconds < cooldownSec) {
+      return { status: 'error', code: 'COOLDOWN', message: 'Try later' };
+    }
+
+    if (lastRedeem && now.seconds - lastRedeem.ts.seconds < daySec) {
+      return {
+        status: 'error',
+        code: 'DUPLICATE',
+        message: 'Занятие уже учтено',
+      };
     }
 
     const redeemRef = db.collection('redeems').doc();
