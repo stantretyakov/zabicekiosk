@@ -24,9 +24,12 @@ export type RedeemResponse =
   | RedeemSingleResponse
   | RedeemErrorResponse;
 
-const API_BASE_URL =
-  (import.meta.env.VITE_CORE_API_URL as string | undefined) ??
-  '/api/v1';
+const API_BASE_URL = (() => {
+  const env = import.meta.env.VITE_CORE_API_URL as string | undefined;
+  if (!env) return '/api/v1';
+  const base = env.replace(/\/$/, '');
+  return base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+})();
 
 export async function redeem(data: {
   token?: string;
