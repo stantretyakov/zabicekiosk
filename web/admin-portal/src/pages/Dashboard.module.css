@@ -1,0 +1,689 @@
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+.loadingCard,
+.errorCard {
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: 16px;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.loadingSpinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(43, 224, 144, 0.2);
+  border-top: 4px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorIcon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* KPI Cards */
+.primaryKpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.secondaryKpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.kpiCard {
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(43, 224, 144, 0.05), rgba(74, 214, 255, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.kpiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.kpiCard:hover::before {
+  opacity: 1;
+}
+
+.kpiCard.clickable {
+  cursor: pointer;
+}
+
+.kpiCard.clickable:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(43, 224, 144, 0.2);
+}
+
+.kpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.kpiIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.expandIcon {
+  font-size: 1.25rem;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+.kpiCard.clickable:hover .expandIcon {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+.kpiContent {
+  position: relative;
+  z-index: 1;
+}
+
+.kpiValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.kpiTitle {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.25rem;
+}
+
+.kpiSubtitle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.kpiTrend {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.kpiTrend.up {
+  color: var(--ok);
+}
+
+.kpiTrend.down {
+  color: var(--error);
+}
+
+.kpiTrend.flat {
+  color: var(--muted);
+}
+
+.trendIcon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Quick Actions */
+.quickActions {
+  margin-bottom: 3rem;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 1.5rem 0;
+  text-align: center;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.actionButton {
+  background: linear-gradient(135deg, var(--panel), var(--card));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.2);
+  border-color: var(--accent);
+}
+
+.actionIcon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.actionText {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+  animation: modalEnter 0.3s ease-out;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+.modalContent {
+  background: linear-gradient(135deg, var(--card), var(--panel));
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: modalContentEnter 0.3s ease-out;
+  border: 1px solid rgba(43, 224, 144, 0.2);
+}
+
+@keyframes modalContentEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 2rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.modalClose {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modalClose:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  transform: scale(1.1);
+}
+
+.modalBody {
+  padding: 2rem;
+}
+
+/* Revenue Breakdown */
+.revenueBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.breakdownItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breakdownItem.total {
+  background: linear-gradient(135deg, rgba(43, 224, 144, 0.1), rgba(43, 224, 144, 0.05));
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.breakdownLabel {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.breakdownValue {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.breakdownPercentage {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Client Overview */
+.clientOverview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.clientStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.clientStatValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.clientStatLabel {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Pass Distribution */
+.passDistribution {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.passTypeItem {
+  padding: 1rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.passTypeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.passTypeName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.passTypeCount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.passTypeBar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.passTypeProgress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 4px;
+  transition: width 0.8s ease;
+}
+
+.passTypePercentage {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Expiration Breakdown */
+.expirationBreakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.expirationItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.expirationPeriod {
+  font-size: 0.875rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.expirationCount {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--error);
+}
+
+.expirationUrgency {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.expirationItem:nth-child(1) .expirationUrgency {
+  background: linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8));
+  color: var(--text);
+}
+
+.expirationItem:nth-child(2) .expirationUrgency {
+  background: linear-gradient(135deg, var(--warn), rgba(255, 209, 102, 0.8));
+  color: var(--bg);
+}
+
+.expirationItem:nth-child(3) .expirationUrgency {
+  background: linear-gradient(135deg, var(--muted), rgba(154, 165, 177, 0.8));
+  color: var(--text);
+}
+
+/* Visit Statistics */
+.visitStats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.visitComparison {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 2rem;
+  background: var(--panel-2);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.visitMonth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.visitValue {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.visitLabel {
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.visitGrowth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.growthValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+.growthValue.positive {
+  background: linear-gradient(135deg, var(--ok), rgba(43, 224, 144, 0.8));
+  color: var(--text);
+}
+
+.growthLabel {
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .primaryKpis {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .secondaryKpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .kpiCard {
+    padding: 1rem;
+  }
+  
+  .kpiValue {
+    font-size: 1.5rem;
+  }
+  
+  .actionGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .actionButton {
+    padding: 1rem;
+  }
+  
+  .actionIcon {
+    font-size: 1.5rem;
+  }
+  
+  .modalContent {
+    max-width: 95vw;
+    max-height: 90vh;
+  }
+  
+  .modalHeader {
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  
+  .modalBody {
+    padding: 1.5rem;
+  }
+  
+  .clientOverview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .visitComparison {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .kpiCard {
+    border-width: 2px;
+  }
+  
+  .modalContent {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .kpiCard,
+  .actionButton,
+  .modalOverlay,
+  .modalContent,
+  .loadingSpinner,
+  .passTypeProgress {
+    transition: none;
+    animation: none;
+  }
+  
+  .kpiCard::before {
+    display: none;
+  }
+}
