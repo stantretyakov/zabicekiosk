@@ -83,50 +83,50 @@ export default function ClientForm({
   };
 
   const loadClientToken = async (clientId: string) => {
-    async function loadToken() {
-      try {
-        setLoadingToken(true);
-        const { token } = await getClientToken(clientId);
-        const baseUrl =
-          import.meta.env.VITE_PARENT_PORTAL_URL ||
-          window.location.origin.replace(/admin[^.]*/, 'parent');
-        const url = `${baseUrl}?token=${token}`;
-        setPassUrl(url);
+    try {
+      setLoadingToken(true);
+      const { token } = await getClientToken(clientId);
+      const baseUrl =
+        import.meta.env.VITE_PARENT_PORTAL_URL ||
+        window.location.origin.replace(/admin[^.]*/, 'parent');
+      const url = `${baseUrl}?token=${token}`;
+      setPassUrl(url);
 
-        if (qrRef.current) {
-          qrRef.current.innerHTML = '';
-          qrInstance.current = new QRCodeStyling({
-            width: 200,
-            height: 200,
-            data: url,
-            dotsOptions: {
-              color: '#2be090',
-              type: 'rounded',
-            },
-            backgroundOptions: {
-              color: '#1a1a1a',
-            },
-            cornersSquareOptions: {
-              color: '#2be090',
-              type: 'extra-rounded',
-            },
-            cornersDotOptions: {
-              color: '#2be090',
-              type: 'dot',
-            },
-          });
-          qrInstance.current.append(qrRef.current);
-        }
-      } catch (err) {
-        // Generate ticket-style card
-        generateTicketCard(url, values.parentName, values.childName);
-        console.error('Failed to load client token:', err);
-      } finally {
-        setLoadingToken(false);
+      // Generate QR code
+      if (qrRef.current) {
+        qrRef.current.innerHTML = '';
+        qrInstance.current = new QRCodeStyling({
+          width: 200,
+          height: 200,
+          data: url,
+          dotsOptions: {
+            color: '#2be090',
+            type: 'rounded',
+          },
+          backgroundOptions: {
+            color: '#1a1a1a',
+          },
+          cornersSquareOptions: {
+            color: '#2be090',
+            type: 'extra-rounded',
+          },
+          cornersDotOptions: {
+            color: '#2be090',
+            type: 'dot',
+          },
+        });
+        qrInstance.current.append(qrRef.current);
       }
-    }
 
-    loadToken();
+      // Generate ticket card
+      setTimeout(() => {
+        generateTicketCard(url, values.parentName, values.childName);
+      }, 100);
+    } catch (error) {
+      console.error('Failed to load client token:', error);
+    } finally {
+      setLoadingToken(false);
+    }
   };
 
   const generateTicketCard = async (url: string, parentName: string, childName: string) => {
@@ -139,6 +139,9 @@ export default function ClientForm({
     // Set canvas size for high quality
     canvas.width = 800;
     canvas.height = 500;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Background gradient
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -161,15 +164,15 @@ export default function ClientForm({
     ctx.fillStyle = '#0F1115';
     ctx.font = 'bold 32px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('🏊‍♀️', 30, 50);
+    ctx.fillText('🏊‍♀️', 30, 55);
 
     // Business name
     ctx.fillStyle = '#0F1115';
     ctx.font = 'bold 24px Inter, sans-serif';
-    ctx.fillText('Swimming Academy', 80, 35);
+    ctx.fillText('Swimming Academy', 90, 40);
     
     ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('Professional Swimming Lessons', 80, 60);
+    ctx.fillText('Professional Swimming Lessons', 90, 65);
 
     // Client information
     ctx.fillStyle = '#EAEFF5';
@@ -185,6 +188,13 @@ export default function ClientForm({
     ctx.fillStyle = '#4AD6FF';
     ctx.fillText(`Child: ${childName}`, 30, 200);
 
+    // Pass type indicator
+    ctx.fillStyle = '#2BE090';
+    ctx.fillRect(30, 220, 200, 2);
+    
+    ctx.fillStyle = '#EAEFF5';
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillText('Swimming Pass Access', 30, 245);
     // Business information
     ctx.fillStyle = '#9AA5B1';
     ctx.font = '14px Inter, sans-serif';
@@ -200,9 +210,9 @@ export default function ClientForm({
     
     ctx.fillStyle = '#9AA5B1';
     ctx.font = '14px Inter, sans-serif';
-    ctx.fillText('1. Scan QR code or visit link', 30, 375);
-    ctx.fillText('2. Show digital pass at facility', 30, 395);
-    ctx.fillText('3. Scan at kiosk to check in', 30, 415);
+    ctx.fillText('1. Scan QR code or visit the link', 30, 375);
+    ctx.fillText('2. Show digital pass at the facility', 30, 395);
+    ctx.fillText('3. Scan at kiosk to check in for sessions', 30, 415);
 
     // QR Code area
     const qrSize = 180;
@@ -216,43 +226,62 @@ export default function ClientForm({
     ctx.lineWidth = 2;
     ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
 
-    // Generate QR code and draw it on canvas
-    try {
-      const qrCodeStyling = new QRCodeStyling({
-        width: qrSize,
-        height: qrSize,
-        data: url,
-        dotsOptions: {
-          color: '#0F1115',
-          type: 'rounded',
-        },
-        backgroundOptions: {
-          color: '#FFFFFF',
-        },
-        cornersSquareOptions: {
-          color: '#2BE090',
-          type: 'extra-rounded',
-        },
-        cornersDotOptions: {
-          color: '#2BE090',
-          type: 'dot',
-        },
-      });
+    // QR code placeholder with text
+    ctx.fillStyle = '#0F1115';
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR CODE', qrX + qrSize/2, qrY + qrSize/2 - 20);
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize/2);
+    ctx.fillText(url.slice(-20), qrX + qrSize/2, qrY + qrSize/2 + 20);
+    
+    // Generate and draw actual QR code
+    setTimeout(() => {
+      try {
+        const qrCodeStyling = new QRCodeStyling({
+          width: qrSize,
+          height: qrSize,
+          data: url,
+          dotsOptions: {
+            color: '#0F1115',
+            type: 'rounded',
+          },
+          backgroundOptions: {
+            color: '#FFFFFF',
+          },
+          cornersSquareOptions: {
+            color: '#2BE090',
+            type: 'extra-rounded',
+          },
+          cornersDotOptions: {
+            color: '#2BE090',
+            type: 'dot',
+          },
+        });
 
-      // Create temporary canvas for QR code
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = qrSize;
-      tempCanvas.height = qrSize;
-      
-      qrCodeStyling.append(tempCanvas);
-      
-      // Wait for QR code to render
-      setTimeout(() => {
-        ctx.drawImage(tempCanvas, qrX, qrY);
-      }, 100);
-    } catch (err) {
-      console.error('Failed to generate QR for ticket:', err);
-    }
+        // Create temporary div for QR generation
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+        
+        qrCodeStyling.append(tempDiv);
+        
+        // Wait for QR code to render, then draw on canvas
+        setTimeout(() => {
+          const qrCanvas = tempDiv.querySelector('canvas');
+          if (qrCanvas) {
+            // Clear QR area and redraw with actual QR
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(qrX, qrY, qrSize, qrSize);
+            ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+          }
+          document.body.removeChild(tempDiv);
+        }, 200);
+      } catch (err) {
+        console.error('Failed to generate QR for ticket:', err);
+      }
+    }, 50);
 
     // QR label
     ctx.fillStyle = '#EAEFF5';
