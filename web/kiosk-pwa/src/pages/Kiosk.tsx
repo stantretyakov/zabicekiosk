@@ -32,6 +32,7 @@ export default function Kiosk() {
   const [toast, setToast] = useState<{ kind: 'pass' | 'cooldown' | 'out' | 'error'; message: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successData, setSuccessData] = useState<{ message: string; details: string } | null>(null);
+  const [flashEffect, setFlashEffect] = useState<'success' | 'error' | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [cameraReady, setCameraReady] = useState(false);
@@ -193,6 +194,10 @@ export default function Kiosk() {
         if (result.status === 'ok') {
           beep(true);
           
+          // Trigger success flash effect
+          setFlashEffect('success');
+          setTimeout(() => setFlashEffect(null), 800);
+          
           if (result.type === 'pass') {
             const message = `Pass redeemed successfully!`;
             const details = `${result.remaining}/${result.planSize} visits remaining`;
@@ -203,24 +208,48 @@ export default function Kiosk() {
             
             setTimeout(() => setShowSuccess(false), 3000);
           } else {
-            setToast({ kind: 'pass', message: result.message });
+            setToast({ kind: 'pass', message: `${result.message} - Drop-in payment processed` });
             addLog(`Drop-in payment: ${result.message}`, 'success');
-            setTimeout(() => setToast(null), 3000);
+            setTimeout(() => setToast(null), 4000);
           }
         } else {
           beep(false);
+          
+          // Trigger error flash effect
+          setFlashEffect('error');
+          setTimeout(() => setFlashEffect(null), 1000);
+          
           const kind = result.code === 'COOLDOWN' ? 'cooldown' : 
                       result.code === 'EXPIRED' ? 'out' : 'error';
-          setToast({ kind, message: result.message });
+          
+          // Enhanced error messages with admin contact suggestion
+          let enhancedMessage = result.message;
+          if (result.code === 'INVALID_TOKEN') {
+            enhancedMessage = `${result.message}. Please contact the administrator for assistance.`;
+          } else if (result.code === 'EXPIRED') {
+            enhancedMessage = `${result.message}. Please renew your pass or contact the administrator.`;
+          } else if (kind === 'error') {
+            enhancedMessage = `${result.message}. If this persists, please contact the administrator.`;
+          }
+          
+          setToast({ kind, message: enhancedMessage });
           addLog(`Error: ${result.message}`, 'error');
-          setTimeout(() => setToast(null), 3000);
+          
+          // Longer timeout for errors to give users time to read
+          const errorTimeout = kind === 'error' ? 6000 : 4000;
+          setTimeout(() => setToast(null), errorTimeout);
         }
       } catch (error) {
         beep(false);
-        const message = 'Network error';
+        
+        // Trigger error flash effect
+        setFlashEffect('error');
+        setTimeout(() => setFlashEffect(null), 1000);
+        
+        const message = 'Network error. Please check your connection or contact the administrator.';
         setToast({ kind: 'error', message });
         addLog(`Network error: ${error}`, 'error');
-        setTimeout(() => setToast(null), 3000);
+        setTimeout(() => setToast(null), 6000);
       }
     });
 
@@ -257,7 +286,12 @@ export default function Kiosk() {
   };
 
   return (
-    <div className={`${styles.root} ${styles[`position${scannerPosition.charAt(0).toUpperCase() + scannerPosition.slice(1)}`]}`}>
+    <div className={`${styles.root} ${styles[`position${scannerPosition.charAt(0).toUpperCase() + scannerPosition.slice(1)}`]} ${flashEffect ? styles[`flash${flashEffect.charAt(0).toUpperCase() + flashEffect.slice(1)}`] : ''}`}>
+      {/* Flash overlay for visual feedback */}
+      {flashEffect && (
+        <div className={`${styles.flashOverlay} ${styles[flashEffect]}`} />
+      )}
+      
       <div className={styles.header}>
         <h1 className={styles.title}>Swimming Pass Scanner</h1>
         <p className={styles.subtitle}>Scan your QR code to check in</p>
