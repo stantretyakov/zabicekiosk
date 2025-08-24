@@ -1,9 +1,6 @@
 .root {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg), var(--panel));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   padding: 2rem 1rem;
   position: relative;
 }
@@ -31,11 +28,52 @@
   font-weight: 500;
 }
 
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100vh - 200px);
+  gap: 2rem;
+}
+
+/* Position Layouts */
+.positionLeft .mainContent,
+.positionRight .mainContent {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3rem;
+}
+
+.positionRight .mainContent {
+  flex-direction: row-reverse;
+}
+
+.positionTop .mainContent {
+  flex-direction: column;
+  align-items: center;
+}
+
+.scannerSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.contentSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+  min-width: 300px;
+}
+
 .cameraContainer {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 2rem;
 }
 
 .cameraWrap {
@@ -123,7 +161,8 @@
   gap: 12px;
 }
 
-.switchButton {
+.switchButton,
+.settingsButton {
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
   border: none;
@@ -141,12 +180,14 @@
   justify-content: center;
 }
 
-.switchButton:hover {
+.switchButton:hover,
+.settingsButton:hover {
   background: rgba(43, 224, 144, 0.8);
   transform: scale(1.1);
 }
 
-.switchButton:active {
+.switchButton:active,
+.settingsButton:active {
   transform: scale(0.95);
 }
 
@@ -195,6 +236,78 @@
   50% {
     opacity: 0.5;
   }
+}
+
+/* Settings Panel */
+.settingsPanel {
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow);
+  min-width: 280px;
+  animation: settingsEnter 0.3s ease-out;
+}
+
+@keyframes settingsEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settingsTitle {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.positionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.positionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  justify-content: flex-start;
+}
+
+.positionButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.positionButton.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.positionIcon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .successOverlay {
@@ -255,11 +368,9 @@
 }
 
 .bottomPanel {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
 }
 
 .logToggle {
@@ -282,29 +393,24 @@
 }
 
 .history {
-  position: fixed;
-  bottom: 6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 500px;
+  width: 100%;
+  max-width: 400px;
   max-height: 300px;
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(16px);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  z-index: 40;
   animation: historyEnter 0.3s ease-out;
 }
 
 @keyframes historyEnter {
   0% {
     opacity: 0;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateY(20px);
   }
   100% {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 
@@ -374,6 +480,27 @@
   color: var(--accent-2);
 }
 
+/* Responsive Design */
+@media (max-width: 768px) {
+  .positionLeft .mainContent,
+  .positionRight .mainContent {
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+  }
+  
+  .contentSection {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .settingsPanel {
+    min-width: auto;
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
 @media (max-width: 480px) {
   .root {
     padding: 1rem 0.5rem;
@@ -409,7 +536,8 @@
     gap: 8px;
   }
   
-  .switchButton {
+  .switchButton,
+  .settingsButton {
     width: 40px;
     height: 40px;
     font-size: 16px;
@@ -422,25 +550,21 @@
   .successDetails {
     font-size: 1rem;
   }
-  
-  .history {
-    width: 95%;
-    bottom: 5rem;
+}
+
+/* Tablet Optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .positionLeft .scannerSection,
+  .positionRight .scannerSection {
+    position: sticky;
+    top: 2rem;
   }
   
-  .historyTitle {
-    padding: 0.75rem 1rem 0.5rem;
-    font-size: 0.875rem;
+  .cameraWrap {
+    max-width: 350px;
   }
   
-  .historyItem {
-    padding: 0.5rem 1rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-  
-  .historyTime {
-    align-self: flex-end;
+  .contentSection {
+    max-width: 400px;
   }
 }
