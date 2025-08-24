@@ -32,7 +32,6 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
   const [passes, setPasses] = useState<Pass[]>([]);
   const [newPassType, setNewPassType] = useState("10");
   const [isLoading, setIsLoading] = useState(false);
-  const [qrCode, setQrCode] = useState<string>("");
   const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,15 +44,15 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
   const loadPasses = async () => {
     if (!client?.id) return;
     try {
-      const data = await listPasses({ clientId: client.id });
-      setPasses(
-        data.items.map(({ client: _c, planSize, ...p }) => ({
-          id: p.id,
-          type: p.type,
-          remaining: p.remaining,
-          total: planSize,
-        }))
-      );
+        const data = await listPasses({ clientId: client.id });
+        setPasses(
+          data.items.map(({ planSize, ...p }) => ({
+            id: p.id,
+            type: p.type,
+            remaining: p.remaining,
+            total: planSize,
+          }))
+        );
     } catch (error) {
       console.error("Failed to load passes:", error);
     }
@@ -62,33 +61,32 @@ export default function ClientForm({ onClose, onSave, client }: ClientFormProps)
   const loadClientToken = async () => {
     if (!client?.id) return;
     try {
-      const { token } = await getClientToken(client.id);
-      setQrCode(token);
+        const { token } = await getClientToken(client.id);
 
-      if (qrRef.current) {
-        qrRef.current.innerHTML = "";
-        const qrCodeStyling = new QRCodeStyling({
-          width: 200,
-          height: 200,
-          data: token,
-          dotsOptions: {
-            color: "#2be090",
-            type: "rounded",
-          },
-          backgroundOptions: {
-            color: "#1a1a1a",
-          },
-          cornersSquareOptions: {
-            color: "#2be090",
-            type: "extra-rounded",
-          },
-          cornersDotOptions: {
-            color: "#2be090",
-            type: "dot",
-          },
-        });
-        qrCodeStyling.append(qrRef.current);
-      }
+        if (qrRef.current) {
+          qrRef.current.innerHTML = "";
+          const qrCodeStyling = new QRCodeStyling({
+            width: 200,
+            height: 200,
+            data: token,
+            dotsOptions: {
+              color: "#2be090",
+              type: "rounded",
+            },
+            backgroundOptions: {
+              color: "#1a1a1a",
+            },
+            cornersSquareOptions: {
+              color: "#2be090",
+              type: "extra-rounded",
+            },
+            cornersDotOptions: {
+              color: "#2be090",
+              type: "dot",
+            },
+          });
+          qrCodeStyling.append(qrRef.current);
+        }
     } catch (error) {
       console.error("Failed to load client token:", error);
     }

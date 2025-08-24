@@ -7,7 +7,7 @@ import {
 
 const app = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ?? 'zabicekiosk.firebaseapp.com',
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
 });
 const auth = getAuth(app);
