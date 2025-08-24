@@ -17,6 +17,25 @@ steps:
       - |
         gcloud services enable firestore.googleapis.com
 
+  - id: enable-secretmanager-api
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud services enable secretmanager.googleapis.com
+
+  - id: grant-secret-access
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud secrets add-iam-policy-binding zabicekiosk_firebase_api_key \
+          --project $PROJECT_ID \
+          --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor"
+
   - id: build-and-deploy-core-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
