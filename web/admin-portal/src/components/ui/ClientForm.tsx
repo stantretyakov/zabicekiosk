@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import QRCodeStyling from 'qr-code-styling';
+import { getClientToken } from '../../lib/api';
 import styles from './ClientForm.module.css';
 
 export type Client = {
@@ -37,6 +39,9 @@ export default function ClientForm({
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [passUrl, setPassUrl] = useState<string | null>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+  const qrInstance = useRef<QRCodeStyling | null>(null);
 
   // Reset form when initial values change
   useEffect(() => {
@@ -48,7 +53,54 @@ export default function ClientForm({
       instagram: initial?.instagram || '',
     });
     setValidationErrors({});
+    setPassUrl(null);
   }, [initial]);
+
+  // Load token and render QR code when editing an existing client
+  useEffect(() => {
+    if (mode !== 'edit' || !initial?.id) return;
+
+    const clientId = initial.id as string;
+    async function loadToken() {
+      try {
+        const { token } = await getClientToken(clientId);
+        const baseUrl =
+          import.meta.env.VITE_PARENT_PORTAL_URL ||
+          window.location.origin.replace('admin', 'parent');
+        const url = `${baseUrl}?token=${token}`;
+        setPassUrl(url);
+
+        if (qrRef.current) {
+          qrRef.current.innerHTML = '';
+          qrInstance.current = new QRCodeStyling({
+            width: 200,
+            height: 200,
+            data: url,
+            dotsOptions: {
+              color: '#2be090',
+              type: 'rounded',
+            },
+            backgroundOptions: {
+              color: '#1a1a1a',
+            },
+            cornersSquareOptions: {
+              color: '#2be090',
+              type: 'extra-rounded',
+            },
+            cornersDotOptions: {
+              color: '#2be090',
+              type: 'dot',
+            },
+          });
+          qrInstance.current.append(qrRef.current);
+        }
+      } catch (err) {
+        console.error('Failed to load client token:', err);
+      }
+    }
+
+    loadToken();
+  }, [mode, initial?.id]);
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -253,17 +305,40 @@ export default function ClientForm({
               placeholder="@username or instagram.com/username"
               aria-describedby={validationErrors.instagram ? 'instagram-error' : undefined}
             />
-            {validationErrors.instagram && (
-              <div id="instagram-error" className={styles.fieldError} role="alert">
-                {validationErrors.instagram}
-              </div>
-            )}
-          </div>
+          {validationErrors.instagram && (
+            <div id="instagram-error" className={styles.fieldError} role="alert">
+              {validationErrors.instagram}
+            </div>
+          )}
+        </div>
 
-          <div className={styles.actions}>
-            <button
-              type="button"
-              onClick={onCancel}
+        {mode === 'edit' && passUrl && (
+          <div className={styles.qrSection}>
+            <div ref={qrRef} className={styles.qrContainer}></div>
+            <div className={styles.qrLink}>{passUrl}</div>
+            <div className={styles.qrActions}>
+              <button
+                type="button"
+                className={styles.qrButton}
+                onClick={() => navigator.clipboard.writeText(passUrl)}
+              >
+                Copy Link
+              </button>
+              <button
+                type="button"
+                className={styles.qrButton}
+                onClick={() => qrInstance.current?.download({ name: 'client-pass', extension: 'png' })}
+              >
+                Download QR
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            onClick={onCancel}
               disabled={submitting}
               className={styles.cancelButton}
             >

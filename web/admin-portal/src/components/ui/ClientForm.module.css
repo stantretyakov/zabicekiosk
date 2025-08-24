@@ -246,6 +246,59 @@
   box-shadow: none;
 }
 
+/* QR code section */
+.qrSection {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.qrContainer {
+  margin: 0 auto 1rem;
+  width: 200px;
+  height: 200px;
+}
+
+.qrLink {
+  word-break: break-all;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.qrActions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.qrButton {
+  padding: 0.5rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qrButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.qrButton:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.qrButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Required field indicator */
 .label:has(+ .input[required])::after {
   content: ' *';

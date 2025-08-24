@@ -91,22 +91,30 @@ export default function Clients() {
       key: 'name',
       title: 'Client',
       render: (client: Client) => (
-        <div>
+        <div
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            setEditingClient(client);
+            setShowForm(true);
+          }}
+        >
           <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
             {client.parentName}
           </div>
-          <div style={{ 
-            fontSize: '0.875rem', 
-            color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
+          <div
+            style={{
+              fontSize: '0.875rem',
+              color: 'var(--muted)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}
+          >
             <span>👶</span>
             {client.childName}
           </div>
         </div>
-      )
+      ),
     },
     {
       key: 'contact',
