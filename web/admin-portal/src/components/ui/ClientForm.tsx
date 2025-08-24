@@ -21,7 +21,7 @@ export type ClientFormProps = {
 };
 
 export default function ClientForm({
-  initial = {},
+  initial,
   mode,
   onSubmit,
   onCancel,
@@ -29,11 +29,11 @@ export default function ClientForm({
   error = null,
 }: ClientFormProps) {
   const [values, setValues] = useState({
-    parentName: initial.parentName || '',
-    childName: initial.childName || '',
-    phone: initial.phone || '',
-    telegram: initial.telegram || '',
-    instagram: initial.instagram || '',
+    parentName: initial?.parentName || '',
+    childName: initial?.childName || '',
+    phone: initial?.phone || '',
+    telegram: initial?.telegram || '',
+    instagram: initial?.instagram || '',
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -41,11 +41,11 @@ export default function ClientForm({
   // Reset form when initial values change
   useEffect(() => {
     setValues({
-      parentName: initial.parentName || '',
-      childName: initial.childName || '',
-      phone: initial.phone || '',
-      telegram: initial.telegram || '',
-      instagram: initial.instagram || '',
+      parentName: initial?.parentName || '',
+      childName: initial?.childName || '',
+      phone: initial?.phone || '',
+      telegram: initial?.telegram || '',
+      instagram: initial?.instagram || '',
     });
     setValidationErrors({});
   }, [initial]);
