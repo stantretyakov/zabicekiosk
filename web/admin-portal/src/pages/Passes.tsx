@@ -1,226 +1,214 @@
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; }
-::selection { background: rgba(75, 222, 160, .25); }
+import React, { useState, useEffect } from 'react';
+import { api } from '../lib/api';
+import DataTable from '../components/DataTable';
 
-/* Enhanced global styles for better UX */
-.toolbar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
+interface Pass {
+  id: string;
+  clientId: string;
+  clientName: string;
+  clientType: 'parent' | 'child';
+  passType: string;
+  totalVisits: number;
+  remainingVisits: number;
+  expiryDate: string;
+  createdAt: string;
+  status: 'active' | 'expired' | 'low';
 }
 
-.toolbar input,
-.toolbar select {
-  background: var(--panel);
-  color: var(--text);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
+export default function Passes() {
+  const [passes, setPasses] = useState<Pass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-.toolbar input:focus,
-.toolbar select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
-  transform: translateY(-1px);
-}
+  const fetchPasses = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '20',
+        ...(searchTerm && { search: searchTerm }),
+        ...(statusFilter !== 'all' && { status: statusFilter })
+      });
+      
+      const response = await api.get(`/admin/passes?${params}`);
+      setPasses(response.data.passes || []);
+      setTotalPages(response.data.totalPages || 1);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch passes');
+      console.error('Error fetching passes:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-.toolbar input::placeholder {
-  color: var(--muted);
-  font-style: italic;
-}
+  useEffect(() => {
+    fetchPasses();
+  }, [currentPage, searchTerm, statusFilter]);
 
-.toolbar button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return '#4ade80';
+      case 'low': return '#fbbf24';
+      case 'expired': return '#f87171';
+      default: return '#6b7280';
+    }
+  };
 
-.toolbar button.primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
+  const getProgressPercentage = (remaining: number, total: number) => {
+    return total > 0 ? (remaining / total) * 100 : 0;
+  };
 
-.toolbar button.primary:hover::before {
-  left: 100%;
-}
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-.toolbar button.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
-}
+  const columns = [
+    {
+      key: 'clientName',
+      label: 'Client',
+      render: (pass: Pass) => (
+        <div>
+          <div className="font-medium">{pass.clientName}</div>
+          <div className="text-sm text-gray-500 capitalize">
+            {pass.clientType === 'parent' ? '👨‍👩‍👧‍👦' : '👶'} {pass.clientType}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'passType',
+      label: 'Pass Type',
+      render: (pass: Pass) => (
+        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+          {pass.passType}
+        </span>
+      )
+    },
+    {
+      key: 'visits',
+      label: 'Visits',
+      render: (pass: Pass) => (
+        <div className="space-y-1">
+          <div className="flex justify-between text-sm">
+            <span>{pass.remainingVisits} / {pass.totalVisits}</span>
+            <span>{getProgressPercentage(pass.remainingVisits, pass.totalVisits).toFixed(0)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${getProgressPercentage(pass.remainingVisits, pass.totalVisits)}%` }}
+            />
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (pass: Pass) => (
+        <span 
+          className="px-2 py-1 rounded-full text-white text-sm font-medium capitalize"
+          style={{ backgroundColor: getStatusColor(pass.status) }}
+        >
+          {pass.status}
+        </span>
+      )
+    },
+    {
+      key: 'expiryDate',
+      label: 'Expires',
+      render: (pass: Pass) => (
+        <div className="text-sm">
+          {formatDate(pass.expiryDate)}
+        </div>
+      )
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      render: (pass: Pass) => (
+        <div className="text-sm text-gray-500">
+          {formatDate(pass.createdAt)}
+        </div>
+      )
+    }
+  ];
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pagination button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 100px;
-}
-
-.pagination button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
-}
-
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-  transform: none;
-  box-shadow: none;
-}
-
-.error {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius);
-  margin: 1rem 0;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow);
-}
-
-.error::before {
-  content: "⚠️";
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-/* Modal overlay improvements */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  animation: modalBackdropEnter 0.3s ease-out;
-}
-
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
 
-.modal-body {
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalEnter 0.3s ease-out;
-  border: 1px solid rgba(43, 224, 144, 0.2);
-  padding: 2rem;
-}
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-900">Passes</h1>
+      </div>
 
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
 
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .toolbar input,
-  .toolbar select,
-  .toolbar button {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .pagination button {
-    width: 100%;
-  }
+      <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Search by client name..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="flex-1"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="low">Low Visits</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+
+      <DataTable
+        data={passes}
+        columns={columns}
+        emptyMessage="No passes found"
+      />
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
