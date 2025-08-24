@@ -12,6 +12,8 @@ interface LogEntry {
   type: 'success' | 'error' | 'info';
 }
 
+type ScannerPosition = 'left' | 'right' | 'top';
+
 export default function Kiosk() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -23,6 +25,8 @@ export default function Kiosk() {
   const [cameraReady, setCameraReady] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [scannerPosition, setScannerPosition] = useState<ScannerPosition>('left');
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -145,41 +149,118 @@ export default function Kiosk() {
   };
 
   return (
-    <div className={styles.root}>
+    <div className={`${styles.root} ${styles[`position${scannerPosition.charAt(0).toUpperCase() + scannerPosition.slice(1)}`]}`}>
       <div className={styles.header}>
         <h1 className={styles.title}>Swimming Pass Scanner</h1>
         <p className={styles.subtitle}>Scan your QR code to check in</p>
       </div>
 
-      <div className={styles.cameraContainer}>
-        <div className={styles.cameraWrap}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
-          />
-          
-          <div className={styles.scanBox} />
-          
-          <div className={`${styles.statusIndicator} ${isOnline ? styles.online : styles.offline}`}>
-            <div className={`${styles.statusDot} ${!isOnline ? styles.offline : ''}`} />
-            {isOnline ? 'Online' : 'Offline'}
+      <div className={styles.mainContent}>
+        <div className={styles.scannerSection}>
+          <div className={styles.cameraContainer}>
+            <div className={styles.cameraWrap}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+              />
+              
+              <div className={styles.scanBox} />
+              
+              <div className={`${styles.statusIndicator} ${isOnline ? styles.online : styles.offline}`}>
+                <div className={`${styles.statusDot} ${!isOnline ? styles.offline : ''}`} />
+                {isOnline ? 'Online' : 'Offline'}
+              </div>
+              
+              <div className={styles.controls}>
+                <button 
+                  onClick={switchCamera}
+                  className={styles.switchButton}
+                  title="Switch camera"
+                >
+                  🔄
+                </button>
+                <button 
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={styles.settingsButton}
+                  title="Scanner position settings"
+                >
+                  ⚙️
+                </button>
+              </div>
+              
+              <div className={styles.prompt}>
+                {cameraReady ? 'Position QR code in the frame' : 'Starting camera...'}
+              </div>
+            </div>
           </div>
-          
-          <div className={styles.controls}>
+        </div>
+
+        <div className={styles.contentSection}>
+          {showSettings && (
+            <div className={styles.settingsPanel}>
+              <h3 className={styles.settingsTitle}>Scanner Position</h3>
+              <div className={styles.positionButtons}>
+                <button
+                  onClick={() => setScannerPosition('left')}
+                  className={`${styles.positionButton} ${scannerPosition === 'left' ? styles.active : ''}`}
+                >
+                  <span className={styles.positionIcon}>⬅️</span>
+                  Left
+                </button>
+                <button
+                  onClick={() => setScannerPosition('right')}
+                  className={`${styles.positionButton} ${scannerPosition === 'right' ? styles.active : ''}`}
+                >
+                  <span className={styles.positionIcon}>➡️</span>
+                  Right
+                </button>
+                <button
+                  onClick={() => setScannerPosition('top')}
+                  className={`${styles.positionButton} ${scannerPosition === 'top' ? styles.active : ''}`}
+                >
+                  <span className={styles.positionIcon}>⬆️</span>
+                  Top
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showLogs && (
+            <div className={styles.history}>
+              <h3 className={styles.historyTitle}>Recent Activity</h3>
+              <ul className={styles.historyList}>
+                {logs.map((log) => (
+                  <li key={log.id} className={styles.historyItem}>
+                    <div className={styles.historyText}>
+                      <span className={`${styles.logType} ${styles[log.type]}`}>
+                        {log.type === 'success' ? '✅' : log.type === 'error' ? '❌' : 'ℹ️'}
+                      </span>
+                      {log.message}
+                    </div>
+                    <div className={styles.historyTime}>
+                      {formatTime(log.timestamp)}
+                    </div>
+                  </li>
+                ))}
+                {logs.length === 0 && (
+                  <li className={styles.historyItem}>
+                    <div className={styles.historyText}>No activity yet</div>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          <div className={styles.bottomPanel}>
             <button 
-              onClick={switchCamera}
-              className={styles.switchButton}
-              title="Switch camera"
+              onClick={() => setShowLogs(!showLogs)}
+              className={styles.logToggle}
             >
-              🔄
+              {showLogs ? 'Hide' : 'Show'} Activity ({logs.length})
             </button>
-          </div>
-          
-          <div className={styles.prompt}>
-            {cameraReady ? 'Position QR code in the frame' : 'Starting camera...'}
           </div>
         </div>
       </div>
@@ -193,41 +274,6 @@ export default function Kiosk() {
       )}
 
       {toast && <Toast kind={toast.kind} message={toast.message} />}
-
-      <div className={styles.bottomPanel}>
-        <button 
-          onClick={() => setShowLogs(!showLogs)}
-          className={styles.logToggle}
-        >
-          {showLogs ? 'Hide' : 'Show'} Activity ({logs.length})
-        </button>
-      </div>
-
-      {showLogs && (
-        <div className={styles.history}>
-          <h3 className={styles.historyTitle}>Recent Activity</h3>
-          <ul className={styles.historyList}>
-            {logs.map((log) => (
-              <li key={log.id} className={styles.historyItem}>
-                <div className={styles.historyText}>
-                  <span className={`${styles.logType} ${styles[log.type]}`}>
-                    {log.type === 'success' ? '✅' : log.type === 'error' ? '❌' : 'ℹ️'}
-                  </span>
-                  {log.message}
-                </div>
-                <div className={styles.historyTime}>
-                  {formatTime(log.timestamp)}
-                </div>
-              </li>
-            ))}
-            {logs.length === 0 && (
-              <li className={styles.historyItem}>
-                <div className={styles.historyText}>No activity yet</div>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
