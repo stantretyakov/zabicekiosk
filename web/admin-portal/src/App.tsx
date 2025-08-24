@@ -12,15 +12,18 @@ import Layout from './components/Layout';
 import { onAuthStateChanged, logout } from './lib/auth';
 
 export default function App() {
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // В dev‑режиме (vite) не требуем авторизации
+  const devMode = import.meta.env.DEV;
+  const [user, setUser] = useState<any>(devMode ? {} : null);
+  const [loading, setLoading] = useState(!devMode);
 
   useEffect(() => {
+    if (devMode) return;
     return onAuthStateChanged(u => {
       setUser(u);
       setLoading(false);
     });
-  }, []);
+  }, [devMode]);
 
   if (loading) return <div style={{padding:16,color:'#888'}}>Loading…</div>;
 
@@ -28,7 +31,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-        <Route element={user ? <Layout onLogout={logout} /> : <Navigate to="/login" replace />}> 
+        <Route element={user ? <Layout onLogout={devMode ? undefined : logout} /> : <Navigate to="/login" replace />}> 
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
           <Route path="/passes" element={<Passes />} />
