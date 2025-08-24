@@ -123,12 +123,3 @@ export default function Layout({ onLogout }: Props) {
     </div>
   );
 }
-          </button>
-        )}
-      </aside>
-      <main className={styles.main}>
-        <Outlet />
-      </main>
-    </div>
-  );
-}
