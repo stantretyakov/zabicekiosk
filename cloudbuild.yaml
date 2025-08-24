@@ -67,7 +67,7 @@ steps:
     args:
       - -c
       - |
-        gcloud secrets versions access latest --secret=zabicekiosk_firebase_api_key > /workspace/firebase_api_key.txt
+        gcloud secrets versions access projects/120039745928/secrets/zabicekiosk_firebase_api_key/versions/1 > /workspace/firebase_api_key.txt
 
   - id: build-zabice-admin-web-build
     name: node:20
