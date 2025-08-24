@@ -70,6 +70,15 @@ export default function ClientForm({
     loadClientToken(clientId);
   }, [mode, initial?.id]);
 
+  // Generate ticket when values change (for immediate preview)
+  useEffect(() => {
+    if (mode === 'edit' && passUrl && values.parentName && values.childName) {
+      setTimeout(() => {
+        generateTicketCard(passUrl, values.parentName, values.childName);
+      }, 100);
+    }
+  }, [passUrl, values.parentName, values.childName, mode]);
+
   const loadClientPasses = async (clientId: string) => {
     try {
       setLoadingPasses(true);
@@ -137,8 +146,8 @@ export default function ClientForm({
     if (!ctx) return;
 
     // Set canvas size for high quality
-    canvas.width = 800;
-    canvas.height = 500;
+    canvas.width = 900;
+    canvas.height = 600;
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -158,82 +167,83 @@ export default function ClientForm({
 
     // Header section
     ctx.fillStyle = '#2BE090';
-    ctx.fillRect(0, 0, canvas.width, 80);
+    ctx.fillRect(0, 0, canvas.width, 90);
 
     // Business logo/icon
     ctx.fillStyle = '#0F1115';
     ctx.font = 'bold 32px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('🏊‍♀️', 30, 55);
+    ctx.fillText('🏊‍♀️', 40, 60);
 
     // Business name
     ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 24px Inter, sans-serif';
-    ctx.fillText('Swimming Academy', 90, 40);
+    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.fillText('Swimming Academy', 100, 45);
     
-    ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('Professional Swimming Lessons', 90, 65);
+    ctx.font = '18px Inter, sans-serif';
+    ctx.fillText('Professional Swimming Lessons', 100, 70);
 
     // Client information
     ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.font = 'bold 32px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Swimming Pass', 30, 130);
+    ctx.fillText('Swimming Pass', 40, 140);
+
+    ctx.font = 'bold 24px Inter, sans-serif';
+    ctx.fillStyle = '#2BE090';
+    ctx.fillText(`Parent: ${parentName}`, 40, 180);
 
     ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillStyle = '#2BE090';
-    ctx.fillText(`Parent: ${parentName}`, 30, 170);
-
-    ctx.font = 'bold 20px Inter, sans-serif';
     ctx.fillStyle = '#4AD6FF';
-    ctx.fillText(`Child: ${childName}`, 30, 200);
+    ctx.fillText(`Child: ${childName}`, 40, 210);
 
     // Pass type indicator
     ctx.fillStyle = '#2BE090';
-    ctx.fillRect(30, 220, 200, 2);
+    ctx.fillRect(40, 240, 250, 3);
     
     ctx.fillStyle = '#EAEFF5';
-    ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('Swimming Pass Access', 30, 245);
+    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.fillText('Swimming Pass Access', 40, 270);
+    
     // Business information
     ctx.fillStyle = '#9AA5B1';
-    ctx.font = '14px Inter, sans-serif';
-    ctx.fillText('📍 Belgrade, Serbia', 30, 240);
-    ctx.fillText('📞 +381 60 123 4567', 30, 265);
-    ctx.fillText('📧 info@swimming-academy.rs', 30, 290);
-    ctx.fillText('💬 @Tretiakovaanny', 30, 315);
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillText('📍 Belgrade, Serbia', 40, 310);
+    ctx.fillText('📞 +381 60 123 4567', 40, 335);
+    ctx.fillText('📧 info@swimming-academy.rs', 40, 360);
+    ctx.fillText('💬 @Tretiakovaanny', 40, 385);
 
     // Instructions
     ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 16px Inter, sans-serif';
-    ctx.fillText('How to use:', 30, 350);
+    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.fillText('How to use:', 40, 430);
     
     ctx.fillStyle = '#9AA5B1';
-    ctx.font = '14px Inter, sans-serif';
-    ctx.fillText('1. Scan QR code or visit the link', 30, 375);
-    ctx.fillText('2. Show digital pass at the facility', 30, 395);
-    ctx.fillText('3. Scan at kiosk to check in for sessions', 30, 415);
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillText('1. Scan QR code or visit the link', 40, 455);
+    ctx.fillText('2. Show digital pass at the facility', 40, 480);
+    ctx.fillText('3. Scan at kiosk to check in for sessions', 40, 505);
 
     // QR Code area
-    const qrSize = 180;
-    const qrX = canvas.width - qrSize - 40;
-    const qrY = 120;
+    const qrSize = 200;
+    const qrX = canvas.width - qrSize - 50;
+    const qrY = 140;
 
     // QR background
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+    ctx.fillRect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30);
     ctx.strokeStyle = '#2BE090';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30);
 
     // QR code placeholder with text
     ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.font = 'bold 18px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('QR CODE', qrX + qrSize/2, qrY + qrSize/2 - 20);
-    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText('QR CODE', qrX + qrSize/2, qrY + qrSize/2 - 25);
+    ctx.font = '14px Inter, sans-serif';
     ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize/2);
-    ctx.fillText(url.slice(-20), qrX + qrSize/2, qrY + qrSize/2 + 20);
+    ctx.fillText(url.slice(-20), qrX + qrSize/2, qrY + qrSize/2 + 25);
     
     // Generate and draw actual QR code
     setTimeout(() => {
@@ -285,21 +295,21 @@ export default function ClientForm({
 
     // QR label
     ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.font = 'bold 16px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize + 25);
+    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize + 35);
 
     // Footer
     ctx.fillStyle = '#2BE090';
-    ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+    ctx.fillRect(0, canvas.height - 70, canvas.width, 70);
     
     ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.font = 'bold 18px Inter, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Keep this pass safe • Valid for swimming sessions', canvas.width/2, canvas.height - 35);
+    ctx.fillText('Keep this pass safe • Valid for swimming sessions', canvas.width/2, canvas.height - 40);
     
-    ctx.font = '12px Inter, sans-serif';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, canvas.width/2, canvas.height - 15);
+    ctx.font = '14px Inter, sans-serif';
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, canvas.width/2, canvas.height - 20);
   };
   const copyToClipboard = async (text: string) => {
     try {
