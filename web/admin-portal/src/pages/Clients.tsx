@@ -1,226 +1,236 @@
-* { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-a { color: inherit; }
-::selection { background: rgba(75, 222, 160, .25); }
+import React, { useState, useEffect } from 'react';
+import { getClients, createClient, updateClient, deleteClient } from '../lib/api';
+import { Client } from '../types';
+import DataTable from '../components/DataTable';
+import ClientForm from '../components/ClientForm';
 
-/* Enhanced global styles for better UX */
-.toolbar {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-}
+export default function Clients() {
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'parent' | 'child'>('all');
+  const [showForm, setShowForm] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-.toolbar input,
-.toolbar select {
-  background: var(--panel);
-  color: var(--text);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  transition: all 0.3s ease;
-  min-width: 120px;
-}
+  useEffect(() => {
+    loadClients();
+  }, []);
 
-.toolbar input:focus,
-.toolbar select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
-  transform: translateY(-1px);
-}
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      const data = await getClients();
+      setClients(data);
+    } catch (err) {
+      setError('Failed to load clients');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-.toolbar input::placeholder {
-  color: var(--muted);
-  font-style: italic;
-}
+  const handleCreateClient = async (clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      await createClient(clientData);
+      await loadClients();
+      setShowForm(false);
+    } catch (err) {
+      setError('Failed to create client');
+      console.error(err);
+    }
+  };
 
-.toolbar button.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  position: relative;
-  overflow: hidden;
-}
+  const handleUpdateClient = async (id: string, clientData: Partial<Client>) => {
+    try {
+      await updateClient(id, clientData);
+      await loadClients();
+      setEditingClient(null);
+      setShowForm(false);
+    } catch (err) {
+      setError('Failed to update client');
+      console.error(err);
+    }
+  };
 
-.toolbar button.primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this client?')) return;
+    
+    try {
+      await deleteClient(id);
+      await loadClients();
+    } catch (err) {
+      setError('Failed to delete client');
+      console.error(err);
+    }
+  };
 
-.toolbar button.primary:hover::before {
-  left: 100%;
-}
+  const filteredClients = clients.filter(client => {
+    const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         client.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === 'all' || client.type === typeFilter;
+    return matchesSearch && matchesType;
+  });
 
-.toolbar button.primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
-}
+  const totalPages = Math.ceil(filteredClients.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedClients = filteredClients.slice(startIndex, startIndex + itemsPerPage);
 
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      render: (client: Client) => (
+        <div className="flex items-center gap-2">
+          <span className="text-lg">
+            {client.type === 'parent' ? '👨‍👩‍👧‍👦' : '🧒'}
+          </span>
+          <div>
+            <div className="font-medium">{client.name}</div>
+            <div className="text-sm text-gray-500">{client.email}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      render: (client: Client) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          client.type === 'parent' 
+            ? 'bg-blue-100 text-blue-800' 
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {client.type === 'parent' ? 'Parent' : 'Child'}
+        </span>
+      )
+    },
+    {
+      key: 'phone',
+      label: 'Phone',
+      render: (client: Client) => client.phone || '-'
+    },
+    {
+      key: 'createdAt',
+      label: 'Created',
+      render: (client: Client) => new Date(client.createdAt).toLocaleDateString()
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (client: Client) => (
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setEditingClient(client);
+              setShowForm(true);
+            }}
+            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteClient(client.id)}
+            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      )
+    }
+  ];
 
-.pagination button {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: var(--text);
-  border: none;
-  border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
-  font-family: var(--font);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 100px;
-}
-
-.pagination button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
-}
-
-.pagination button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: var(--muted);
-  transform: none;
-  box-shadow: none;
-}
-
-.error {
-  background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-  border: 1px solid var(--error);
-  color: var(--error);
-  padding: 1rem 1.5rem;
-  border-radius: var(--radius);
-  margin: 1rem 0;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: var(--shadow);
-}
-
-.error::before {
-  content: "⚠️";
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-/* Modal overlay improvements */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  padding: 1rem;
-  animation: modalBackdropEnter 0.3s ease-out;
-}
-
-@keyframes modalBackdropEnter {
-  from {
-    opacity: 0;
-    backdrop-filter: blur(0px);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading clients...</div>
+      </div>
+    );
   }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(8px);
-  }
-}
 
-.modal-body {
-  background: linear-gradient(135deg, var(--card), var(--panel));
-  border-radius: 16px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: modalEnter 0.3s ease-out;
-  border: 1px solid rgba(43, 224, 144, 0.2);
-  padding: 2rem;
-}
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Clients</h1>
+        <button
+          onClick={() => {
+            setEditingClient(null);
+            setShowForm(true);
+          }}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+        >
+          Add Client
+        </button>
+      </div>
 
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
+      {error && (
+        <div className="error">
+          {error}
+        </div>
+      )}
 
-/* Responsive improvements */
-@media (max-width: 768px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .toolbar input,
-  .toolbar select,
-  .toolbar button {
-    width: 100%;
-    min-width: auto;
-  }
-  
-  .pagination {
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-  }
-  
-  .pagination button {
-    width: 100%;
-  }
+      <div className="toolbar">
+        <input
+          type="text"
+          placeholder="Search clients..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as 'all' | 'parent' | 'child')}
+        >
+          <option value="all">All Types</option>
+          <option value="parent">Parents</option>
+          <option value="child">Children</option>
+        </select>
+      </div>
+
+      <DataTable
+        data={paginatedClients}
+        columns={columns}
+        emptyMessage="No clients found"
+      />
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
+
+      {showForm && (
+        <div className="modal">
+          <div className="modal-body">
+            <ClientForm
+              client={editingClient}
+              onSubmit={editingClient 
+                ? (data) => handleUpdateClient(editingClient.id, data)
+                : handleCreateClient
+              }
+              onCancel={() => {
+                setShowForm(false);
+                setEditingClient(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
