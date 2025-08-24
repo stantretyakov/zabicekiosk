@@ -229,6 +229,30 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
         </p>
       </div>
 
+      {/* Contact Section */}
+      <div className={styles.contactSection}>
+        <h3 className={styles.contactTitle}>
+          <span className={styles.contactIcon}>💬</span>
+          Need Help?
+        </h3>
+        <p className={styles.contactDescription}>
+          Have questions about your pass or need assistance?
+        </p>
+        <a
+          href="https://t.me/Tretiakovaanny"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.telegramButton}
+        >
+          <span className={styles.telegramIcon}>📱</span>
+          <span className={styles.telegramText}>
+            <span className={styles.telegramLabel}>Contact Admin</span>
+            <span className={styles.telegramHandle}>@Tretiakovaanny</span>
+          </span>
+          <span className={styles.telegramArrow}>→</span>
+        </a>
+      </div>
+
       <div className={styles.footer}>
         <p className={styles.footerText}>
           Swimming Pass • Valid until {formatDate(data.expiresAt)}
