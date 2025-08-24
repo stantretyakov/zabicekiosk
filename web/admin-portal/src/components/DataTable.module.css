@@ -1,5 +1,189 @@
-.table{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
-.table th{background:var(--panel-2);text-align:left;padding:0.5rem;color:var(--text);}
-.table td{padding:0.5rem;}
-.table tbody tr:nth-child(odd){background:var(--panel-2);}
-.table tbody tr:nth-child(even){background:var(--panel);}
+.container {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.headerSlot {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  max-height: 70vh;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  color: var(--text);
+  font-family: var(--font);
+  background: var(--card);
+}
+
+.header {
+  background: linear-gradient(135deg, var(--panel-2), var(--sidebar));
+  text-align: left;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 2px solid rgba(43, 224, 144, 0.2);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.75rem;
+}
+
+.row {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.row:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.row:nth-child(even) {
+  background: var(--card);
+}
+
+.row:hover {
+  background: linear-gradient(135deg, rgba(43, 224, 144, 0.05), rgba(74, 214, 255, 0.05));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.cell {
+  padding: 1rem 1.5rem;
+  vertical-align: middle;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.cell:last-child {
+  border-right: none;
+}
+
+.emptyCell {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  border-bottom: none;
+  background: linear-gradient(135deg, var(--panel), var(--panel-2));
+}
+
+.emptyCell::before {
+  content: "📋";
+  display: block;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+}
+
+.skeletonRow {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.skeleton {
+  height: 1rem;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(43, 224, 144, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 6px;
+  margin: 0.25rem 0;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+}
+
+.paginationButton {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.paginationButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.3);
+}
+
+.paginationButton:focus {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--muted);
+  transform: none;
+  box-shadow: none;
+}
+
+.paginationButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .headerSlot {
+    padding: 1rem;
+  }
+  
+  .header,
+  .cell {
+    padding: 0.75rem 1rem;
+  }
+  
+  .table {
+    font-size: 0.8rem;
+  }
+  
+  .pagination {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .paginationButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

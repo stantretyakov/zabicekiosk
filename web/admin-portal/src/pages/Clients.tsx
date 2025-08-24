@@ -127,7 +127,18 @@ export default function Clients() {
       {loading ? (
         <p>Loading...</p>
       ) : items.length === 0 ? (
-        <p>No clients yet</p>
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '3rem', 
+          color: 'var(--muted)',
+          background: 'var(--card)',
+          borderRadius: 'var(--radius)',
+          boxShadow: 'var(--shadow)'
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem', opacity: 0.5 }}>👥</div>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text)' }}>No clients yet</h3>
+          <p style={{ margin: 0, fontSize: '0.875rem' }}>Start by adding your first client</p>
+        </div>
       ) : (
         <DataTable>
           <thead>
@@ -147,16 +158,117 @@ export default function Clients() {
               <tr key={c.id}>
                 <td>{c.parentName}</td>
                 <td>{c.childName}</td>
-                <td>{c.phone}</td>
-                <td>{c.telegram && '@' + c.telegram}</td>
-                <td>{c.instagram}</td>
-                <td>{String(c.active)}</td>
-                <td>{c.createdAt ? new Date(c.createdAt).toLocaleString() : ''}</td>
                 <td>
-                  <button onClick={() => openEdit(c)}>Edit</button>
-                  {c.active && (
-                    <button onClick={() => setConfirm({ id: c.id })}>Archive</button>
+                  {c.phone ? (
+                    <a href={`tel:${c.phone}`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                      {c.phone}
+                    </a>
+                  ) : (
+                    <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>
                   )}
+                </td>
+                <td>
+                  {c.telegram ? (
+                    <a 
+                      href={`https://t.me/${c.telegram}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent-2)', textDecoration: 'none' }}
+                    >
+                      @{c.telegram}
+                    </a>
+                  ) : (
+                    <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>
+                  )}
+                </td>
+                <td>
+                  {c.instagram ? (
+                    <a 
+                      href={c.instagram} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                    >
+                      Instagram
+                    </a>
+                  ) : (
+                    <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>—</span>
+                  )}
+                </td>
+                <td>
+                  <span style={{
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '12px',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    background: c.active ? 'var(--ok)' : 'var(--muted)',
+                    color: c.active ? 'var(--bg)' : 'var(--text)'
+                  }}>
+                    {c.active ? 'Active' : 'Archived'}
+                  </span>
+                </td>
+                <td style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>
+                  {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      onClick={() => openEdit(c)}
+                      style={{
+                        background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+                        color: 'var(--text)',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(43, 224, 144, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      Edit
+                    </button>
+                  {c.active && (
+                    <button 
+                      onClick={() => setConfirm({ id: c.id })}
+                      style={{
+                        background: 'var(--error)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      Archive
+                    </button>
+                  )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -164,10 +276,44 @@ export default function Clients() {
         </DataTable>
       )}
       <div className="pagination">
-        <button onClick={gotoPrev} disabled={prevTokens.length === 0}>
+        <button 
+          onClick={gotoPrev} 
+          disabled={prevTokens.length === 0}
+          style={{
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+            color: 'var(--text)',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: 'var(--radius)',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: prevTokens.length === 0 ? 'not-allowed' : 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            opacity: prevTokens.length === 0 ? 0.4 : 1,
+            transition: 'all 0.2s ease'
+          }}
+        >
           Prev
         </button>
-        <button onClick={gotoNext} disabled={!nextPageToken}>
+        <button 
+          onClick={gotoNext} 
+          disabled={!nextPageToken}
+          style={{
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+            color: 'var(--text)',
+            border: 'none',
+            padding: '0.75rem 1.5rem',
+            borderRadius: 'var(--radius)',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: !nextPageToken ? 'not-allowed' : 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+            opacity: !nextPageToken ? 0.4 : 1,
+            transition: 'all 0.2s ease'
+          }}
+        >
           Next
         </button>
       </div>
