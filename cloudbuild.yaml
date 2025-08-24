@@ -98,7 +98,7 @@ options:
 
 availableSecrets:
   secretManager:
-    - versionName: projects/120039745928/secrets/zabicekiosk_firebase_api_key/versions/latest
+    - versionName: projects/120039745928/secrets/zabicekiosk_firebase_api_key/versions/1
       env: VITE_FIREBASE_API_KEY
 
 substitutions:
