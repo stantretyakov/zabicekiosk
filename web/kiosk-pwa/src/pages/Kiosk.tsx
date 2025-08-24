@@ -153,12 +153,12 @@ export default function Kiosk() {
 
       <div className={styles.cameraContainer}>
         <div className={styles.cameraWrap}>
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
             muted
-            className={facingMode === 'user' ? styles.mirrored : ''}
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
           
           <div className={styles.scanBox} />
