@@ -46,6 +46,7 @@ export default function ClientForm({
   const [loadingToken, setLoadingToken] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
+  const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // Reset form when initial values change
   useEffect(() => {
@@ -117,6 +118,8 @@ export default function ClientForm({
           qrInstance.current.append(qrRef.current);
         }
       } catch (err) {
+        // Generate ticket-style card
+        generateTicketCard(url, values.parentName, values.childName);
         console.error('Failed to load client token:', err);
       } finally {
         setLoadingToken(false);
@@ -126,6 +129,149 @@ export default function ClientForm({
     loadToken();
   };
 
+  const generateTicketCard = async (url: string, parentName: string, childName: string) => {
+    if (!ticketCanvasRef.current) return;
+
+    const canvas = ticketCanvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set canvas size for high quality
+    canvas.width = 800;
+    canvas.height = 500;
+
+    // Background gradient
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#0F1115');
+    gradient.addColorStop(0.5, '#12161C');
+    gradient.addColorStop(1, '#171E27');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Accent border
+    ctx.strokeStyle = '#2BE090';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+    // Header section
+    ctx.fillStyle = '#2BE090';
+    ctx.fillRect(0, 0, canvas.width, 80);
+
+    // Business logo/icon
+    ctx.fillStyle = '#0F1115';
+    ctx.font = 'bold 32px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🏊‍♀️', 30, 50);
+
+    // Business name
+    ctx.fillStyle = '#0F1115';
+    ctx.font = 'bold 24px Inter, sans-serif';
+    ctx.fillText('Swimming Academy', 80, 35);
+    
+    ctx.font = '16px Inter, sans-serif';
+    ctx.fillText('Professional Swimming Lessons', 80, 60);
+
+    // Client information
+    ctx.fillStyle = '#EAEFF5';
+    ctx.font = 'bold 28px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Swimming Pass', 30, 130);
+
+    ctx.font = 'bold 22px Inter, sans-serif';
+    ctx.fillStyle = '#2BE090';
+    ctx.fillText(`Parent: ${parentName}`, 30, 170);
+
+    ctx.font = 'bold 20px Inter, sans-serif';
+    ctx.fillStyle = '#4AD6FF';
+    ctx.fillText(`Child: ${childName}`, 30, 200);
+
+    // Business information
+    ctx.fillStyle = '#9AA5B1';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.fillText('📍 Belgrade, Serbia', 30, 240);
+    ctx.fillText('📞 +381 60 123 4567', 30, 265);
+    ctx.fillText('📧 info@swimming-academy.rs', 30, 290);
+    ctx.fillText('💬 @Tretiakovaanny', 30, 315);
+
+    // Instructions
+    ctx.fillStyle = '#EAEFF5';
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.fillText('How to use:', 30, 350);
+    
+    ctx.fillStyle = '#9AA5B1';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.fillText('1. Scan QR code or visit link', 30, 375);
+    ctx.fillText('2. Show digital pass at facility', 30, 395);
+    ctx.fillText('3. Scan at kiosk to check in', 30, 415);
+
+    // QR Code area
+    const qrSize = 180;
+    const qrX = canvas.width - qrSize - 40;
+    const qrY = 120;
+
+    // QR background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+    ctx.strokeStyle = '#2BE090';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
+
+    // Generate QR code and draw it on canvas
+    try {
+      const qrCodeStyling = new QRCodeStyling({
+        width: qrSize,
+        height: qrSize,
+        data: url,
+        dotsOptions: {
+          color: '#0F1115',
+          type: 'rounded',
+        },
+        backgroundOptions: {
+          color: '#FFFFFF',
+        },
+        cornersSquareOptions: {
+          color: '#2BE090',
+          type: 'extra-rounded',
+        },
+        cornersDotOptions: {
+          color: '#2BE090',
+          type: 'dot',
+        },
+      });
+
+      // Create temporary canvas for QR code
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = qrSize;
+      tempCanvas.height = qrSize;
+      
+      qrCodeStyling.append(tempCanvas);
+      
+      // Wait for QR code to render
+      setTimeout(() => {
+        ctx.drawImage(tempCanvas, qrX, qrY);
+      }, 100);
+    } catch (err) {
+      console.error('Failed to generate QR for ticket:', err);
+    }
+
+    // QR label
+    ctx.fillStyle = '#EAEFF5';
+    ctx.font = 'bold 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize + 25);
+
+    // Footer
+    ctx.fillStyle = '#2BE090';
+    ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+    
+    ctx.fillStyle = '#0F1115';
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Keep this pass safe • Valid for swimming sessions', canvas.width/2, canvas.height - 35);
+    
+    ctx.font = '12px Inter, sans-serif';
+    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, canvas.width/2, canvas.height - 15);
+  };
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -170,6 +316,43 @@ export default function ClientForm({
     }
   };
 
+  const downloadTicket = () => {
+    if (!ticketCanvasRef.current) return;
+    
+    const link = document.createElement('a');
+    link.download = `${values.childName.replace(/\s+/g, '_')}_swimming_ticket.png`;
+    link.href = ticketCanvasRef.current.toDataURL('image/png', 1.0);
+    link.click();
+  };
+
+  const shareTicketImage = async () => {
+    if (!ticketCanvasRef.current) return;
+    
+    try {
+      // Convert canvas to blob
+      ticketCanvasRef.current.toBlob(async (blob) => {
+        if (!blob) return;
+        
+        const file = new File([blob], `${values.childName.replace(/\s+/g, '_')}_swimming_ticket.png`, {
+          type: 'image/png'
+        });
+        
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: `Swimming Pass - ${values.childName}`,
+            text: `Swimming pass ticket for ${values.childName}`,
+            files: [file]
+          });
+        } else {
+          // Fallback to download
+          downloadTicket();
+        }
+      }, 'image/png', 1.0);
+    } catch (err) {
+      console.error('Failed to share ticket image:', err);
+      downloadTicket();
+    }
+  };
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case 'parentName':
@@ -455,6 +638,62 @@ export default function ClientForm({
                 )}
               </div>
 
+              <div className={styles.ticketSection}>
+                <h3 className={styles.sectionTitle}>Swimming Pass Ticket</h3>
+                <p className={styles.sectionDescription}>
+                  Professional ticket with client info, QR code, and business details
+                </p>
+                
+                {loadingToken ? (
+                  <div className={styles.loadingTicket}>
+                    <div className={styles.ticketSpinner} />
+                    <p>Generating ticket...</p>
+                  </div>
+                ) : passUrl ? (
+                  <div className={styles.ticketContainer}>
+                    <div className={styles.ticketPreview}>
+                      <canvas
+                        ref={ticketCanvasRef}
+                        className={styles.ticketCanvas}
+                        width="800"
+                        height="500"
+                      />
+                      <div className={styles.ticketOverlay}>
+                        <span className={styles.ticketLabel}>Swimming Pass Ticket</span>
+                      </div>
+                    </div>
+                    
+                    <div className={styles.ticketActions}>
+                      <button
+                        type="button"
+                        onClick={shareTicketImage}
+                        className={styles.shareTicketButton}
+                      >
+                        <span className={styles.shareIcon}>📤</span>
+                        <span className={styles.shareText}>
+                          <span className={styles.shareLabel}>Share Ticket</span>
+                          <span className={styles.shareSubtext}>Send as image</span>
+                        </span>
+                        <span className={styles.shareArrow}>→</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={downloadTicket}
+                        className={styles.downloadTicketButton}
+                      >
+                        <span className={styles.downloadIcon}>🖨️</span>
+                        Print Ticket
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.ticketError}>
+                    <span className={styles.errorIcon}>⚠️</span>
+                    Failed to generate ticket
+                  </div>
+                )}
+              </div>
               <div className={styles.passesSection}>
                 <h3 className={styles.sectionTitle}>Active Passes</h3>
                 <p className={styles.sectionDescription}>
