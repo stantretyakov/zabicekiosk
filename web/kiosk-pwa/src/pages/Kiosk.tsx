@@ -66,7 +66,8 @@ export default function Kiosk() {
       console.error(err);
       const msg = 'Ошибка соединения';
       setToast({ kind: 'error', message: msg });
-      pushHistory(msg);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      pushHistory(`${msg}: ${errMsg}`);
       setSuccessInfo(null);
       beep(false);
     } finally {
