@@ -263,38 +263,97 @@ export async function getStats(): Promise<Stats> {
   if (import.meta.env.DEV) {
     await new Promise(resolve => setTimeout(resolve, 400));
     
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const totalClients = mockClients.length;
     const activeClients = mockClients.filter(c => c.active).length;
-    const activePasses = mockPasses.filter(p => p.remaining > 0).length;
-    const redeems7d = mockRedeems.filter(r => 
+    const clientRetention = totalClients ? (activeClients / totalClients) * 100 : 0;
+
+    const activePassDocs = mockPasses.filter(p => p.remaining > 0);
+    const activePasses = activePassDocs.length;
+
+    const passTypeCounts: Record<string, number> = {};
+    const upcomingExpirations = { next7Days: 0, next14Days: 0, next30Days: 0 };
+    for (const p of activePassDocs) {
+      const label = p.planSize === 1 ? 'Single' : `${p.planSize}-Session`;
+      passTypeCounts[label] = (passTypeCounts[label] || 0) + 1;
+      const expiryDate = new Date(p.purchasedAt);
+      expiryDate.setDate(expiryDate.getDate() + 30);
+      const days = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (days <= 7) upcomingExpirations.next7Days++;
+      if (days <= 14) upcomingExpirations.next14Days++;
+      if (days <= 30) upcomingExpirations.next30Days++;
+    }
+    const passTypeDistribution = Object.entries(passTypeCounts).map(([type, count]) => ({
+      type,
+      count,
+      percentage: activePasses ? Math.round((count / activePasses) * 1000) / 10 : 0,
+    }));
+
+    const redeems7d = mockRedeems.filter(r =>
       new Date(r.ts).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
     ).length;
-    const dropInRevenue = mockRedeems
-      .filter(r => r.kind === 'dropin' && r.priceRSD)
-      .reduce((sum, r) => sum + (r.priceRSD || 0), 0);
-    const expiring14d = mockPasses.filter(p => {
-      const expiryDate = new Date(p.purchasedAt);
-      expiryDate.setDate(expiryDate.getDate() + 30); // Assuming 30-day validity
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-      return daysUntilExpiry <= 14 && daysUntilExpiry > 0;
-    }).length;
-    
+
+    let dropInRevenue = 0;
+    let visitsThisMonth = 0;
+    let visitsLastMonth = 0;
+    const redeemsByDayMap: Record<string, number> = {};
+    const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
+
+    for (const r of mockRedeems) {
+      const ts = new Date(r.ts);
+      if (ts >= sevenDaysAgo) {
+        const key = r.ts.slice(0, 10);
+        redeemsByDayMap[key] = (redeemsByDayMap[key] || 0) + 1;
+      }
+      if (r.kind === 'dropin' && r.priceRSD && ts >= startOfMonth) {
+        dropInRevenue += r.priceRSD;
+      }
+      if (ts >= startOfMonth) {
+        visitsThisMonth++;
+      } else if (ts >= startOfLastMonth && ts <= endOfLastMonth) {
+        visitsLastMonth++;
+      }
+    }
+    const redeemsByDay = Object.keys(redeemsByDayMap)
+      .sort()
+      .map(date => ({ date, count: redeemsByDayMap[date] }));
+
+    const visitStats = {
+      thisMonth: visitsThisMonth,
+      lastMonth: visitsLastMonth,
+      growth: visitsLastMonth
+        ? ((visitsThisMonth - visitsLastMonth) / visitsLastMonth) * 100
+        : 0,
+    };
+
+    const revenueBreakdown = {
+      passes: 0,
+      dropIns: dropInRevenue,
+      total: dropInRevenue,
+    };
+
     const mockStats: Stats = {
       activePasses,
       redeems7d,
       dropInRevenue,
-      expiring14d,
-      redeemsByDay: [
-        { date: '2024-01-01', count: 12 },
-        { date: '2024-01-02', count: 15 },
-        { date: '2024-01-03', count: 18 },
-        { date: '2024-01-04', count: 14 },
-        { date: '2024-01-05', count: 22 },
-        { date: '2024-01-06', count: 19 },
-        { date: '2024-01-07', count: 16 }
-      ],
-      recentRedeems: mockRedeems.slice(0, 5)
+      expiring14d: upcomingExpirations.next14Days,
+      redeemsByDay,
+      recentRedeems: mockRedeems.slice(0, 5),
+      totalClients,
+      activeClients,
+      clientRetention: Number(clientRetention.toFixed(1)),
+      mrr: revenueBreakdown.total,
+      grr: revenueBreakdown.total,
+      visitStats,
+      revenueBreakdown,
+      passTypeDistribution,
+      upcomingExpirations,
     };
-    
+
     return mockStats;
   }
   

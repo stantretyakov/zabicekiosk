@@ -3,34 +3,6 @@ import { getStats } from '../lib/api';
 import type { Stats } from '../types';
 import styles from './Dashboard.module.css';
 
-interface ExtendedStats extends Stats {
-  totalClients: number;
-  activeClients: number;
-  clientRetention: number;
-  mrr: number;
-  grr: number;
-  visitStats: {
-    thisMonth: number;
-    lastMonth: number;
-    growth: number;
-  };
-  revenueBreakdown: {
-    passes: number;
-    dropIns: number;
-    total: number;
-  };
-  passTypeDistribution: {
-    type: string;
-    count: number;
-    percentage: number;
-  }[];
-  upcomingExpirations: {
-    next7Days: number;
-    next14Days: number;
-    next30Days: number;
-  };
-}
-
 interface KpiCardProps {
   title: string;
   value: string | number;
@@ -103,7 +75,7 @@ function DetailModal({ title, isOpen, onClose, children }: DetailModalProps) {
 }
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<ExtendedStats | null>(null);
+  const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -118,7 +90,7 @@ export default function Dashboard() {
       
       // In dev mode, use comprehensive mock data
       if (import.meta.env.DEV) {
-        const mockStats: ExtendedStats = {
+        const mockStats: Stats = {
           activePasses: 127,
           redeems7d: 89,
           dropInRevenue: 45000,
@@ -171,7 +143,7 @@ export default function Dashboard() {
       }
       
       // Production API call
-      const data = await getStats() as ExtendedStats;
+      const data = await getStats();
       setStats(data);
     } catch (e: any) {
       setError(e.message);

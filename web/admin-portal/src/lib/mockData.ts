@@ -1,4 +1,4 @@
-import { Client, PassWithClient, Redeem, Stats } from '../types';
+import { Client, PassWithClient, Redeem } from '../types';
 
 // Mock clients data for development
 export const mockClients: Client[] = [
