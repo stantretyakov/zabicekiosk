@@ -46,4 +46,13 @@ export type Stats = {
   expiring14d: number;
   redeemsByDay: { date: string; count: number }[];
   recentRedeems: Redeem[];
+  totalClients: number;
+  activeClients: number;
+  clientRetention: number;
+  mrr: number;
+  grr: number;
+  visitStats: { thisMonth: number; lastMonth: number; growth: number };
+  revenueBreakdown: { passes: number; dropIns: number; total: number };
+  passTypeDistribution: { type: string; count: number; percentage: number }[];
+  upcomingExpirations: { next7Days: number; next14Days: number; next30Days: number };
 };
