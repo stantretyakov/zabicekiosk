@@ -21,3 +21,43 @@ paths:
       responses:
         '200':
           description: OK
+  /api/v1/content/active:
+    get:
+      summary: Get active promo content
+      responses:
+        '200':
+          description: OK
+  /api/v1/admin/settings:
+    get:
+      summary: Get global settings
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update global settings
+      responses:
+        '200':
+          description: OK
+  /api/v1/admin/content:
+    get:
+      summary: List promo content
+      responses:
+        '200':
+          description: OK
+    post:
+      summary: Create promo content item
+      responses:
+        '200':
+          description: OK
+  /api/v1/admin/content/{id}:
+    patch:
+      summary: Update promo content item
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: OK

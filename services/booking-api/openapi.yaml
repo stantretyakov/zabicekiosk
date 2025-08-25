@@ -15,3 +15,14 @@ paths:
       responses:
         '200':
           description: OK
+  /v1/admin/schedule:
+    get:
+      summary: Get schedule
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update schedule
+      responses:
+        '200':
+          description: OK
