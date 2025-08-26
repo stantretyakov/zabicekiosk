@@ -11,6 +11,7 @@ export async function buildServer() {
   await app.register(import('./routes/public.card.js'), { prefix: '/api/v1' });
   await app.register(import('./routes/public.redeem.js'), { prefix: '/api/v1' });
   await app.register(import('./routes/public.content.js'), { prefix: '/api/v1' });
+  await app.register(import('./routes/public.kiosk.js'), { prefix: '/api/v1' });
 
   const adminClients = (await import('./routes/admin.clients.js')).default;
   const adminPasses = (await import('./routes/admin.passes.js')).default;

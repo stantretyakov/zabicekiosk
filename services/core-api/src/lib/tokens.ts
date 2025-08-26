@@ -5,8 +5,8 @@ import crypto from 'crypto';
  * Tokens are not stored in the database directly – only their HMAC hash.
  */
 export function generateToken(): string {
-  // 16 bytes = 32 hex characters. More than enough for the kiosk use‑case.
-  return crypto.randomBytes(16).toString('hex');
+  // Use 10 random bytes and base64url to produce a shorter token (~16 chars).
+  return crypto.randomBytes(10).toString('base64url');
 }
 
 /**

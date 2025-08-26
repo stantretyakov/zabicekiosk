@@ -31,6 +31,23 @@ const API_BASE_URL = (() => {
   return base.endsWith('/api/v1') ? base : `${base}/api/v1`;
 })();
 
+function getKioskId(): string {
+  let id = localStorage.getItem('kioskId');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('kioskId', id);
+  }
+  return id;
+}
+
+export async function registerKiosk(): Promise<void> {
+  await fetch(`${API_BASE_URL}/kiosks/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kioskId: getKioskId() }),
+  });
+}
+
 export async function redeem(data: {
   token?: string;
   clientId?: string;
@@ -42,7 +59,7 @@ export async function redeem(data: {
       'Content-Type': 'application/json',
       'Idempotency-Key': crypto.randomUUID(),
     },
-    body: JSON.stringify({ ...data, kioskId: 'kiosk-1', ts: new Date().toISOString() }),
+    body: JSON.stringify({ ...data, kioskId: getKioskId(), ts: new Date().toISOString() }),
   });
   return res.json();
 }
