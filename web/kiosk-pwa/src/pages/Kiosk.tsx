@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { scanStream } from '../lib/barcode';
-import { redeem } from '../lib/api';
+import { redeem, registerKiosk } from '../lib/api';
 import beep from '../lib/beep';
 import Toast from '../components/Toast';
 import styles from './Kiosk.module.css';
@@ -40,6 +40,7 @@ export default function Kiosk() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [scannerPosition, setScannerPosition] = useState<ScannerPosition>('left');
   const [showSettings, setShowSettings] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
 
@@ -57,16 +58,32 @@ export default function Kiosk() {
   }, []);
 
   useEffect(() => {
+    registerKiosk().catch(err => console.error('Failed to register kiosk', err));
+  }, []);
+
+  useEffect(() => {
     loadPromoContent();
     // Auto-rotate promo content every 10 seconds
     const interval = setInterval(() => {
-      setCurrentPromoIndex(prev => 
+      setCurrentPromoIndex(prev =>
         promoContent.length > 0 ? (prev + 1) % promoContent.length : 0
       );
     }, 10000);
     
     return () => clearInterval(interval);
   }, [promoContent.length]);
+
+  const handleToggleSettings = () => {
+    if (!isAdmin) {
+      const pin = prompt('Enter admin PIN');
+      if (pin !== import.meta.env.VITE_KIOSK_PIN) {
+        setToast({ kind: 'error', message: 'Invalid PIN' });
+        return;
+      }
+      setIsAdmin(true);
+    }
+    setShowSettings(!showSettings);
+  };
 
   const loadPromoContent = async () => {
     try {
@@ -324,8 +341,8 @@ export default function Kiosk() {
                 >
                   🔄
                 </button>
-                <button 
-                  onClick={() => setShowSettings(!showSettings)}
+                <button
+                  onClick={handleToggleSettings}
                   className={styles.settingsButton}
                   title="Scanner position settings"
                 >

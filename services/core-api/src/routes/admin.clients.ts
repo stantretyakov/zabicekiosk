@@ -199,7 +199,13 @@ export default async function adminClients(app: FastifyInstance) {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const ref = db.collection('clients').doc(id);
     await ref.set(
-      { active: false, archivedAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() },
+      {
+        active: false,
+        archivedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        token: FieldValue.delete(),
+        tokenHash: FieldValue.delete(),
+      },
       { merge: true },
     );
     return { status: 'ok' };

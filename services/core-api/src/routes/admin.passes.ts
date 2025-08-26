@@ -117,9 +117,27 @@ export default async function adminPasses(app: FastifyInstance) {
     { preHandler: requireAdmin },
     async req => {
       const { id } = z.object({ id: z.string() }).parse(req.params);
-      await db.collection('passes').doc(id).update({
-        revoked: true,
-        revokedAt: FieldValue.serverTimestamp(),
+      const passRef = db.collection('passes').doc(id);
+      const passSnap = await passRef.get();
+      if (!passSnap.exists) {
+        const err: any = new Error('Not Found');
+        err.statusCode = 404;
+        throw err;
+      }
+      const pass = passSnap.data() as any;
+      await db.runTransaction(async tx => {
+        tx.update(passRef, {
+          revoked: true,
+          revokedAt: FieldValue.serverTimestamp(),
+        });
+        const revRef = db.collection('redeems').doc();
+        tx.set(revRef, {
+          ts: FieldValue.serverTimestamp(),
+          passId: passRef.id,
+          clientId: pass.clientId,
+          delta: 0,
+          kind: 'revoke',
+        });
       });
       return { status: 'ok' };
     },
