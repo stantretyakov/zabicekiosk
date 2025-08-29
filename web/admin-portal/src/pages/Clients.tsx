@@ -3,6 +3,7 @@ import { listClients, createClient, updateClient, archiveClient } from '../lib/a
 import { Client } from '../types';
 import DataTable from '../components/ui/DataTable';
 import ClientForm from '../components/ui/ClientForm';
+import ClientImport from '../components/ui/ClientImport';
 
 export default function Clients() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -14,6 +15,7 @@ export default function Clients() {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [pageToken, setPageToken] = useState<string | undefined>();
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     loadClients();
@@ -233,28 +235,49 @@ export default function Clients() {
         }}>
           Clients
         </h1>
-        <button
-          onClick={() => {
-            setEditingClient(null);
-            setShowForm(true);
-          }}
-          className="primary"
-          style={{
-            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
-            color: 'var(--text)',
-            border: 'none',
-            borderRadius: 'var(--radius)',
-            padding: '0.75rem 1.5rem',
-            fontFamily: 'var(--font)',
-            fontSize: '0.875rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          Add Client
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button
+            onClick={() => setShowImport(true)}
+            className="primary"
+            style={{
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              padding: '0.75rem 1.5rem',
+              fontFamily: 'var(--font)',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Import
+          </button>
+          <button
+            onClick={() => {
+              setEditingClient(null);
+              setShowForm(true);
+            }}
+            className="primary"
+            style={{
+              background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              padding: '0.75rem 1.5rem',
+              fontFamily: 'var(--font)',
+              fontSize: '0.875rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Add Client
+          </button>
+        </div>
       </div>
 
       <div className="toolbar">
@@ -300,6 +323,13 @@ export default function Clients() {
             setShowForm(false);
             setEditingClient(null);
           }}
+        />
+      )}
+      {showImport && (
+        <ClientImport
+          open={showImport}
+          onClose={() => setShowImport(false)}
+          onImported={() => loadClients()}
         />
       )}
     </div>
