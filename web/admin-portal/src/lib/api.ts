@@ -145,6 +145,46 @@ export async function archiveClient(id: string): Promise<void> {
   await fetchJSON(`/admin/clients/${id}`, { method: 'DELETE' });
 }
 
+export async function importClients(data: any[]): Promise<{ count: number }> {
+  if (import.meta.env.DEV) {
+    const items = Array.isArray(data) ? data : [];
+    items.forEach((c, i) => {
+      mockClients.unshift({
+        id: `client-${Date.now()}-${i}`,
+        parentName: c.parentName || '',
+        childName: c.childName || '',
+        phone: c.phone,
+        telegram: c.telegram,
+        instagram: c.instagram,
+        active: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    });
+    return { count: items.length };
+  }
+
+  return fetchJSON(`/admin/clients/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function importClientsFile(file: File): Promise<{ count: number }> {
+  if (import.meta.env.DEV) {
+    const text = await file.text();
+    const json = JSON.parse(text);
+    return importClients(json);
+  }
+  const form = new FormData();
+  form.append('file', file);
+  return fetchJSON(`/admin/clients/import`, {
+    method: 'POST',
+    body: form,
+  });
+}
+
 export async function createPass(body: {
   clientId: string;
   planSize: number;

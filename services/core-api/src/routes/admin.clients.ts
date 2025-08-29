@@ -54,6 +54,9 @@ export default async function adminClients(app: FastifyInstance) {
         message: 'invalid instagram url',
       }),
   });
+  const importClientSchema = clientSchema.extend({
+    phone: z.string().trim().optional().transform(v => normalizePhone(v)),
+  });
 
   const updateSchema = clientSchema.partial();
 
@@ -149,6 +152,46 @@ export default async function adminClients(app: FastifyInstance) {
       updatedAt: d.updatedAt?.toDate?.().toISOString(),
     };
     return result;
+  });
+
+  app.post('/clients/import', { preHandler: requireAdmin }, async req => {
+    let payload: unknown;
+    if ((req as any).isMultipart && (req as any).isMultipart()) {
+      const file = await (req as any).file();
+      const buf = await file.toBuffer();
+      payload = JSON.parse(buf.toString('utf8'));
+    } else {
+      payload = req.body;
+    }
+
+    if (!Array.isArray(payload)) {
+      const err: any = new Error('invalid payload');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const now = FieldValue.serverTimestamp();
+    const batch = db.batch();
+    for (const item of payload) {
+      const body = importClientSchema.parse(item);
+      const rawToken = generateToken();
+      const ref = db.collection('clients').doc();
+      batch.set(ref, {
+        parentName: body.parentName.trim(),
+        childName: body.childName.trim(),
+        phone: body.phone,
+        telegram: body.telegram,
+        instagram: body.instagram,
+        active: true,
+        fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
+        createdAt: now,
+        updatedAt: now,
+        token: rawToken,
+        tokenHash: hashToken(rawToken),
+      });
+    }
+    await batch.commit();
+    return { count: payload.length };
   });
 
   app.get<{ Params: { id: string } }>('/clients/:id/token', { preHandler: requireAdmin }, async req => {
