@@ -7,6 +7,8 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+// Ignore undefined fields when writing to Firestore
+db.settings({ ignoreUndefinedProperties: true });
 
 // Client data: parentName, childName, and contact info (telegram, phone, or instagram)
 const clients = [
@@ -45,7 +47,14 @@ async function importClients() {
 
   clients.forEach((client) => {
     const docRef = db.collection('clients').doc(); // auto-generated ID
-    batch.set(docRef, client);
+    const preparedClient = {
+      parentName: client.parentName,
+      childName: client.childName,
+      telegram: client.telegram ?? null,
+      phone: client.phone ?? null,
+      instagram: client.instagram ?? null,
+    };
+    batch.set(docRef, preparedClient);
   });
 
   await batch.commit();
