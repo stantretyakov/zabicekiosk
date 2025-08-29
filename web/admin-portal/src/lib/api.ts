@@ -153,9 +153,9 @@ export async function importClients(data: any[]): Promise<{ count: number }> {
         id: `client-${Date.now()}-${i}`,
         parentName: c.parentName || '',
         childName: c.childName || '',
-        phone: c.phone,
-        telegram: c.telegram,
-        instagram: c.instagram,
+        phone: c.phone ?? null,
+        telegram: c.telegram ?? null,
+        instagram: c.instagram ?? null,
         active: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -164,10 +164,17 @@ export async function importClients(data: any[]): Promise<{ count: number }> {
     return { count: items.length };
   }
 
+  const sanitized = data.map(c => ({
+    parentName: c.parentName,
+    childName: c.childName,
+    phone: c.phone ?? null,
+    telegram: c.telegram ?? null,
+    instagram: c.instagram ?? null,
+  }));
   return fetchJSON(`/admin/clients/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify(sanitized),
   });
 }
 
