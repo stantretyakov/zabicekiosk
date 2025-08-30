@@ -8,7 +8,7 @@ import {
   type SettingsResponse,
 } from '../../lib/api';
 import styles from './ClientForm.module.css';
-import type { PassWithClient } from '../../types';
+import type { PassWithClient, Client as ApiClient } from '../../types';
 
 export type Client = {
   id: string;
@@ -858,7 +858,7 @@ export default function ClientForm({
             open={showSellPassForm}
             onClose={() => setShowSellPassForm(false)}
             onSuccess={handleSellPassSuccess}
-            preselectedClientId={initial.id as string}
+            preselectedClient={initial as ApiClient}
           />
         )}
       </div>

@@ -53,13 +53,18 @@ export default function Passes() {
     setError(null);
   };
 
+  const normalize = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
+
   const filteredPasses = passes.filter(pass => {
     if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      pass.client.parentName.toLowerCase().includes(searchLower) ||
-      pass.client.childName.toLowerCase().includes(searchLower)
-    );
+    const searchLower = normalize(searchTerm);
+    const parent = normalize(pass.client?.parentName || '');
+    const child = normalize(pass.client?.childName || '');
+    return parent.includes(searchLower) || child.includes(searchLower);
   });
 
   const formatDate = (dateString?: string) => {
