@@ -23,6 +23,8 @@ interface GeneralSettings {
   businessAddress: string;
   businessPhone: string;
   businessEmail: string;
+  businessTelegram: string;
+  businessInstagram: string;
 }
 
 export default function Settings() {
@@ -49,7 +51,9 @@ export default function Settings() {
     businessName: 'Swimming Academy',
     businessAddress: 'Belgrade, Serbia',
     businessPhone: '+381 60 123 4567',
-    businessEmail: 'info@swimming-academy.rs'
+    businessEmail: 'info@swimming-academy.rs',
+    businessTelegram: '@Tretiakovaanny',
+    businessInstagram: '@swimmingacademy'
   });
 
   useEffect(() => {
@@ -72,6 +76,8 @@ export default function Settings() {
         businessAddress: settings.businessAddress ?? '',
         businessPhone: settings.businessPhone ?? '',
         businessEmail: settings.businessEmail ?? '',
+        businessTelegram: settings.businessTelegram ?? '',
+        businessInstagram: settings.businessInstagram ?? '',
       });
       setLoading(false);
     } catch (err: any) {
@@ -103,6 +109,8 @@ export default function Settings() {
         businessAddress: saved.businessAddress ?? generalSettings.businessAddress,
         businessPhone: saved.businessPhone ?? generalSettings.businessPhone,
         businessEmail: saved.businessEmail ?? generalSettings.businessEmail,
+        businessTelegram: saved.businessTelegram ?? generalSettings.businessTelegram,
+        businessInstagram: saved.businessInstagram ?? generalSettings.businessInstagram,
       });
 
       setSuccess('Settings saved successfully!');
@@ -421,6 +429,34 @@ export default function Settings() {
                   }))}
                   className={styles.input}
                   placeholder="info@business.com"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Telegram</label>
+                <input
+                  type="text"
+                  value={generalSettings.businessTelegram}
+                  onChange={(e) => setGeneralSettings(prev => ({
+                    ...prev,
+                    businessTelegram: e.target.value
+                  }))}
+                  className={styles.input}
+                  placeholder="@username"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Instagram</label>
+                <input
+                  type="text"
+                  value={generalSettings.businessInstagram}
+                  onChange={(e) => setGeneralSettings(prev => ({
+                    ...prev,
+                    businessInstagram: e.target.value
+                  }))}
+                  className={styles.input}
+                  placeholder="@username"
                 />
               </div>
 
