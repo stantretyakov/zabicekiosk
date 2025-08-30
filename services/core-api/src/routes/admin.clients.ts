@@ -56,7 +56,13 @@ export default async function adminClients(app: FastifyInstance) {
         if (!/^https?:\/\//.test(url)) {
           url = `https://instagram.com/${url}`;
         }
-        return url;
+        const u = new URL(url);
+        u.search = '';
+        u.hash = '';
+        if (u.pathname.endsWith('/')) {
+          u.pathname = u.pathname.slice(0, -1);
+        }
+        return u.toString();
       })
       .refine(v => !v || /^https?:\/\/([^/]*\.)?instagram\.com\/[A-Za-z0-9._]+\/?$/.test(v), {
         message: 'invalid instagram url',

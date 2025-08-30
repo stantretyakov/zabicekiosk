@@ -409,8 +409,13 @@ export default function ClientForm({
         }
         return '';
       case 'instagram':
-        if (value && !/^@?[A-Za-z0-9._]{1,30}$/.test(value.replace(/^https?:\/\/(www\.)?instagram\.com\//, ''))) {
-          return 'Invalid instagram handle';
+        if (value) {
+          const handle = value
+            .replace(/^https?:\/\/(www\.)?instagram\.com\//, '')
+            .replace(/[\/?].*$/, '');
+          if (!/^@?[A-Za-z0-9._]{1,30}$/.test(handle)) {
+            return 'Invalid instagram handle';
+          }
         }
         return '';
       default:
@@ -457,7 +462,11 @@ export default function ClientForm({
       childName: values.childName.trim(),
       phone: values.phone.trim() || undefined,
       telegram: values.telegram.trim().replace(/^@/, '') || undefined,
-      instagram: values.instagram.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//, '') || undefined,
+      instagram: values.instagram
+        .trim()
+        .replace(/^@/, '')
+        .replace(/^https?:\/\/(www\.)?instagram\.com\//, '')
+        .replace(/[\/?].*$/, '') || undefined,
     };
 
     onSubmit(cleanValues);
