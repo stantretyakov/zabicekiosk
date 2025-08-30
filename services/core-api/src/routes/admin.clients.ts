@@ -31,6 +31,12 @@ export default async function adminClients(app: FastifyInstance) {
       .string()
       .trim()
       .optional()
+      .transform(v => {
+        if (!v) return undefined;
+        const value = v.toLowerCase();
+        if (value === 'none') return undefined;
+        return v;
+      })
       .refine(v => !v || /^@?[A-Za-z0-9_]{5,32}$/.test(v), {
         message: 'invalid telegram handle',
       })
@@ -41,7 +47,9 @@ export default async function adminClients(app: FastifyInstance) {
       .optional()
       .transform(v => {
         if (!v) return undefined;
-        let url = v.trim();
+        const value = v.trim();
+        if (value.toLowerCase() === 'none') return undefined;
+        let url = value;
         if (url.startsWith('@')) {
           url = url.slice(1);
         }
