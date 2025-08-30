@@ -292,6 +292,13 @@
   background: rgba(255, 209, 102, 0.1);
 }
 
+.kioskSummary {
+  text-align: right;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin: 0.5rem 0 1rem;
+}
+
 .kiosksList {
   display: flex;
   flex-direction: column;
