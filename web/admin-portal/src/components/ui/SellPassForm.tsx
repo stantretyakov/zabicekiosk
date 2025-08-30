@@ -89,8 +89,9 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
   };
 
   useEffect(() => {
-    if (searchTerm.length >= 2) {
-      searchClients();
+    const term = searchTerm.trim();
+    if (term.length >= 2) {
+      searchClients(term);
     } else {
       setClients([]);
       setShowDropdown(false);
@@ -137,11 +138,11 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     }
   };
 
-  const searchClients = async () => {
+  const searchClients = async (term: string) => {
     try {
       setLoadingClients(true);
       const data = await listClients({
-        search: searchTerm,
+        search: term,
         active: 'true',
         pageSize: 10,
       });
@@ -150,6 +151,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     } catch (err) {
       console.error('Failed to search clients:', err);
       setClients([]);
+      setShowDropdown(true);
     } finally {
       setLoadingClients(false);
     }
