@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { listPasses, deletePass, createPass } from '../lib/api';
 import { PassWithClient } from '../types';
 import DataTable from '../components/ui/DataTable';
+import SellPassForm from '../components/ui/SellPassForm';
 
 export default function Passes() {
   const [passes, setPasses] = useState<PassWithClient[]>([]);
@@ -10,6 +11,7 @@ export default function Passes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pageToken, setPageToken] = useState<string | undefined>();
   const [hasNextPage, setHasNextPage] = useState(false);
+  const [showSellForm, setShowSellForm] = useState(false);
 
   useEffect(() => {
     loadPasses();
@@ -46,28 +48,9 @@ export default function Passes() {
     }
   };
 
-  const handleSellPass = async () => {
-    const clientId = prompt('Enter client ID');
-    if (!clientId) return;
-    const planSizeStr = prompt('Enter plan size (e.g., 5, 10, 20)');
-    if (!planSizeStr) return;
-    const planSize = parseInt(planSizeStr, 10);
-    if (isNaN(planSize) || planSize <= 0) {
-      alert('Invalid plan size');
-      return;
-    }
-    try {
-      await createPass({
-        clientId,
-        planSize,
-        purchasedAt: new Date().toISOString(),
-        priceRSD: planSize * 1500,
-      });
-      await loadPasses();
-    } catch (err: any) {
-      setError(err.message || 'Failed to sell pass');
-      console.error(err);
-    }
+  const handleSellSuccess = async () => {
+    await loadPasses();
+    setError(null);
   };
 
   const filteredPasses = passes.filter(pass => {
@@ -242,7 +225,7 @@ export default function Passes() {
           Passes
         </h1>
         <button
-          onClick={handleSellPass}
+          onClick={() => setShowSellForm(true)}
           style={{
             background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
             color: 'var(--text)',
@@ -284,6 +267,12 @@ export default function Passes() {
         emptyText="No passes found"
         onNextPage={hasNextPage ? () => loadPasses(pageToken) : undefined}
         hasNext={hasNextPage}
+      />
+
+      <SellPassForm
+        open={showSellForm}
+        onClose={() => setShowSellForm(false)}
+        onSuccess={handleSellSuccess}
       />
     </div>
   );
