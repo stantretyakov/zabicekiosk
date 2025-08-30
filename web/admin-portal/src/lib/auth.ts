@@ -26,15 +26,14 @@ export async function loginWithGoogle() {
   }
   
   try {
-    // iOS часто блокирует popup — сразу уходим в redirect
-    if (/iPad|iPhone|iPod/i.test(navigator.userAgent)) {
-      await signInWithRedirect(auth, provider);
-      return null;
-    }
     const res = await signInWithPopup(auth, provider);
     return res.user;
-  } catch (e:any) {
-    if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/cancelled-popup-request') {
+  } catch (e: any) {
+    if (
+      e?.code === 'auth/popup-blocked' ||
+      e?.code === 'auth/cancelled-popup-request' ||
+      e?.code === 'auth/operation-not-supported-in-this-environment'
+    ) {
       await signInWithRedirect(auth, provider);
       return null;
     }
