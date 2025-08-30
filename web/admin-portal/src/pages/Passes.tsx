@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { listPasses, deletePass, createPass } from '../lib/api';
+import { listPasses, deletePass } from '../lib/api';
 import { PassWithClient } from '../types';
 import DataTable from '../components/ui/DataTable';
 import SellPassForm from '../components/ui/SellPassForm';

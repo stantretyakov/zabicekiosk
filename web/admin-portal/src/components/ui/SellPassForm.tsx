@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { listClients, createPass } from '../../lib/api';
+import { listClients, createPass, fetchSettings } from '../../lib/api';
 import type { Client } from '../../types';
 import styles from './SellPassForm.module.css';
 
@@ -31,7 +31,8 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
   const [clients, setClients] = useState<Client[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedPassType, setSelectedPassType] = useState<string>('10');
+  const [passTypes, setPassTypes] = useState<PassType[]>(DEFAULT_PASS_TYPES);
+  const [selectedPassType, setSelectedPassType] = useState<string>(DEFAULT_PASS_TYPES[2].id);
   const [customPass, setCustomPass] = useState({
     sessions: 10,
     priceRSD: 11000,
@@ -56,9 +57,11 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
       setSearchTerm('');
       setClients([]);
       setShowDropdown(false);
-      setSelectedPassType('10');
       setUseCustomPass(false);
       setError(null);
+
+      // Load pass options
+      loadPassTypes();
       
       // Focus search input
       setTimeout(() => {
@@ -66,6 +69,24 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
       }, 100);
     }
   }, [open, preselectedClientId]);
+
+  const loadPassTypes = async () => {
+    try {
+      const settings = await fetchSettings();
+      const options = (settings.passes || []).filter((p: any) => p.active !== false);
+      if (options.length > 0) {
+        setPassTypes(options);
+        setSelectedPassType(options[0].id);
+      } else {
+        setPassTypes(DEFAULT_PASS_TYPES);
+        setSelectedPassType(DEFAULT_PASS_TYPES[0].id);
+      }
+    } catch (err) {
+      console.error('Failed to load pass types:', err);
+      setPassTypes(DEFAULT_PASS_TYPES);
+      setSelectedPassType(DEFAULT_PASS_TYPES[0].id);
+    }
+  };
 
   useEffect(() => {
     if (searchTerm.length >= 2) {
@@ -160,8 +181,8 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
       };
     }
     
-    const defaultPass = DEFAULT_PASS_TYPES.find(p => p.id === selectedPassType);
-    return defaultPass || DEFAULT_PASS_TYPES[1]; // fallback to 10 sessions
+    const defaultPass = passTypes.find(p => p.id === selectedPassType);
+    return defaultPass || passTypes[0] || DEFAULT_PASS_TYPES[0];
   };
 
   const formatPrice = (price: number) => {
@@ -195,6 +216,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
         planSize: passConfig.sessions,
         purchasedAt: new Date().toISOString(),
         priceRSD: passConfig.priceRSD,
+        validityDays: passConfig.validityDays,
       });
       
       onSuccess();
@@ -326,7 +348,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
             <label className={styles.label}>Pass Type</label>
             
             <div className={styles.passTypeGrid}>
-              {DEFAULT_PASS_TYPES.map((passType) => (
+              {passTypes.map((passType) => (
                 <div
                   key={passType.id}
                   onClick={() => {
