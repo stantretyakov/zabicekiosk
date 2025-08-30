@@ -234,76 +234,106 @@ export default function Kiosk() {
     };
   }, [facingMode]);
 
-  useEffect(() => {
-    if (!videoRef.current || !cameraReady) return;
+  const handleScan = async (data: string) => {
+    try {
+      let token: string | undefined;
+      let clientId: string | undefined;
 
-    const cleanup = scanStream(videoRef.current, async (token) => {
       try {
-        addLog(`Scanning token: ${token.slice(0, 8)}...`, 'info');
-        const result = await redeem({ token });
-        
-        if (result.status === 'ok') {
-          beep(true);
-          
-          // Trigger success flash effect
-          setFlashEffect('success');
-          setTimeout(() => setFlashEffect(null), 800);
-          
-          if (result.type === 'pass') {
-            const message = `Pass redeemed successfully!`;
-            const details = `${result.remaining}/${result.planSize} visits remaining`;
-            
-            setSuccessData({ message, details });
-            setShowSuccess(true);
-            addLog(`Pass redeemed: ${result.remaining}/${result.planSize} remaining`, 'success');
-            
-            setTimeout(() => setShowSuccess(false), 3000);
-          } else {
-            setToast({ kind: 'pass', message: `${result.message} - Drop-in payment processed` });
-            addLog(`Drop-in payment: ${result.message}`, 'success');
-            setTimeout(() => setToast(null), 4000);
-          }
-        } else {
-          beep(false);
-          
-          // Trigger error flash effect
-          setFlashEffect('error');
-          setTimeout(() => setFlashEffect(null), 1000);
-          
-          const kind = result.code === 'COOLDOWN' ? 'cooldown' : 
-                      result.code === 'EXPIRED' ? 'out' : 'error';
-          
-          // Enhanced error messages with admin contact suggestion
-          let enhancedMessage = result.message;
-          if (result.code === 'INVALID_TOKEN') {
-            enhancedMessage = `${result.message}. Please contact the administrator for assistance.`;
-          } else if (result.code === 'EXPIRED') {
-            enhancedMessage = `${result.message}. Please renew your pass or contact the administrator.`;
-          } else if (kind === 'error') {
-            enhancedMessage = `${result.message}. If this persists, please contact the administrator.`;
-          }
-          
-          setToast({ kind, message: enhancedMessage });
-          addLog(`Error: ${result.message}`, 'error');
-          
-          // Longer timeout for errors to give users time to read
-          const errorTimeout = kind === 'error' ? 6000 : 4000;
-          setTimeout(() => setToast(null), errorTimeout);
-        }
-      } catch (error) {
+        const url = new URL(data);
+        token = url.searchParams.get('token') || undefined;
+        clientId = url.searchParams.get('clientId') || undefined;
+      } catch {
+        token = data;
+      }
+
+      if (!token && !clientId) {
         beep(false);
-        
+        setFlashEffect('error');
+        setTimeout(() => setFlashEffect(null), 1000);
+        const message = 'Invalid QR code';
+        setToast({ kind: 'error', message });
+        addLog('Invalid QR code scanned', 'error');
+        setTimeout(() => setToast(null), 4000);
+        return;
+      }
+
+      const logMsg = token
+        ? `Scanning token: ${token.slice(0, 8)}...`
+        : `Scanning client: ${clientId}`;
+      addLog(logMsg, 'info');
+
+      const result = await redeem({ token, clientId });
+
+      if (result.status === 'ok') {
+        beep(true);
+
+        // Trigger success flash effect
+        setFlashEffect('success');
+        setTimeout(() => setFlashEffect(null), 800);
+
+        if (result.type === 'pass') {
+          const message = `Pass redeemed successfully!`;
+          const details = `${result.remaining}/${result.planSize} visits remaining`;
+
+          setSuccessData({ message, details });
+          setShowSuccess(true);
+          addLog(`Pass redeemed: ${result.remaining}/${result.planSize} remaining`, 'success');
+
+          setTimeout(() => setShowSuccess(false), 3000);
+        } else {
+          setToast({ kind: 'pass', message: `${result.message} - Drop-in payment processed` });
+          addLog(`Drop-in payment: ${result.message}`, 'success');
+          setTimeout(() => setToast(null), 4000);
+        }
+      } else {
+        beep(false);
+
         // Trigger error flash effect
         setFlashEffect('error');
         setTimeout(() => setFlashEffect(null), 1000);
-        
-        const message = 'Network error. Please check your connection or contact the administrator.';
-        setToast({ kind: 'error', message });
-        addLog(`Network error: ${error}`, 'error');
-        setTimeout(() => setToast(null), 6000);
-      }
-    });
 
+        const kind =
+          result.code === 'COOLDOWN'
+            ? 'cooldown'
+            : result.code === 'EXPIRED'
+            ? 'out'
+            : 'error';
+
+        // Enhanced error messages with admin contact suggestion
+        let enhancedMessage = result.message;
+        if (result.code === 'INVALID_TOKEN') {
+          enhancedMessage = `${result.message}. Please contact the administrator for assistance.`;
+        } else if (result.code === 'EXPIRED') {
+          enhancedMessage = `${result.message}. Please renew your pass or contact the administrator.`;
+        } else if (kind === 'error') {
+          enhancedMessage = `${result.message}. If this persists, please contact the administrator.`;
+        }
+
+        setToast({ kind, message: enhancedMessage });
+        addLog(`Error: ${result.message}`, 'error');
+
+        // Longer timeout for errors to give users time to read
+        const errorTimeout = kind === 'error' ? 6000 : 4000;
+        setTimeout(() => setToast(null), errorTimeout);
+      }
+    } catch (error) {
+      beep(false);
+
+      // Trigger error flash effect
+      setFlashEffect('error');
+      setTimeout(() => setFlashEffect(null), 1000);
+
+      const message = 'Network error. Please check your connection or contact the administrator.';
+      setToast({ kind: 'error', message });
+      addLog(`Network error: ${error}`, 'error');
+      setTimeout(() => setToast(null), 6000);
+    }
+  };
+
+  useEffect(() => {
+    if (!videoRef.current || !cameraReady) return;
+    const cleanup = scanStream(videoRef.current, handleScan);
     return cleanup;
   }, [cameraReady]);
 
