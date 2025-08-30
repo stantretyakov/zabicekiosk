@@ -197,6 +197,7 @@ export async function createPass(body: {
   planSize: number;
   purchasedAt: string;
   priceRSD?: number;
+  validityDays?: number;
 }): Promise<void> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {

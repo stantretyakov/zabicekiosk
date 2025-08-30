@@ -81,6 +81,7 @@ export default async function adminPasses(app: FastifyInstance) {
       planSize: z.coerce.number().min(1),
       purchasedAt: z.string().datetime(),
       priceRSD: z.coerce.number().optional(),
+      validityDays: z.coerce.number().min(1).max(365).optional(),
     });
     const body = bodySchema.parse(req.body);
 
@@ -97,7 +98,10 @@ export default async function adminPasses(app: FastifyInstance) {
 
     const purchasedAt = Timestamp.fromDate(new Date(body.purchasedAt));
     const expiresAt = Timestamp.fromDate(
-      new Date(purchasedAt.toDate().getTime() + 30 * 24 * 60 * 60 * 1000)
+      new Date(
+        purchasedAt.toDate().getTime() +
+          (body.validityDays ?? 30) * 24 * 60 * 60 * 1000,
+      )
     );
 
     await db.runTransaction(async tx => {
