@@ -54,6 +54,7 @@ export default async function adminStats(app: FastifyInstance) {
 
     let redeems7d = 0;
     let dropInRevenue = 0;
+    let passRevenue = 0;
     const redeemsByDayMap: Record<string, number> = {};
     let visitsThisMonth = 0;
     let visitsLastMonth = 0;
@@ -63,18 +64,23 @@ export default async function adminStats(app: FastifyInstance) {
       const data = doc.data() as any;
       const ts: Date | undefined = data.ts?.toDate?.();
       if (!ts) continue;
-      if (ts >= sevenDaysAgo) {
-        redeems7d++;
-        const key = ts.toISOString().slice(0, 10);
-        redeemsByDayMap[key] = (redeemsByDayMap[key] || 0) + 1;
+      const key = ts.toISOString().slice(0, 10);
+      if (data.kind === 'pass' || data.kind === 'dropin') {
+        if (ts >= sevenDaysAgo) {
+          redeems7d++;
+          redeemsByDayMap[key] = (redeemsByDayMap[key] || 0) + 1;
+        }
+        if (ts >= startOfMonth) {
+          visitsThisMonth++;
+        } else if (ts >= startOfLastMonth && ts <= endOfLastMonth) {
+          visitsLastMonth++;
+        }
       }
       if (data.kind === 'dropin' && data.priceRSD && ts >= startOfMonth) {
         dropInRevenue += data.priceRSD;
       }
-      if (ts >= startOfMonth) {
-        visitsThisMonth++;
-      } else if (ts >= startOfLastMonth && ts <= endOfLastMonth) {
-        visitsLastMonth++;
+      if (data.kind === 'purchase' && data.priceRSD && ts >= startOfMonth) {
+        passRevenue += data.priceRSD;
       }
     }
 
@@ -91,9 +97,9 @@ export default async function adminStats(app: FastifyInstance) {
     };
 
     const revenueBreakdown = {
-      passes: 0,
+      passes: passRevenue,
       dropIns: dropInRevenue,
-      total: dropInRevenue,
+      total: passRevenue + dropInRevenue,
     };
 
     const expiring14d = upcomingExpirations.next14Days;

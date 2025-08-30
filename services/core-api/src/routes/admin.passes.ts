@@ -80,6 +80,7 @@ export default async function adminPasses(app: FastifyInstance) {
       clientId: z.string(),
       planSize: z.coerce.number().min(1),
       purchasedAt: z.string().datetime(),
+      priceRSD: z.coerce.number().optional(),
     });
     const body = bodySchema.parse(req.body);
 
@@ -99,14 +100,26 @@ export default async function adminPasses(app: FastifyInstance) {
       new Date(purchasedAt.toDate().getTime() + 30 * 24 * 60 * 60 * 1000)
     );
 
-    await db.collection('passes').add({
-      clientId: body.clientId,
-      planSize: body.planSize,
-      used: 0,
-      purchasedAt,
-      expiresAt,
-      revoked: false,
-      createdAt: FieldValue.serverTimestamp(),
+    await db.runTransaction(async tx => {
+      const passRef = db.collection('passes').doc();
+      tx.set(passRef, {
+        clientId: body.clientId,
+        planSize: body.planSize,
+        used: 0,
+        purchasedAt,
+        expiresAt,
+        revoked: false,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      const revRef = db.collection('redeems').doc();
+      tx.set(revRef, {
+        ts: FieldValue.serverTimestamp(),
+        passId: passRef.id,
+        clientId: body.clientId,
+        delta: body.planSize,
+        kind: 'purchase',
+        priceRSD: body.priceRSD ?? 0,
+      });
     });
 
     return { status: 'created' };

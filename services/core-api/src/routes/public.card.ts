@@ -55,7 +55,8 @@ export default async function publicCard(app: FastifyInstance) {
     }
 
     return {
-      name: client?.childName || client?.parentName || '',
+      name: client?.parentName || client?.childName || '',
+      childName: client?.childName || '',
       planSize,
       used,
       remaining,

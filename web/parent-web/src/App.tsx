@@ -94,7 +94,7 @@ export default function App() {
         // Transform API response to match our PassData interface
         const transformedData: PassData = {
           name: data.name || 'Unknown Client',
-          childName: data.childName || data.name || 'Unknown Child',
+          childName: data.childName || 'Unknown Child',
           planSize: data.planSize || 1,
           used: data.used || 0,
           remaining: data.remaining || 0,

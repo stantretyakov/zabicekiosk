@@ -54,6 +54,7 @@ export default function Redeems() {
     switch (kind) {
       case 'pass': return '🎫';
       case 'dropin': return '💰';
+      case 'purchase': return '🛒';
       default: return '📋';
     }
   };
@@ -62,6 +63,7 @@ export default function Redeems() {
     switch (kind) {
       case 'pass': return 'var(--accent)';
       case 'dropin': return 'var(--warn)';
+      case 'purchase': return 'var(--accent-2)';
       default: return 'var(--muted)';
     }
   };
@@ -192,6 +194,7 @@ export default function Redeems() {
           <option value="all">All Types</option>
           <option value="pass">Pass Redeems</option>
           <option value="dropin">Drop-in Payments</option>
+          <option value="purchase">Pass Purchases</option>
         </select>
       </div>
 

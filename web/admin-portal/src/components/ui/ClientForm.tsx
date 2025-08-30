@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
-import { getClientToken, listPasses } from '../../lib/api';
+import { getClientToken, listPasses, createPass } from '../../lib/api';
 import styles from './ClientForm.module.css';
 import type { PassWithClient } from '../../types';
 
@@ -44,6 +44,7 @@ export default function ClientForm({
   const [passes, setPasses] = useState<PassWithClient[]>([]);
   const [loadingPasses, setLoadingPasses] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);
+  const [newPassType, setNewPassType] = useState('10');
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
   const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,7 +98,7 @@ export default function ClientForm({
       const { token } = await getClientToken(clientId);
       const baseUrl =
         import.meta.env.VITE_PARENT_PORTAL_URL ||
-        window.location.origin.replace(/admin[^.]*/, 'parent');
+        window.location.origin.replace(/admin[^.]*/, 'parent-web');
       const url = `${baseUrl}?token=${token}`;
       setPassUrl(url);
 
@@ -135,6 +136,22 @@ export default function ClientForm({
       console.error('Failed to load client token:', error);
     } finally {
       setLoadingToken(false);
+    }
+  };
+
+  const handleAddPass = async () => {
+    if (!initial?.id) return;
+    try {
+      const planSize = parseInt(newPassType, 10);
+      await createPass({
+        clientId: initial.id as string,
+        planSize,
+        purchasedAt: new Date().toISOString(),
+        priceRSD: planSize * 1500,
+      });
+      await loadClientPasses(initial.id as string);
+    } catch (err) {
+      console.error('Failed to sell pass:', err);
     }
   };
 
@@ -781,11 +798,26 @@ export default function ClientForm({
                   <div className={styles.noPasses}>
                     <span className={styles.noPassesIcon}>🎫</span>
                     <p>No active passes found</p>
-                    <p className={styles.noPassesHint}>
-                      Create a pass for this client in the Passes section
-                    </p>
                   </div>
                 )}
+                <div className={styles.addPassForm}>
+                  <select
+                    value={newPassType}
+                    onChange={e => setNewPassType(e.target.value)}
+                    className={styles.passSelect}
+                  >
+                    <option value="5">5 Pass</option>
+                    <option value="10">10 Pass</option>
+                    <option value="20">20 Pass</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddPass}
+                    className={styles.btnSellPass}
+                  >
+                    Sell Pass
+                  </button>
+                </div>
               </div>
             </>
           )}
