@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
 import { fetchSettings, updateSettings } from '../lib/api';
+import KioskRegistration from '../components/ui/KioskRegistration';
 
 interface PriceSettings {
   dropInRSD: number;
@@ -32,6 +33,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showKioskDialog, setShowKioskDialog] = useState(false);
 
   // Settings state
   const [priceSettings, setPriceSettings] = useState<PriceSettings>({
@@ -498,6 +500,40 @@ export default function Settings() {
             </div>
           </div>
         </section>
+
+        {/* Kiosk Management */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.sectionIcon}>📱</span>
+              Kiosk Management
+            </h2>
+            <p className={styles.sectionDescription}>
+              Manage kiosk devices and access settings
+            </p>
+          </div>
+
+          <div className={styles.card}>
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => setShowKioskDialog(true)}
+                className={styles.addButton}
+                type="button"
+              >
+                <span className={styles.addIcon}>📱</span>
+                Manage Kiosks
+              </button>
+              <p style={{ 
+                fontSize: '0.875rem', 
+                color: 'var(--muted)', 
+                margin: '1rem 0 0 0',
+                fontStyle: 'italic'
+              }}>
+                Configure kiosk settings, generate admin PINs, and view registered devices
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Save Button */}
@@ -521,6 +557,15 @@ export default function Settings() {
           )}
         </button>
       </div>
+
+      <KioskRegistration
+        open={showKioskDialog}
+        onClose={() => setShowKioskDialog(false)}
+        onSaved={() => {
+          setSuccess('Kiosk settings updated successfully!');
+          setTimeout(() => setSuccess(null), 3000);
+        }}
+      />
     </div>
   );
 }
