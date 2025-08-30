@@ -810,10 +810,7 @@
 }
 
 .addPassForm {
-  display: flex;
-  gap: 1rem;
   margin-top: 1rem;
-  align-items: center;
 }
 
 .passSelect {
@@ -838,14 +835,19 @@
   color: var(--text);
   border: none;
   border-radius: var(--radius);
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
   font-family: var(--font);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  width: 100%;
 }
 
 .btnSellPass:hover {
@@ -853,6 +855,10 @@
   box-shadow: 0 8px 24px rgba(74, 214, 255, 0.4);
 }
 
+.addIcon {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
 /* Responsive Design */
 @media (max-width: 768px) {
   .qrContainer {
@@ -925,11 +931,9 @@
   }
 
   .addPassForm {
-    flex-direction: column;
-    align-items: stretch;
+    margin-top: 0.75rem;
   }
 
-  .passSelect,
   .btnSellPass {
     width: 100%;
   }

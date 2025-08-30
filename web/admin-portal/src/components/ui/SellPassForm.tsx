@@ -7,6 +7,7 @@ export type SellPassFormProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  preselectedClientId?: string;
 };
 
 interface PassType {
@@ -24,7 +25,7 @@ const DEFAULT_PASS_TYPES: PassType[] = [
   { id: '20', name: '20 Sessions', sessions: 20, priceRSD: 20000, validityDays: 60 },
 ];
 
-export default function SellPassForm({ open, onClose, onSuccess }: SellPassFormProps) {
+export default function SellPassForm({ open, onClose, onSuccess, preselectedClientId }: SellPassFormProps) {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
@@ -46,7 +47,12 @@ export default function SellPassForm({ open, onClose, onSuccess }: SellPassFormP
   useEffect(() => {
     if (open) {
       // Reset form when opening
-      setSelectedClient(null);
+      if (preselectedClientId) {
+        // Load preselected client
+        loadPreselectedClient();
+      } else {
+        setSelectedClient(null);
+      }
       setSearchTerm('');
       setClients([]);
       setShowDropdown(false);
@@ -59,7 +65,7 @@ export default function SellPassForm({ open, onClose, onSuccess }: SellPassFormP
         searchRef.current?.focus();
       }, 100);
     }
-  }, [open]);
+  }, [open, preselectedClientId]);
 
   useEffect(() => {
     if (searchTerm.length >= 2) {
@@ -80,6 +86,35 @@ export default function SellPassForm({ open, onClose, onSuccess }: SellPassFormP
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const loadPreselectedClient = async () => {
+    if (!preselectedClientId) return;
+    
+    try {
+      // In dev mode, find client from mock data
+      if (import.meta.env.DEV) {
+        const { mockClients } = await import('../../lib/mockData');
+        const client = mockClients.find(c => c.id === preselectedClientId);
+        if (client) {
+          setSelectedClient(client);
+        }
+        return;
+      }
+      
+      // In production, we could fetch the specific client
+      // For now, we'll search for it
+      const data = await listClients({
+        pageSize: 50,
+        active: 'true',
+      });
+      const client = data.items.find(c => c.id === preselectedClientId);
+      if (client) {
+        setSelectedClient(client);
+      }
+    } catch (err) {
+      console.error('Failed to load preselected client:', err);
+    }
+  };
 
   const searchClients = async () => {
     try {
@@ -203,20 +238,44 @@ export default function SellPassForm({ open, onClose, onSuccess }: SellPassFormP
                   <div className={styles.selectedClientName}>
                     {selectedClient.parentName}
                   </div>
-                  <button
-                    type="button"
-                    onClick={clearClient}
-                    className={styles.changeButton}
-                  >
-                    Change
-                  </button>
+                  {!preselectedClientId && (
+                    <button
+                      type="button"
+                      onClick={clearClient}
+                      className={styles.changeButton}
+                    >
+                      Change
+                    </button>
+                  )}
                 </div>
                 <div className={styles.selectedClientChild}>
+            ) : (
+              <div style={{
+                padding: '1rem',
+                background: 'var(--panel-2)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--muted)',
+                textAlign: 'center',
+                fontStyle: 'italic'
+              }}>
+                Loading client information...
+              </div>
                   <span>👶</span>
                   {selectedClient.childName}
                 </div>
+                {preselectedClientId && (
+                  <div style={{ 
+                    fontSize: '0.75rem', 
+                    color: 'var(--muted)', 
+                    marginTop: '0.5rem',
+                    fontStyle: 'italic'
+                  }}>
+                    Client preselected from profile
+                  </div>
+                )}
               </div>
-            ) : (
+            ) : !preselectedClientId ? (
               <div className={styles.clientSearch} ref={dropdownRef}>
                 <input
                   ref={searchRef}

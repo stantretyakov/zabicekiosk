@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
+import SellPassForm from './SellPassForm';
 import {
   getClientToken,
   listPasses,
-  createPass,
   fetchSettings,
   type SettingsResponse,
 } from '../../lib/api';
@@ -50,7 +50,7 @@ export default function ClientForm({
   const [passes, setPasses] = useState<PassWithClient[]>([]);
   const [loadingPasses, setLoadingPasses] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);
-  const [newPassType, setNewPassType] = useState('10');
+  const [showSellPassForm, setShowSellPassForm] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
   const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -152,19 +152,9 @@ export default function ClientForm({
     }
   };
 
-  const handleAddPass = async () => {
-    if (!initial?.id) return;
-    try {
-      const planSize = parseInt(newPassType, 10);
-      await createPass({
-        clientId: initial.id as string,
-        planSize,
-        purchasedAt: new Date().toISOString(),
-        priceRSD: planSize * 1500,
-      });
+  const handleSellPassSuccess = async () => {
+    if (initial?.id) {
       await loadClientPasses(initial.id as string);
-    } catch (err) {
-      console.error('Failed to sell pass:', err);
     }
   };
 
@@ -831,21 +821,13 @@ export default function ClientForm({
                   </div>
                 )}
                 <div className={styles.addPassForm}>
-                  <select
-                    value={newPassType}
-                    onChange={e => setNewPassType(e.target.value)}
-                    className={styles.passSelect}
-                  >
-                    <option value="5">5 Pass</option>
-                    <option value="10">10 Pass</option>
-                    <option value="20">20 Pass</option>
-                  </select>
                   <button
                     type="button"
-                    onClick={handleAddPass}
+                    onClick={() => setShowSellPassForm(true)}
                     className={styles.btnSellPass}
                   >
-                    Sell Pass
+                    <span className={styles.addIcon}>+</span>
+                    Sell New Pass
                   </button>
                 </div>
               </div>
@@ -870,6 +852,15 @@ export default function ClientForm({
             </button>
           </div>
         </form>
+        
+        {showSellPassForm && initial?.id && (
+          <SellPassForm
+            open={showSellPassForm}
+            onClose={() => setShowSellPassForm(false)}
+            onSuccess={handleSellPassSuccess}
+            preselectedClientId={initial.id as string}
+          />
+        )}
       </div>
     </div>
   );
