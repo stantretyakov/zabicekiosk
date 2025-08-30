@@ -21,6 +21,24 @@ paths:
       responses:
         '200':
           description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  childName:
+                    type: string
+                  planSize:
+                    type: integer
+                  used:
+                    type: integer
+                  remaining:
+                    type: integer
+                  expiresAt:
+                    type: string
+                    format: date-time
   /api/v1/content/active:
     get:
       summary: Get active promo content

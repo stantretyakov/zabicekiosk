@@ -809,6 +809,50 @@
   opacity: 0.8;
 }
 
+.addPassForm {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.passSelect {
+  background: var(--panel);
+  color: var(--text);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.passSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(43, 224, 144, 0.1);
+}
+
+.btnSellPass {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btnSellPass:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(74, 214, 255, 0.4);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .qrContainer {
@@ -877,6 +921,16 @@
   }
   
   .passProgress {
+    width: 100%;
+  }
+
+  .addPassForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .passSelect,
+  .btnSellPass {
     width: 100%;
   }
 }

@@ -196,6 +196,7 @@ export async function createPass(body: {
   clientId: string;
   planSize: number;
   purchasedAt: string;
+  priceRSD?: number;
 }): Promise<void> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {
@@ -215,8 +216,18 @@ export async function createPass(body: {
       type: body.planSize === 1 ? 'single' : 'subscription',
       client,
     };
-    
+
     mockPasses.unshift(newPass);
+
+    mockRedeems.unshift({
+      id: `redeem-${Date.now()}`,
+      ts: body.purchasedAt,
+      kind: 'purchase',
+      clientId: body.clientId,
+      delta: body.planSize,
+      priceRSD: body.priceRSD,
+      client,
+    });
     return;
   }
   
@@ -340,11 +351,14 @@ export async function getStats(): Promise<Stats> {
       percentage: activePasses ? Math.round((count / activePasses) * 1000) / 10 : 0,
     }));
 
-    const redeems7d = mockRedeems.filter(r =>
-      new Date(r.ts).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
+    const redeems7d = mockRedeems.filter(
+      r =>
+        (r.kind === 'pass' || r.kind === 'dropin') &&
+        new Date(r.ts).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000
     ).length;
 
     let dropInRevenue = 0;
+    let passRevenue = 0;
     let visitsThisMonth = 0;
     let visitsLastMonth = 0;
     const redeemsByDayMap: Record<string, number> = {};
@@ -352,17 +366,22 @@ export async function getStats(): Promise<Stats> {
 
     for (const r of mockRedeems) {
       const ts = new Date(r.ts);
-      if (ts >= sevenDaysAgo) {
-        const key = r.ts.slice(0, 10);
-        redeemsByDayMap[key] = (redeemsByDayMap[key] || 0) + 1;
+      const key = r.ts.slice(0, 10);
+      if (r.kind === 'pass' || r.kind === 'dropin') {
+        if (ts >= sevenDaysAgo) {
+          redeemsByDayMap[key] = (redeemsByDayMap[key] || 0) + 1;
+        }
+        if (ts >= startOfMonth) {
+          visitsThisMonth++;
+        } else if (ts >= startOfLastMonth && ts <= endOfLastMonth) {
+          visitsLastMonth++;
+        }
       }
       if (r.kind === 'dropin' && r.priceRSD && ts >= startOfMonth) {
         dropInRevenue += r.priceRSD;
       }
-      if (ts >= startOfMonth) {
-        visitsThisMonth++;
-      } else if (ts >= startOfLastMonth && ts <= endOfLastMonth) {
-        visitsLastMonth++;
+      if (r.kind === 'purchase' && r.priceRSD && ts >= startOfMonth) {
+        passRevenue += r.priceRSD;
       }
     }
     const redeemsByDay = Object.keys(redeemsByDayMap)
@@ -378,9 +397,9 @@ export async function getStats(): Promise<Stats> {
     };
 
     const revenueBreakdown = {
-      passes: 0,
+      passes: passRevenue,
       dropIns: dropInRevenue,
-      total: dropInRevenue,
+      total: passRevenue + dropInRevenue,
     };
 
     const mockStats: Stats = {
@@ -405,4 +424,28 @@ export async function getStats(): Promise<Stats> {
   }
   
   return fetchJSON(`/admin/stats`);
+}
+
+export interface SettingsResponse {
+  prices?: { dropInRSD: number; currency?: string };
+  passes?: any[];
+  cooldownSec?: number;
+  maxDailyRedeems?: number;
+  businessName?: string;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
+  [key: string]: any;
+}
+
+export async function fetchSettings(): Promise<SettingsResponse> {
+  return fetchJSON(`/admin/settings`);
+}
+
+export async function updateSettings(body: any): Promise<SettingsResponse> {
+  return fetchJSON(`/admin/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }

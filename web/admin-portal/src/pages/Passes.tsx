@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { listPasses, deletePass } from '../lib/api';
+import { listPasses, deletePass, createPass } from '../lib/api';
 import { PassWithClient } from '../types';
 import DataTable from '../components/ui/DataTable';
 
@@ -42,6 +42,30 @@ export default function Passes() {
       await loadPasses();
     } catch (err: any) {
       setError(err.message || 'Failed to revoke pass');
+      console.error(err);
+    }
+  };
+
+  const handleSellPass = async () => {
+    const clientId = prompt('Enter client ID');
+    if (!clientId) return;
+    const planSizeStr = prompt('Enter plan size (e.g., 5, 10, 20)');
+    if (!planSizeStr) return;
+    const planSize = parseInt(planSizeStr, 10);
+    if (isNaN(planSize) || planSize <= 0) {
+      alert('Invalid plan size');
+      return;
+    }
+    try {
+      await createPass({
+        clientId,
+        planSize,
+        purchasedAt: new Date().toISOString(),
+        priceRSD: planSize * 1500,
+      });
+      await loadPasses();
+    } catch (err: any) {
+      setError(err.message || 'Failed to sell pass');
       console.error(err);
     }
   };
@@ -201,14 +225,14 @@ export default function Passes() {
 
   return (
     <div>
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: '2rem'
       }}>
-        <h1 style={{ 
-          fontSize: '2rem', 
+        <h1 style={{
+          fontSize: '2rem',
           fontWeight: '700',
           background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
           WebkitBackgroundClip: 'text',
@@ -217,6 +241,24 @@ export default function Passes() {
         }}>
           Passes
         </h1>
+        <button
+          onClick={handleSellPass}
+          style={{
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+            color: 'var(--text)',
+            border: 'none',
+            borderRadius: 'var(--radius)',
+            padding: '0.75rem 1.5rem',
+            fontFamily: 'var(--font)',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          Sell Pass
+        </button>
       </div>
 
       <div className="toolbar">

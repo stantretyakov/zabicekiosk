@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
+import { fetchSettings, updateSettings } from '../lib/api';
 
 interface PriceSettings {
   dropInRSD: number;
@@ -58,14 +59,17 @@ export default function Settings() {
   const loadSettings = async () => {
     try {
       setLoading(true);
-      // In dev mode, use mock data
-      if (import.meta.env.DEV) {
-        setTimeout(() => setLoading(false), 800);
-        return;
-      }
-      
-      // TODO: Load from API
-      // const settings = await fetchSettings();
+      const settings = await fetchSettings();
+      setPriceSettings(settings.prices || { dropInRSD: 0, currency: 'RSD' });
+      setPassSettings(settings.passes || []);
+      setGeneralSettings({
+        cooldownSec: settings.cooldownSec ?? 5,
+        maxDailyRedeems: settings.maxDailyRedeems ?? 2,
+        businessName: settings.businessName ?? '',
+        businessAddress: settings.businessAddress ?? '',
+        businessPhone: settings.businessPhone ?? '',
+        businessEmail: settings.businessEmail ?? '',
+      });
       setLoading(false);
     } catch (err: any) {
       setError(err.message || 'Failed to load settings');
@@ -77,13 +81,24 @@ export default function Settings() {
     try {
       setSaving(true);
       setError(null);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // TODO: Save to API
-      // await updateSettings({ priceSettings, passSettings, generalSettings });
-      
+
+      const payload = {
+        prices: priceSettings,
+        passes: passSettings,
+        ...generalSettings,
+      };
+      const saved = await updateSettings(payload);
+      setPriceSettings(saved.prices || priceSettings);
+      setPassSettings(saved.passes || passSettings);
+      setGeneralSettings({
+        cooldownSec: saved.cooldownSec ?? generalSettings.cooldownSec,
+        maxDailyRedeems: saved.maxDailyRedeems ?? generalSettings.maxDailyRedeems,
+        businessName: saved.businessName ?? generalSettings.businessName,
+        businessAddress: saved.businessAddress ?? generalSettings.businessAddress,
+        businessPhone: saved.businessPhone ?? generalSettings.businessPhone,
+        businessEmail: saved.businessEmail ?? generalSettings.businessEmail,
+      });
+
       setSuccess('Settings saved successfully!');
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
