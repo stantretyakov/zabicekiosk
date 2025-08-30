@@ -249,18 +249,6 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   )}
                 </div>
                 <div className={styles.selectedClientChild}>
-            ) : (
-              <div style={{
-                padding: '1rem',
-                background: 'var(--panel-2)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: 'var(--radius)',
-                color: 'var(--muted)',
-                textAlign: 'center',
-                fontStyle: 'italic'
-              }}>
-                Loading client information...
-              </div>
                   <span>👶</span>
                   {selectedClient.childName}
                 </div>
@@ -318,6 +306,18 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   </div>
                 )}
               </div>
+            ) : (
+              <div style={{
+                padding: '1rem',
+                background: 'var(--panel-2)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: 'var(--radius)',
+                color: 'var(--muted)',
+                textAlign: 'center',
+                fontStyle: 'italic'
+              }}>
+                Loading client information...
+              </div>
             )}
           </div>
 
@@ -372,7 +372,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
               <h3 className={styles.customPassTitle}>Custom Pass Configuration</h3>
               
               <div className={styles.customPassGrid}>
-                <div className={styles.field}>
+                <div className={styles.formGroup}>
                   <label className={styles.label}>Sessions</label>
                   <input
                     type="number"
@@ -388,7 +388,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   />
                 </div>
                 
-                <div className={styles.field}>
+                <div className={styles.formGroup}>
                   <label className={styles.label}>Price (RSD)</label>
                   <input
                     type="number"
@@ -404,7 +404,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   />
                 </div>
                 
-                <div className={styles.field}>
+                <div className={styles.formGroup}>
                   <label className={styles.label}>Validity (Days)</label>
                   <input
                     type="number"
