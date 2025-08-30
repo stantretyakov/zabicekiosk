@@ -210,17 +210,21 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     try {
       setSubmitting(true);
       setError(null);
-      
-      await createPass({
+
+      const res = await createPass({
         clientId: selectedClient.id,
         planSize: passConfig.sessions,
         purchasedAt: new Date().toISOString(),
         priceRSD: passConfig.priceRSD,
         validityDays: passConfig.validityDays,
       });
-      
-      onSuccess();
-      onClose();
+
+      if (res.status === 'exists') {
+        setError('Client already has an active pass');
+      } else {
+        onSuccess();
+        onClose();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create pass');
     } finally {
