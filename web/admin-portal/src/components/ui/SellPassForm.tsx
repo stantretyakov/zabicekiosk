@@ -7,7 +7,7 @@ export type SellPassFormProps = {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  preselectedClientId?: string;
+  preselectedClient?: Client;
 };
 
 interface PassType {
@@ -25,7 +25,7 @@ const DEFAULT_PASS_TYPES: PassType[] = [
   { id: '20', name: '20 Sessions', sessions: 20, priceRSD: 20000, validityDays: 60 },
 ];
 
-export default function SellPassForm({ open, onClose, onSuccess, preselectedClientId }: SellPassFormProps) {
+export default function SellPassForm({ open, onClose, onSuccess, preselectedClient }: SellPassFormProps) {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
@@ -48,9 +48,8 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
   useEffect(() => {
     if (open) {
       // Reset form when opening
-      if (preselectedClientId) {
-        // Load preselected client
-        loadPreselectedClient();
+      if (preselectedClient) {
+        setSelectedClient(preselectedClient);
       } else {
         setSelectedClient(null);
       }
@@ -62,13 +61,13 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
 
       // Load pass options
       loadPassTypes();
-      
+
       // Focus search input
       setTimeout(() => {
         searchRef.current?.focus();
       }, 100);
     }
-  }, [open, preselectedClientId]);
+  }, [open, preselectedClient]);
 
   const loadPassTypes = async () => {
     try {
@@ -109,44 +108,26 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadPreselectedClient = async () => {
-    if (!preselectedClientId) return;
-    
-    try {
-      // In dev mode, find client from mock data
-      if (import.meta.env.DEV) {
-        const { mockClients } = await import('../../lib/mockData');
-        const client = mockClients.find(c => c.id === preselectedClientId);
-        if (client) {
-          setSelectedClient(client);
-        }
-        return;
-      }
-      
-      // In production, we could fetch the specific client
-      // For now, we'll search for it
-      const data = await listClients({
-        pageSize: 50,
-        active: 'true',
-      });
-      const client = data.items.find(c => c.id === preselectedClientId);
-      if (client) {
-        setSelectedClient(client);
-      }
-    } catch (err) {
-      console.error('Failed to load preselected client:', err);
-    }
-  };
+  const normalize = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
 
   const searchClients = async (term: string) => {
     try {
       setLoadingClients(true);
       const data = await listClients({
-        search: term,
         active: 'true',
-        pageSize: 10,
+        pageSize: 100,
+        orderBy: 'parentName',
       });
-      setClients(data.items);
+      const searchLower = normalize(term);
+      const filtered = data.items.filter(c =>
+        normalize(c.parentName).includes(searchLower) ||
+        normalize(c.childName).includes(searchLower),
+      );
+      setClients(filtered);
       setShowDropdown(true);
     } catch (err) {
       console.error('Failed to search clients:', err);
@@ -266,7 +247,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   <div className={styles.selectedClientName}>
                     {selectedClient.parentName}
                   </div>
-                  {!preselectedClientId && (
+                  {!preselectedClient && (
                     <button
                       type="button"
                       onClick={clearClient}
@@ -280,7 +261,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   <span>👶</span>
                   {selectedClient.childName}
                 </div>
-                {preselectedClientId && (
+                {preselectedClient && (
                   <div style={{ 
                     fontSize: '0.75rem', 
                     color: 'var(--muted)', 
@@ -291,7 +272,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   </div>
                 )}
               </div>
-            ) : !preselectedClientId ? (
+            ) : !preselectedClient ? (
               <div className={styles.clientSearch} ref={dropdownRef}>
                 <input
                   ref={searchRef}
