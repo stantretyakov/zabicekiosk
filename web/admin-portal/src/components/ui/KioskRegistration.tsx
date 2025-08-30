@@ -49,6 +49,14 @@ export default function KioskRegistration({ open, onClose, onSaved }: KioskRegis
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(() => {
+      loadKioskSettings();
+    }, 30000);
+    return () => clearInterval(id);
+  }, [open]);
+
   const loadKioskSettings = async () => {
     try {
       setLoading(true);
@@ -189,6 +197,8 @@ export default function KioskRegistration({ open, onClose, onSaved }: KioskRegis
     const diffInMinutes = (now.getTime() - lastSeenDate.getTime()) / (1000 * 60);
     return diffInMinutes < 5 ? 'online' : 'offline';
   };
+
+  const onlineCount = registeredKiosks.filter(k => getKioskStatus(k.lastSeen) === 'online').length;
 
   if (!open) return null;
 
@@ -401,6 +411,10 @@ export default function KioskRegistration({ open, onClose, onSaved }: KioskRegis
                 </h3>
                 <p className={styles.sectionDescription}>
                   Devices that have connected to the system
+                </p>
+
+                <p className={styles.kioskSummary}>
+                  {onlineCount} of {registeredKiosks.length} kiosks online
                 </p>
 
                 {registeredKiosks.length > 0 ? (
