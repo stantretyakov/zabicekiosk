@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from './KioskRegistration.module.css';
+import { fetchJSON } from '../../lib/api';
 
 export type KioskRegistrationProps = {
   open: boolean;
@@ -91,11 +92,13 @@ export default function KioskRegistration({ open, onClose, onSaved }: KioskRegis
         return;
       }
       
-      // TODO: Load from API
-      // const response = await fetchJSON('/admin/kiosks/settings');
-      // setSettings(response.settings);
-      // setRegisteredKiosks(response.kiosks);
-      
+      const response = await fetchJSON<{ settings: KioskSettings; kiosks: Omit<RegisteredKiosk, 'status'>[] }>(
+        '/admin/kiosks/settings'
+      );
+      setSettings(response.settings);
+      setRegisteredKiosks(
+        response.kiosks.map(k => ({ ...k, status: getKioskStatus(k.lastSeen) }))
+      );
       setLoading(false);
     } catch (err: any) {
       setError(err.message || 'Failed to load kiosk settings');
@@ -150,13 +153,12 @@ export default function KioskRegistration({ open, onClose, onSaved }: KioskRegis
         return;
       }
       
-      // TODO: Save to API
-      // await fetchJSON('/admin/kiosks/settings', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(settings),
-      // });
-      
+      await fetchJSON('/admin/kiosks/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+
       setSuccess('Kiosk settings saved successfully!');
       setTimeout(() => {
         setSuccess(null);
