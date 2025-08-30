@@ -4,6 +4,7 @@ import { redeem, registerKiosk } from '../lib/api';
 import beep from '../lib/beep';
 import Toast from '../components/Toast';
 import KioskSetup from '../components/KioskSetup';
+import CameraSettings from '../components/CameraSettings';
 import styles from './Kiosk.module.css';
 
 interface LogEntry {
@@ -42,6 +43,7 @@ export default function Kiosk() {
   const [scannerPosition, setScannerPosition] = useState<ScannerPosition>('left');
   const [showSettings, setShowSettings] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showCameraSettings, setShowCameraSettings] = useState(false);
   const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -96,15 +98,7 @@ export default function Kiosk() {
   }, [promoContent.length]);
 
   const handleToggleSettings = () => {
-    if (!isAdmin && kioskConfig) {
-      const pin = prompt('Enter admin PIN');
-      if (pin !== kioskConfig.adminPin) {
-        setToast({ kind: 'error', message: 'Invalid PIN' });
-        return;
-      }
-      setIsAdmin(true);
-    }
-    setShowSettings(!showSettings);
+    setShowCameraSettings(true);
   };
 
   const handleKioskConfigured = (config: any) => {
@@ -394,7 +388,7 @@ export default function Kiosk() {
                 <button
                   onClick={handleToggleSettings}
                   className={styles.settingsButton}
-                  title="Scanner position settings"
+                  title="Camera settings"
                 >
                   ⚙️
                 </button>
@@ -408,35 +402,6 @@ export default function Kiosk() {
         </div>
 
         <div className={styles.contentSection}>
-          {showSettings && (
-            <div className={styles.settingsPanel}>
-              <h3 className={styles.settingsTitle}>Scanner Position</h3>
-              <div className={styles.positionButtons}>
-                <button
-                  onClick={() => setScannerPosition('left')}
-                  className={`${styles.positionButton} ${scannerPosition === 'left' ? styles.active : ''}`}
-                >
-                  <span className={styles.positionIcon}>⬅️</span>
-                  Left
-                </button>
-                <button
-                  onClick={() => setScannerPosition('right')}
-                  className={`${styles.positionButton} ${scannerPosition === 'right' ? styles.active : ''}`}
-                >
-                  <span className={styles.positionIcon}>➡️</span>
-                  Right
-                </button>
-                <button
-                  onClick={() => setScannerPosition('top')}
-                  className={`${styles.positionButton} ${scannerPosition === 'top' ? styles.active : ''}`}
-                >
-                  <span className={styles.positionIcon}>⬆️</span>
-                  Top
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Promo Content Frame */}
           {promoContent.length > 0 && (
             <div className={styles.promoFrame}>
@@ -530,6 +495,18 @@ export default function Kiosk() {
       )}
 
       {toast && <Toast kind={toast.kind} message={toast.message} />}
+      
+      <CameraSettings
+        isOpen={showCameraSettings}
+        onClose={() => setShowCameraSettings(false)}
+        currentPosition={scannerPosition}
+        onPositionChange={(position) => {
+          setScannerPosition(position);
+          setShowCameraSettings(false);
+          addLog(`Scanner position changed to ${position}`, 'info');
+        }}
+        adminPin={kioskConfig?.adminPin || ''}
+      />
     </div>
   );
 }
