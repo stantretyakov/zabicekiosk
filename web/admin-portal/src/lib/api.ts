@@ -198,16 +198,21 @@ export async function createPass(body: {
   purchasedAt: string;
   priceRSD?: number;
   validityDays?: number;
-}): Promise<void> {
+}): Promise<{ status: 'created' | 'exists' }> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {
     await new Promise(resolve => setTimeout(resolve, 400));
-    
+
     const client = mockClients.find(c => c.id === body.clientId);
     if (!client) {
       throw new Error('Client not found');
     }
-    
+
+    const existing = mockPasses.find(p => p.clientId === body.clientId && p.remaining > 0);
+    if (existing) {
+      return { status: 'exists' };
+    }
+
     const newPass: PassWithClient = {
       id: `pass-${Date.now()}`,
       clientId: body.clientId,
@@ -229,10 +234,10 @@ export async function createPass(body: {
       priceRSD: body.priceRSD,
       client,
     });
-    return;
+    return { status: 'created' };
   }
-  
-  await fetchJSON(`/admin/passes`, {
+
+  return fetchJSON(`/admin/passes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
