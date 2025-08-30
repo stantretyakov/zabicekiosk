@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
-import { getClientToken, listPasses, createPass } from '../../lib/api';
+import {
+  getClientToken,
+  listPasses,
+  createPass,
+  fetchSettings,
+  type SettingsResponse,
+} from '../../lib/api';
 import styles from './ClientForm.module.css';
 import type { PassWithClient } from '../../types';
 
@@ -48,6 +54,13 @@ export default function ClientForm({
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
   const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [settings, setSettings] = useState<SettingsResponse>({});
+
+  useEffect(() => {
+    fetchSettings()
+      .then(setSettings)
+      .catch(err => console.error('Failed to load settings:', err));
+  }, []);
 
   // Reset form when initial values change
   useEffect(() => {
@@ -78,7 +91,7 @@ export default function ClientForm({
         generateTicketCard(passUrl, values.parentName, values.childName);
       }, 100);
     }
-  }, [passUrl, values.parentName, values.childName, mode]);
+  }, [passUrl, values.parentName, values.childName, mode, settings]);
 
   const loadClientPasses = async (clientId: string) => {
     try {
@@ -195,8 +208,8 @@ export default function ClientForm({
     // Business name
     ctx.fillStyle = '#0F1115';
     ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillText('Swimming Academy', 100, 45);
-    
+    ctx.fillText(settings.businessName || 'Swimming Academy', 100, 45);
+
     ctx.font = '18px Inter, sans-serif';
     ctx.fillText('Professional Swimming Lessons', 100, 70);
 
@@ -225,10 +238,27 @@ export default function ClientForm({
     // Business information
     ctx.fillStyle = '#9AA5B1';
     ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('📍 Belgrade, Serbia', 40, 310);
-    ctx.fillText('📞 +381 60 123 4567', 40, 335);
-    ctx.fillText('📧 info@swimming-academy.rs', 40, 360);
-    ctx.fillText('💬 @Tretiakovaanny', 40, 385);
+    let infoY = 310;
+    const lineHeight = 25;
+    if (settings.businessAddress) {
+      ctx.fillText(`📍 ${settings.businessAddress}`, 40, infoY);
+      infoY += lineHeight;
+    }
+    if (settings.businessPhone) {
+      ctx.fillText(`📞 ${settings.businessPhone}`, 40, infoY);
+      infoY += lineHeight;
+    }
+    if (settings.businessEmail) {
+      ctx.fillText(`📧 ${settings.businessEmail}`, 40, infoY);
+      infoY += lineHeight;
+    }
+    if (settings.businessTelegram) {
+      ctx.fillText(`💬 ${settings.businessTelegram}`, 40, infoY);
+      infoY += lineHeight;
+    }
+    if (settings.businessInstagram) {
+      ctx.fillText(`📸 ${settings.businessInstagram}`, 40, infoY);
+    }
 
     // Instructions
     ctx.fillStyle = '#EAEFF5';

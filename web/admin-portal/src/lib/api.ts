@@ -435,6 +435,8 @@ export interface SettingsResponse {
   businessAddress?: string;
   businessPhone?: string;
   businessEmail?: string;
+  businessTelegram?: string;
+  businessInstagram?: string;
   [key: string]: any;
 }
 
