@@ -373,10 +373,15 @@ export function filterClients(
 
   // Apply search filter
   if (filters.search) {
-    const searchLower = filters.search.toLowerCase();
+    const normalize = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+    const searchLower = normalize(filters.search);
     filtered = filtered.filter(client =>
-      client.parentName.toLowerCase().includes(searchLower) ||
-      client.childName.toLowerCase().includes(searchLower)
+      normalize(client.parentName).includes(searchLower) ||
+      normalize(client.childName).includes(searchLower)
     );
   }
 
