@@ -3,6 +3,7 @@ import { scanStream } from '../lib/barcode';
 import { redeem, registerKiosk } from '../lib/api';
 import beep from '../lib/beep';
 import Toast from '../components/Toast';
+import KioskSetup from '../components/KioskSetup';
 import styles from './Kiosk.module.css';
 
 interface LogEntry {
@@ -43,6 +44,25 @@ export default function Kiosk() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [kioskConfig, setKioskConfig] = useState<any>(null);
+
+  useEffect(() => {
+    // Check if kiosk is configured
+    const savedConfig = localStorage.getItem('kioskConfig');
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig);
+        setKioskConfig(config);
+        setNeedsSetup(false);
+      } catch (err) {
+        console.error('Failed to parse saved config:', err);
+        setNeedsSetup(true);
+      }
+    } else {
+      setNeedsSetup(true);
+    }
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -58,7 +78,9 @@ export default function Kiosk() {
   }, []);
 
   useEffect(() => {
-    registerKiosk().catch(err => console.error('Failed to register kiosk', err));
+    if (kioskConfig && !needsSetup) {
+      registerKiosk().catch(err => console.error('Failed to register kiosk', err));
+    }
   }, []);
 
   useEffect(() => {
@@ -74,15 +96,33 @@ export default function Kiosk() {
   }, [promoContent.length]);
 
   const handleToggleSettings = () => {
-    if (!isAdmin) {
+    if (!isAdmin && kioskConfig) {
       const pin = prompt('Enter admin PIN');
-      if (pin !== import.meta.env.VITE_KIOSK_PIN) {
+      if (pin !== kioskConfig.adminPin) {
         setToast({ kind: 'error', message: 'Invalid PIN' });
         return;
       }
       setIsAdmin(true);
     }
     setShowSettings(!showSettings);
+  };
+
+  const handleKioskConfigured = (config: any) => {
+    setKioskConfig(config);
+    setNeedsSetup(false);
+    // Apply configuration
+    setScannerPosition(config.scannerPosition || 'left');
+    setFacingMode(config.cameraFacingMode || 'environment');
+    addLog(`Kiosk configured: ${config.location}`, 'success');
+  };
+
+  const handleSetupCancel = () => {
+    // For now, just show error - in production you might want to prevent usage
+    setToast({ 
+      kind: 'error', 
+      message: 'Kiosk must be configured before use. Contact administrator.' 
+    });
+    setTimeout(() => setToast(null), 5000);
   };
 
   const loadPromoContent = async () => {
@@ -301,6 +341,16 @@ export default function Kiosk() {
       default: return 'var(--accent-2)';
     }
   };
+
+  // Show setup dialog if kiosk needs configuration
+  if (needsSetup) {
+    return (
+      <KioskSetup
+        onConfigured={handleKioskConfigured}
+        onCancel={handleSetupCancel}
+      />
+    );
+  }
 
   return (
     <div className={`${styles.root} ${styles[`position${scannerPosition.charAt(0).toUpperCase() + scannerPosition.slice(1)}`]} ${flashEffect ? styles[`flash${flashEffect.charAt(0).toUpperCase() + flashEffect.slice(1)}`] : ''}`}>

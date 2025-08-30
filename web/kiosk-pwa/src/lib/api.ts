@@ -41,10 +41,18 @@ function getKioskId(): string {
 }
 
 export async function registerKiosk(): Promise<void> {
+  const kioskConfig = localStorage.getItem('kioskConfig');
+  const config = kioskConfig ? JSON.parse(kioskConfig) : {};
+  
   await fetch(`${API_BASE_URL}/kiosks/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ kioskId: getKioskId() }),
+    body: JSON.stringify({ 
+      kioskId: getKioskId(),
+      location: config.location,
+      description: config.description,
+      version: '1.0.0'
+    }),
   });
 }
 
