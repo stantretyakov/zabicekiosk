@@ -60,7 +60,10 @@ export default function Settings() {
     try {
       setLoading(true);
       const settings = await fetchSettings();
-      setPriceSettings(settings.prices || { dropInRSD: 0, currency: 'RSD' });
+      setPriceSettings({
+        dropInRSD: settings.prices?.dropInRSD ?? 0,
+        currency: settings.prices?.currency ?? 'RSD',
+      });
       setPassSettings(settings.passes || []);
       setGeneralSettings({
         cooldownSec: settings.cooldownSec ?? 5,
@@ -88,7 +91,10 @@ export default function Settings() {
         ...generalSettings,
       };
       const saved = await updateSettings(payload);
-      setPriceSettings(saved.prices || priceSettings);
+      setPriceSettings({
+        dropInRSD: saved.prices?.dropInRSD ?? priceSettings.dropInRSD,
+        currency: saved.prices?.currency ?? priceSettings.currency,
+      });
       setPassSettings(saved.passes || passSettings);
       setGeneralSettings({
         cooldownSec: saved.cooldownSec ?? generalSettings.cooldownSec,
