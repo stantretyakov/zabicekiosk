@@ -143,10 +143,7 @@ export default async function adminPasses(app: FastifyInstance) {
       }
       const pass = passSnap.data() as any;
       await db.runTransaction(async tx => {
-        tx.update(passRef, {
-          revoked: true,
-          revokedAt: FieldValue.serverTimestamp(),
-        });
+        tx.delete(passRef);
         const revRef = db.collection('redeems').doc();
         tx.set(revRef, {
           ts: FieldValue.serverTimestamp(),
