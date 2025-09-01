@@ -69,7 +69,6 @@ export interface Translations {
   noClientsFound: string;
 
   // Client Form
-  addClient: string;
   editClient: string;
   parentName: string;
   childName: string;
@@ -92,7 +91,6 @@ export interface Translations {
   shareTicket: string;
   sendAsImage: string;
   printTicket: string;
-  activePasses: string;
   currentSwimmingPasses: string;
   loadingPasses: string;
   noActivePassesFound: string;
@@ -213,7 +211,6 @@ export interface Translations {
   priority: string;
   targetAudience: string;
   expiresAt: string;
-  allClients: string;
   activePassHolders: string;
   expiringPasses: string;
   characters: string;
@@ -321,7 +318,6 @@ const translations: Record<Language, Translations> = {
     noClientsFound: 'Клиенты не найдены',
 
     // Client Form
-    addClient: 'Добавить клиента',
     editClient: 'Редактировать клиента',
     parentName: 'Имя родителя',
     childName: 'Имя ребенка',
@@ -344,7 +340,6 @@ const translations: Record<Language, Translations> = {
     shareTicket: 'Поделиться билетом',
     sendAsImage: 'Отправить как изображение',
     printTicket: 'Печать билета',
-    activePasses: 'Активные абонементы',
     currentSwimmingPasses: 'Текущие абонементы на плавание для этого клиента',
     loadingPasses: 'Загрузка абонементов...',
     noActivePassesFound: 'Активные абонементы не найдены',
@@ -465,7 +460,6 @@ const translations: Record<Language, Translations> = {
     priority: 'Приоритет',
     targetAudience: 'Целевая аудитория',
     expiresAt: 'Истекает (необязательно)',
-    allClients: 'Все клиенты',
     activePassHolders: 'Владельцы активных абонементов',
     expiringPasses: 'Истекающие абонементы',
     characters: 'символов',
@@ -571,7 +565,6 @@ const translations: Record<Language, Translations> = {
     noClientsFound: 'No clients found',
 
     // Client Form
-    addClient: 'Add Client',
     editClient: 'Edit Client',
     parentName: 'Parent Name',
     childName: 'Child Name',
@@ -594,7 +587,6 @@ const translations: Record<Language, Translations> = {
     shareTicket: 'Share Ticket',
     sendAsImage: 'Send as image',
     printTicket: 'Print Ticket',
-    activePasses: 'Active Passes',
     currentSwimmingPasses: 'Current swimming passes for this client',
     loadingPasses: 'Loading passes...',
     noActivePassesFound: 'No active passes found',
@@ -715,7 +707,6 @@ const translations: Record<Language, Translations> = {
     priority: 'Priority',
     targetAudience: 'Target Audience',
     expiresAt: 'Expires At (Optional)',
-    allClients: 'All Clients',
     activePassHolders: 'Active Pass Holders',
     expiringPasses: 'Expiring Passes',
     characters: 'characters',
