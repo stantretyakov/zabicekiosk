@@ -160,14 +160,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleCreateClient = async (clientData: any) => {
+  const handleCreateClient = async () => {
     try {
       // In dev mode, just close the form
       if (import.meta.env.DEV) {
         setShowClientForm(false);
         return;
       }
-      
+
       // TODO: Implement actual client creation
       setShowClientForm(false);
     } catch (err: any) {
