@@ -1,6 +1,7 @@
 import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import styles from './PassCard.module.css';
+import { FROG_PNG } from '../assets/frog';
 
 export interface PassData {
   name: string;
@@ -217,7 +218,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
             level="M"
             includeMargin={false}
             imageSettings={{
-              src: '/frog.svg',
+              src: FROG_PNG,
               height: 32,
               width: 32,
               excavate: true,
