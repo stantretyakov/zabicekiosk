@@ -31,7 +31,6 @@ export type ClientFormProps = {
 };
 
 export default function ClientForm({
-  const { t } = useTranslation();
   initial,
   mode,
   onSubmit,
@@ -39,6 +38,7 @@ export default function ClientForm({
   submitting = false,
   error = null,
 }: ClientFormProps) {
+  const { t } = useTranslation();
   const [values, setValues] = useState({
     parentName: initial?.parentName || '',
     childName: initial?.childName || '',

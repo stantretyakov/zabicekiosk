@@ -34,7 +34,6 @@ function SkeletonRow<T>({ columns }: { columns: Column<T>[] }) {
 }
 
 export default function DataTable<T>({
-  const { t } = useTranslation();
   columns,
   rows,
   loading = false,
@@ -45,6 +44,7 @@ export default function DataTable<T>({
   hasNext = false,
   hasPrev = false,
 }: DataTableProps<T>) {
+  const { t } = useTranslation();
   const showPagination = onNextPage || onPrevPage;
   
   const defaultEmptyText = emptyText || t('noDataAvailable');
