@@ -73,19 +73,25 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
 
   const loadPassTypes = async () => {
     try {
-      const settings = await fetchSettings();
-      const options = (settings.passes || []).filter((p: any) => p.active !== false);
-      if (options.length > 0) {
-        setPassTypes(options);
-        setSelectedPassType(options[0].id);
-      } else {
+      // In dev mode, use default pass types
+      if (import.meta.env.DEV) {
         setPassTypes(DEFAULT_PASS_TYPES);
-        setSelectedPassType(DEFAULT_PASS_TYPES[0].id);
+        setSelectedPassType(DEFAULT_PASS_TYPES[2].id);
+      } else {
+        const settings = await fetchSettings();
+        const options = (settings.passes || []).filter((p: any) => p.active !== false);
+        if (options.length > 0) {
+          setPassTypes(options);
+          setSelectedPassType(options[0].id);
+        } else {
+          setPassTypes(DEFAULT_PASS_TYPES);
+          setSelectedPassType(DEFAULT_PASS_TYPES[0].id);
+        }
       }
     } catch (err) {
       console.error('Failed to load pass types:', err);
       setPassTypes(DEFAULT_PASS_TYPES);
-      setSelectedPassType(DEFAULT_PASS_TYPES[0].id);
+      setSelectedPassType(DEFAULT_PASS_TYPES[2].id);
     }
   };
 

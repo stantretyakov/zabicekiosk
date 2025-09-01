@@ -59,9 +59,21 @@ export default function ClientForm({
   const [settings, setSettings] = useState<SettingsResponse>({});
 
   useEffect(() => {
-    fetchSettings()
-      .then(setSettings)
-      .catch(err => console.error('Failed to load settings:', err));
+    // In dev mode, use mock settings
+    if (import.meta.env.DEV) {
+      setSettings({
+        businessName: 'Swimming Academy',
+        businessAddress: 'Belgrade, Serbia',
+        businessPhone: '+381 60 123 4567',
+        businessEmail: 'info@swimming-academy.rs',
+        businessTelegram: '@Tretiakovaanny',
+        businessInstagram: '@swimmingacademy'
+      });
+    } else {
+      fetchSettings()
+        .then(setSettings)
+        .catch(err => console.error('Failed to load settings:', err));
+    }
   }, []);
 
   // Reset form when initial values change
