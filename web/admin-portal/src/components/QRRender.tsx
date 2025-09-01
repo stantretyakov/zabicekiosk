@@ -6,5 +6,20 @@ interface Props {
 }
 
 export default function QRRender({ src, size = 256 }: Props) {
-  return <img src={src} width={size} height={size} alt="QR code" />;
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <img src={src} width={size} height={size} alt="QR code" />
+      <span
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          fontSize: size * 0.2,
+        }}
+      >
+        🐸
+      </span>
+    </div>
+  );
 }
