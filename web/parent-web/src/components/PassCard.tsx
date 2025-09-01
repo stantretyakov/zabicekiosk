@@ -2,7 +2,7 @@ import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslation } from '../lib/i18n';
 import styles from './PassCard.module.css';
-import { FROG_PNG } from '../assets/frog';
+import frogImage from '../assets/frog.png';
 
 export interface PassData {
   name: string;
@@ -220,7 +220,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
             level="M"
             includeMargin={false}
             imageSettings={{
-              src: FROG_PNG,
+              src: frogImage,
               height: 32,
               width: 32,
               excavate: true,
