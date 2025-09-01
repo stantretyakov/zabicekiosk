@@ -219,13 +219,18 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
             size={180}
             level="M"
             includeMargin={false}
-            imageSettings={{
-              src: FROG_PNG,
-              height: 32,
-              width: 32,
-              excavate: true,
-            }}
           />
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '24px',
+            pointerEvents: 'none',
+            textShadow: '0 0 4px rgba(255, 255, 255, 0.8)'
+          }}>
+            🐸
+          </div>
         </div>
         <p className={styles.qrHint}>
           {t('scanHint')}
