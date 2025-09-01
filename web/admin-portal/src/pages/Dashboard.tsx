@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getStats } from '../lib/api';
 import type { Stats } from '../types';
+import { useTranslation } from '../lib/i18n';
 import styles from './Dashboard.module.css';
 
 interface KpiCardProps {
@@ -75,6 +76,7 @@ function DetailModal({ title, isOpen, onClose, children }: DetailModalProps) {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -191,16 +193,16 @@ export default function Dashboard() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Dashboard</h1>
-        <p className={styles.subtitle}>Swimming facility overview and key metrics</p>
+        <h1 className={styles.title}>{t('dashboardTitle')}</h1>
+        <p className={styles.subtitle}>{t('dashboardSubtitle')}</p>
       </div>
 
       {/* Primary KPIs */}
       <div className={styles.primaryKpis}>
         <KpiCard
-          title="Monthly Recurring Revenue"
+          title={t('monthlyRecurringRevenue')}
           value={formatCurrency(stats.mrr)}
-          subtitle="Current month"
+          subtitle={t('currentMonth')}
           trend="up"
           trendValue="+12.5%"
           icon="💰"
@@ -210,9 +212,9 @@ export default function Dashboard() {
         />
         
         <KpiCard
-          title="Active Clients"
+          title={t('activeClients')}
           value={stats.activeClients}
-          subtitle={`of ${stats.totalClients} total`}
+          subtitle={`${stats.totalClients} ${t('totalClients').toLowerCase()}`}
           trend="up"
           trendValue="+8"
           icon="👥"
@@ -222,9 +224,9 @@ export default function Dashboard() {
         />
         
         <KpiCard
-          title="Client Retention"
+          title={t('clientRetention')}
           value={`${stats.clientRetention}%`}
-          subtitle="Last 3 months"
+          subtitle="За 3 месяца"
           trend="up"
           trendValue="+2.3%"
           icon="🎯"
@@ -232,9 +234,9 @@ export default function Dashboard() {
         />
         
         <KpiCard
-          title="Monthly Visits"
+          title={t('monthlyVisits')}
           value={stats.visitStats.thisMonth}
-          subtitle="This month"
+          subtitle={t('thisMonth')}
           trend="up"
           trendValue={formatPercentage(stats.visitStats.growth)}
           icon="🏊‍♀️"
@@ -247,7 +249,7 @@ export default function Dashboard() {
       {/* Secondary KPIs */}
       <div className={styles.secondaryKpis}>
         <KpiCard
-          title="Active Passes"
+          title={t('activePasses')}
           value={stats.activePasses}
           icon="🎫"
           color="var(--accent)"
@@ -256,9 +258,9 @@ export default function Dashboard() {
         />
         
         <KpiCard
-          title="Expiring Soon"
+          title={t('expiringSoon')}
           value={stats.expiring14d}
-          subtitle="Next 14 days"
+          subtitle={t('next14Days')}
           icon="⏰"
           color="var(--error)"
           onClick={() => setActiveModal('expiring')}
@@ -266,17 +268,17 @@ export default function Dashboard() {
         />
         
         <KpiCard
-          title="Weekly Visits"
+          title={t('weeklyVisits')}
           value={stats.redeems7d}
-          subtitle="Last 7 days"
+          subtitle="За 7 дней"
           icon="📊"
           color="var(--accent-2)"
         />
         
         <KpiCard
-          title="Drop-in Revenue"
+          title={t('dropInRevenue')}
           value={formatCurrency(stats.dropInRevenue)}
-          subtitle="This month"
+          subtitle={t('thisMonth')}
           icon="💳"
           color="var(--warn)"
         />
@@ -284,50 +286,50 @@ export default function Dashboard() {
 
       {/* Quick Actions */}
       <div className={styles.quickActions}>
-        <h2 className={styles.sectionTitle}>Quick Actions</h2>
+        <h2 className={styles.sectionTitle}>{t('quickActions')}</h2>
         <div className={styles.actionGrid}>
           <button className={styles.actionButton}>
             <span className={styles.actionIcon}>👤</span>
-            <span className={styles.actionText}>Add Client</span>
+            <span className={styles.actionText}>{t('addClient')}</span>
           </button>
           <button className={styles.actionButton}>
             <span className={styles.actionIcon}>🎫</span>
-            <span className={styles.actionText}>Create Pass</span>
+            <span className={styles.actionText}>{t('createPass')}</span>
           </button>
           <button className={styles.actionButton}>
             <span className={styles.actionIcon}>📊</span>
-            <span className={styles.actionText}>View Reports</span>
+            <span className={styles.actionText}>{t('viewReports')}</span>
           </button>
           <button className={styles.actionButton}>
             <span className={styles.actionIcon}>⚙️</span>
-            <span className={styles.actionText}>Settings</span>
+            <span className={styles.actionText}>{t('settings')}</span>
           </button>
         </div>
       </div>
 
       {/* Detail Modals */}
       <DetailModal
-        title="Revenue Breakdown"
+        title={t('revenueBreakdown')}
         isOpen={activeModal === 'revenue'}
         onClose={() => setActiveModal(null)}
       >
         <div className={styles.revenueBreakdown}>
           <div className={styles.breakdownItem}>
-            <span className={styles.breakdownLabel}>Pass Sales</span>
+            <span className={styles.breakdownLabel}>{t('passSales')}</span>
             <span className={styles.breakdownValue}>{formatCurrency(stats.revenueBreakdown.passes)}</span>
             <span className={styles.breakdownPercentage}>
               {((stats.revenueBreakdown.passes / stats.revenueBreakdown.total) * 100).toFixed(1)}%
             </span>
           </div>
           <div className={styles.breakdownItem}>
-            <span className={styles.breakdownLabel}>Drop-in Sessions</span>
+            <span className={styles.breakdownLabel}>{t('dropInSessions')}</span>
             <span className={styles.breakdownValue}>{formatCurrency(stats.revenueBreakdown.dropIns)}</span>
             <span className={styles.breakdownPercentage}>
               {((stats.revenueBreakdown.dropIns / stats.revenueBreakdown.total) * 100).toFixed(1)}%
             </span>
           </div>
           <div className={`${styles.breakdownItem} ${styles.total}`}>
-            <span className={styles.breakdownLabel}>Total Revenue</span>
+            <span className={styles.breakdownLabel}>{t('totalRevenue')}</span>
             <span className={styles.breakdownValue}>{formatCurrency(stats.revenueBreakdown.total)}</span>
             <span className={styles.breakdownPercentage}>100%</span>
           </div>
@@ -335,32 +337,32 @@ export default function Dashboard() {
       </DetailModal>
 
       <DetailModal
-        title="Client Overview"
+        title={t('clientOverview')}
         isOpen={activeModal === 'clients'}
         onClose={() => setActiveModal(null)}
       >
         <div className={styles.clientOverview}>
           <div className={styles.clientStat}>
             <span className={styles.clientStatValue}>{stats.totalClients}</span>
-            <span className={styles.clientStatLabel}>Total Clients</span>
+            <span className={styles.clientStatLabel}>{t('totalClients')}</span>
           </div>
           <div className={styles.clientStat}>
             <span className={styles.clientStatValue}>{stats.activeClients}</span>
-            <span className={styles.clientStatLabel}>Active Clients</span>
+            <span className={styles.clientStatLabel}>{t('activeClients')}</span>
           </div>
           <div className={styles.clientStat}>
             <span className={styles.clientStatValue}>{stats.totalClients - stats.activeClients}</span>
-            <span className={styles.clientStatLabel}>Inactive Clients</span>
+            <span className={styles.clientStatLabel}>{t('inactiveClients')}</span>
           </div>
           <div className={styles.clientStat}>
             <span className={styles.clientStatValue}>{stats.clientRetention}%</span>
-            <span className={styles.clientStatLabel}>Retention Rate</span>
+            <span className={styles.clientStatLabel}>{t('retentionRate')}</span>
           </div>
         </div>
       </DetailModal>
 
       <DetailModal
-        title="Pass Distribution"
+        title={t('passDistribution')}
         isOpen={activeModal === 'passes'}
         onClose={() => setActiveModal(null)}
       >
@@ -384,31 +386,31 @@ export default function Dashboard() {
       </DetailModal>
 
       <DetailModal
-        title="Upcoming Expirations"
+        title={t('upcomingExpirations')}
         isOpen={activeModal === 'expiring'}
         onClose={() => setActiveModal(null)}
       >
         <div className={styles.expirationBreakdown}>
           <div className={styles.expirationItem}>
-            <span className={styles.expirationPeriod}>Next 7 days</span>
+            <span className={styles.expirationPeriod}>{t('next7Days')}</span>
             <span className={styles.expirationCount}>{stats.upcomingExpirations.next7Days}</span>
-            <span className={styles.expirationUrgency}>High Priority</span>
+            <span className={styles.expirationUrgency}>{t('highPriority')}</span>
           </div>
           <div className={styles.expirationItem}>
-            <span className={styles.expirationPeriod}>Next 14 days</span>
+            <span className={styles.expirationPeriod}>{t('next14Days')}</span>
             <span className={styles.expirationCount}>{stats.upcomingExpirations.next14Days}</span>
-            <span className={styles.expirationUrgency}>Medium Priority</span>
+            <span className={styles.expirationUrgency}>{t('mediumPriority')}</span>
           </div>
           <div className={styles.expirationItem}>
-            <span className={styles.expirationPeriod}>Next 30 days</span>
+            <span className={styles.expirationPeriod}>{t('next30Days')}</span>
             <span className={styles.expirationCount}>{stats.upcomingExpirations.next30Days}</span>
-            <span className={styles.expirationUrgency}>Low Priority</span>
+            <span className={styles.expirationUrgency}>{t('lowPriority')}</span>
           </div>
         </div>
       </DetailModal>
 
       <DetailModal
-        title="Visit Statistics"
+        title={t('visitStatistics')}
         isOpen={activeModal === 'visits'}
         onClose={() => setActiveModal(null)}
       >
@@ -416,17 +418,17 @@ export default function Dashboard() {
           <div className={styles.visitComparison}>
             <div className={styles.visitMonth}>
               <span className={styles.visitValue}>{stats.visitStats.thisMonth}</span>
-              <span className={styles.visitLabel}>This Month</span>
+              <span className={styles.visitLabel}>{t('thisMonth')}</span>
             </div>
             <div className={styles.visitGrowth}>
               <span className={`${styles.growthValue} ${styles.positive}`}>
                 {formatPercentage(stats.visitStats.growth)}
               </span>
-              <span className={styles.growthLabel}>Growth</span>
+              <span className={styles.growthLabel}>{t('growth')}</span>
             </div>
             <div className={styles.visitMonth}>
               <span className={styles.visitValue}>{stats.visitStats.lastMonth}</span>
-              <span className={styles.visitLabel}>Last Month</span>
+              <span className={styles.visitLabel}>{t('lastMonth')}</span>
             </div>
           </div>
         </div>

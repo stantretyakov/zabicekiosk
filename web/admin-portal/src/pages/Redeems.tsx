@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { listRedeems } from '../lib/api';
 import { Redeem } from '../types';
+import { useTranslation } from '../lib/i18n';
 import DataTable from '../components/ui/DataTable';
 
 export default function Redeems() {
+  const { t } = useTranslation();
   const [redeems, setRedeems] = useState<Redeem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +46,10 @@ export default function Redeems() {
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
     
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    if (diffInMinutes < 1) return t('justNow');
+    if (diffInMinutes < 60) return `${diffInMinutes}${t('minutesAgo')}`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}${t('hoursAgo')}`;
+    return `${Math.floor(diffInMinutes / 1440)}${t('daysAgo')}`;
   };
 
   const getKindIcon = (kind: string) => {
@@ -71,7 +73,7 @@ export default function Redeems() {
   const columns = [
     {
       key: 'kind',
-      title: 'Type',
+      title: t('type'),
       render: (redeem: Redeem) => (
         <div style={{ 
           display: 'flex', 
@@ -91,7 +93,7 @@ export default function Redeems() {
     },
     {
       key: 'client',
-      title: 'Client',
+      title: t('client'),
       render: (redeem: Redeem) => (
         <div>
           {redeem.client ? (
@@ -112,7 +114,7 @@ export default function Redeems() {
             </>
           ) : (
             <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
-              Unknown client
+              {t('unknownClient')}
             </span>
           )}
         </div>
@@ -120,7 +122,7 @@ export default function Redeems() {
     },
     {
       key: 'value',
-      title: 'Value',
+      title: t('value'),
       render: (redeem: Redeem) => (
         <div style={{
           padding: '0.5rem 1rem',
@@ -133,7 +135,7 @@ export default function Redeems() {
           textAlign: 'center'
         }}>
           {redeem.kind === 'pass' 
-            ? `${Math.abs(redeem.delta || 0)} visit${Math.abs(redeem.delta || 0) !== 1 ? 's' : ''}`
+            ? `${Math.abs(redeem.delta || 0)} ${t('visits')}`
             : `${redeem.priceRSD || 0} RSD`
           }
         </div>
@@ -141,7 +143,7 @@ export default function Redeems() {
     },
     {
       key: 'timestamp',
-      title: 'When',
+      title: t('when'),
       render: (redeem: Redeem) => (
         <div>
           <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
@@ -174,14 +176,14 @@ export default function Redeems() {
           WebkitTextFillColor: 'transparent',
           margin: 0
         }}>
-          Redeems
+          {t('redeemsTitle')}
         </h1>
       </div>
 
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search by client name..."
+          placeholder={t('searchByClientNameRedeems')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ flex: 1, minWidth: '200px' }}
@@ -191,10 +193,10 @@ export default function Redeems() {
           value={kindFilter}
           onChange={(e) => setKindFilter(e.target.value)}
         >
-          <option value="all">All Types</option>
-          <option value="pass">Pass Redeems</option>
-          <option value="dropin">Drop-in Payments</option>
-          <option value="purchase">Pass Purchases</option>
+          <option value="all">{t('allTypes')}</option>
+          <option value="pass">{t('passRedeems')}</option>
+          <option value="dropin">{t('dropInPayments')}</option>
+          <option value="purchase">{t('passPurchases')}</option>
         </select>
       </div>
 
@@ -208,7 +210,7 @@ export default function Redeems() {
         columns={columns}
         rows={filteredRedeems}
         loading={loading}
-        emptyText="No redeems found"
+        emptyText={t('noRedeemsFound')}
       />
     </div>
   );

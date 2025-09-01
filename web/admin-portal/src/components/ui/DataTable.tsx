@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../../lib/i18n';
 import styles from './DataTable.module.css';
 
 export type Column<T> = {
@@ -33,10 +34,11 @@ function SkeletonRow<T>({ columns }: { columns: Column<T>[] }) {
 }
 
 export default function DataTable<T>({
+  const { t } = useTranslation();
   columns,
   rows,
   loading = false,
-  emptyText = 'No data available',
+  emptyText,
   headerSlot,
   onNextPage,
   onPrevPage,
@@ -44,6 +46,8 @@ export default function DataTable<T>({
   hasPrev = false,
 }: DataTableProps<T>) {
   const showPagination = onNextPage || onPrevPage;
+  
+  const defaultEmptyText = emptyText || t('noDataAvailable');
 
   return (
     <div className={styles.container}>
@@ -78,7 +82,7 @@ export default function DataTable<T>({
               // Show empty state
               <tr>
                 <td colSpan={columns.length} className={styles.emptyCell}>
-                  {emptyText}
+                  {defaultEmptyText}
                 </td>
               </tr>
             ) : (
@@ -113,7 +117,7 @@ export default function DataTable<T>({
             className={styles.paginationButton}
             aria-label="Previous page"
           >
-            ← Previous
+            {t('previous')}
           </button>
           <button
             type="button"
@@ -122,7 +126,7 @@ export default function DataTable<T>({
             className={styles.paginationButton}
             aria-label="Next page"
           >
-            Next →
+            {t('next')}
           </button>
         </div>
       )}

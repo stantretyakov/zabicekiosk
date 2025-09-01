@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../lib/i18n';
 import styles from './Content.module.css';
 
 interface PromoContent {
@@ -14,6 +15,7 @@ interface PromoContent {
 }
 
 export default function Content() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,8 +245,8 @@ export default function Content() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Content Management</h1>
-        <p className={styles.subtitle}>Create and manage promotional content for parent pass cards</p>
+        <h1 className={styles.title}>{t('contentTitle')}</h1>
+        <p className={styles.subtitle}>{t('contentSubtitle')}</p>
       </div>
 
       {error && (
@@ -279,7 +281,7 @@ export default function Content() {
           type="button"
         >
           <span className={styles.addIcon}>+</span>
-          Create Content
+          {t('createContent')}
         </button>
       </div>
 
@@ -302,60 +304,60 @@ export default function Content() {
             <form onSubmit={(e) => { e.preventDefault(); saveContent(); }} className={styles.form}>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Title</label>
+                  <label className={styles.label}>{t('title')}</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     className={styles.input}
-                    placeholder="Enter content title"
+                    placeholder="Введите заголовок контента"
                     required
                     maxLength={50}
                   />
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Type</label>
+                  <label className={styles.label}>{t('type')}</label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as PromoContent['type'] }))}
                     className={styles.select}
                   >
-                    <option value="info">Information</option>
-                    <option value="promotion">Promotion</option>
-                    <option value="announcement">Announcement</option>
-                    <option value="warning">Warning</option>
+                    <option value="info">{t('information')}</option>
+                    <option value="promotion">{t('promotion')}</option>
+                    <option value="announcement">{t('announcement')}</option>
+                    <option value="warning">{t('warning')}</option>
                   </select>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Priority</label>
+                  <label className={styles.label}>{t('priority')}</label>
                   <select
                     value={formData.priority}
                     onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
                     className={styles.select}
                   >
-                    <option value={1}>High (1)</option>
-                    <option value={2}>Medium (2)</option>
-                    <option value={3}>Low (3)</option>
+                    <option value={1}>{t('high')}</option>
+                    <option value={2}>{t('medium')}</option>
+                    <option value={3}>{t('low')}</option>
                   </select>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Target Audience</label>
+                  <label className={styles.label}>{t('targetAudience')}</label>
                   <select
                     value={formData.targetAudience}
                     onChange={(e) => setFormData(prev => ({ ...prev, targetAudience: e.target.value as PromoContent['targetAudience'] }))}
                     className={styles.select}
                   >
-                    <option value="all">All Clients</option>
-                    <option value="active">Active Pass Holders</option>
-                    <option value="expiring">Expiring Passes</option>
+                    <option value="all">{t('allClients')}</option>
+                    <option value="active">{t('activePassHolders')}</option>
+                    <option value="expiring">{t('expiringPasses')}</option>
                   </select>
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Expires At (Optional)</label>
+                  <label className={styles.label}>{t('expiresAt')}</label>
                   <input
                     type="date"
                     value={formData.expiresAt}
@@ -367,18 +369,18 @@ export default function Content() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Message</label>
+                <label className={styles.label}>{t('message')}</label>
                 <textarea
                   value={formData.message}
                   onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
                   className={styles.textarea}
-                  placeholder="Enter your promotional message..."
+                  placeholder="Введите ваше рекламное сообщение..."
                   required
                   maxLength={200}
                   rows={4}
                 />
                 <div className={styles.charCount}>
-                  {formData.message.length}/200 characters
+                  {formData.message.length}/200 {t('characters')}
                 </div>
               </div>
 
@@ -389,7 +391,7 @@ export default function Content() {
                   className={styles.cancelButton}
                   disabled={saving}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
@@ -399,12 +401,12 @@ export default function Content() {
                   {saving ? (
                     <>
                       <div className={styles.saveSpinner} />
-                      Saving...
+                      {t('saving')}
                     </>
                   ) : (
                     <>
                       <span className={styles.saveIcon}>💾</span>
-                      {editingContent ? 'Update' : 'Create'} Content
+                      {editingContent ? t('updateContent') : t('createContent')}
                     </>
                   )}
                 </button>
@@ -418,16 +420,16 @@ export default function Content() {
         {promoContents.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📝</div>
-            <h3 className={styles.emptyTitle}>No Content Created</h3>
+            <h3 className={styles.emptyTitle}>{t('noContentCreated')}</h3>
             <p className={styles.emptyDescription}>
-              Create your first promotional content to display on parent pass cards
+              {t('noContentDescription')}
             </p>
             <button
               onClick={() => setShowForm(true)}
               className={styles.emptyButton}
               type="button"
             >
-              Create Content
+              {t('createContent')}
             </button>
           </div>
         ) : (
@@ -456,7 +458,7 @@ export default function Content() {
                     <span className={styles.expiredBadge}>Expired</span>
                   )}
                   <span className={`${styles.statusBadge} ${content.active ? styles.active : styles.inactive}`}>
-                    {content.active ? 'Active' : 'Inactive'}
+                    {content.active ? t('active') : t('inactive')}
                   </span>
                 </div>
               </div>
@@ -473,7 +475,7 @@ export default function Content() {
                   </div>
                   {content.expiresAt && (
                     <div className={styles.dateItem}>
-                      <span className={styles.dateLabel}>Expires:</span>
+                      <span className={styles.dateLabel}>{t('expired')}:</span>
                       <span className={`${styles.dateValue} ${isExpired(content.expiresAt) ? styles.expired : ''}`}>
                         {formatDate(content.expiresAt)}
                       </span>
@@ -487,21 +489,21 @@ export default function Content() {
                     className={`${styles.toggleButton} ${content.active ? styles.deactivate : styles.activate}`}
                     type="button"
                   >
-                    {content.active ? 'Deactivate' : 'Activate'}
+                    {content.active ? t('deactivate') : t('activate')}
                   </button>
                   <button
                     onClick={() => startEdit(content)}
                     className={styles.editButton}
                     type="button"
                   >
-                    Edit
+                    {t('edit')}
                   </button>
                   <button
                     onClick={() => deleteContent(content.id)}
                     className={styles.deleteButton}
                     type="button"
                   >
-                    Delete
+                    {t('delete')}
                   </button>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { listClients, createPass, fetchSettings } from '../../lib/api';
 import type { Client } from '../../types';
+import { useTranslation } from '../../lib/i18n';
 import styles from './SellPassForm.module.css';
 
 export type SellPassFormProps = {
@@ -26,6 +27,7 @@ const DEFAULT_PASS_TYPES: PassType[] = [
 ];
 
 export default function SellPassForm({ open, onClose, onSuccess, preselectedClient }: SellPassFormProps) {
+  const { t } = useTranslation();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [clients, setClients] = useState<Client[]>([]);
@@ -229,7 +231,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     <div className={styles.backdrop} onClick={onClose} onKeyDown={handleKeyDown}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit} className={styles.form}>
-          <h2 className={styles.title}>Sell Swimming Pass</h2>
+          <h2 className={styles.title}>{t('sellSwimmingPass')}</h2>
 
           {error && (
             <div className={styles.errorMessage} role="alert">
@@ -239,7 +241,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
 
           {/* Client Selection */}
           <div className={styles.field}>
-            <label className={styles.label}>Select Client</label>
+            <label className={styles.label}>{t('selectClient')}</label>
             
             {selectedClient ? (
               <div className={styles.selectedClient}>
@@ -253,7 +255,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                       onClick={clearClient}
                       className={styles.changeButton}
                     >
-                      Change
+                      {t('change')}
                     </button>
                   )}
                 </div>
@@ -268,7 +270,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                     marginTop: '0.5rem',
                     fontStyle: 'italic'
                   }}>
-                    Client preselected from profile
+                    {t('clientPreselected')}
                   </div>
                 )}
               </div>
@@ -279,7 +281,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by parent or child name..."
+                  placeholder={t('searchByParentOrChild')}
                   className={styles.searchInput}
                   disabled={submitting}
                 />
@@ -289,7 +291,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                     {loadingClients ? (
                       <div className={styles.loadingOption}>
                         <div className={styles.loadingSpinner} />
-                        Searching...
+                        {t('loading')}
                       </div>
                     ) : clients.length > 0 ? (
                       clients.map((client) => (
@@ -309,7 +311,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                       ))
                     ) : (
                       <div className={styles.noResults}>
-                        No clients found
+                        Клиенты не найдены
                       </div>
                     )}
                   </div>
@@ -325,14 +327,14 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                 textAlign: 'center',
                 fontStyle: 'italic'
               }}>
-                Loading client information...
+                Загрузка информации о клиенте...
               </div>
             )}
           </div>
 
           {/* Pass Type Selection */}
           <div className={styles.field}>
-            <label className={styles.label}>Pass Type</label>
+            <label className={styles.label}>{t('passType')}</label>
             
             <div className={styles.passTypeGrid}>
               {passTypes.map((passType) => (
@@ -350,10 +352,10 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                     {passType.sessions}
                   </div>
                   <div className={styles.passTypeLabel}>
-                    {passType.name}
+                    Настройка
                   </div>
                   <div className={styles.passTypePrice}>
-                    {formatPrice(passType.priceRSD)}
+                    {t('configure')}
                   </div>
                 </div>
               ))}
@@ -378,11 +380,11 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
           {/* Custom Pass Configuration */}
           {useCustomPass && (
             <div className={styles.customPassSection}>
-              <h3 className={styles.customPassTitle}>Custom Pass Configuration</h3>
+              <h3 className={styles.customPassTitle}>{t('customPassConfiguration')}</h3>
               
               <div className={styles.customPassGrid}>
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Sessions</label>
+                  <label className={styles.label}>{t('sessions')}</label>
                   <input
                     type="number"
                     value={customPass.sessions}
@@ -398,7 +400,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                 </div>
                 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Price (RSD)</label>
+                  <label className={styles.label}>{t('priceRsd')}</label>
                   <input
                     type="number"
                     value={customPass.priceRSD}
@@ -414,7 +416,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                 </div>
                 
                 <div className={styles.formGroup}>
-                  <label className={styles.label}>Validity (Days)</label>
+                  <label className={styles.label}>{t('validityDays')}</label>
                   <input
                     type="number"
                     value={customPass.validityDays}
@@ -434,12 +436,12 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
 
           {/* Price Summary */}
           <div className={styles.priceCalculation}>
-            <div className={styles.priceLabel}>Total Price</div>
+            <div className={styles.priceLabel}>{t('totalPriceLabel')}</div>
             <div className={styles.priceValue}>
               {formatPrice(selectedPassConfig.priceRSD)}
             </div>
             <div className={styles.pricePerSession}>
-              {formatPrice(calculatePricePerSession(selectedPassConfig.priceRSD, selectedPassConfig.sessions))} per session
+              {formatPrice(calculatePricePerSession(selectedPassConfig.priceRSD, selectedPassConfig.sessions))} {t('perSession')}
             </div>
           </div>
 
@@ -450,7 +452,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
               disabled={submitting}
               className={styles.cancelButton}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -458,7 +460,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
               className={styles.submitButton}
             >
               {submitting && <div className={styles.spinner} />}
-              {submitting ? 'Creating...' : 'Sell Pass'}
+              {submitting ? t('creating') : t('sellPass')}
             </button>
           </div>
         </form>

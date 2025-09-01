@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 import SellPassForm from './SellPassForm';
+import { useTranslation } from '../../lib/i18n';
 import {
   getClientToken,
   listPasses,
@@ -30,6 +31,7 @@ export type ClientFormProps = {
 };
 
 export default function ClientForm({
+  const { t } = useTranslation();
   initial,
   mode,
   onSubmit,
@@ -522,7 +524,7 @@ export default function ClientForm({
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit} className={styles.form}>
           <h2 className={styles.title}>
-            {mode === 'create' ? 'Add Client' : 'Edit Client'}
+            {mode === 'create' ? t('addClient') : t('editClient')}
           </h2>
 
           {error && (
@@ -533,7 +535,7 @@ export default function ClientForm({
 
           <div className={styles.field}>
             <label htmlFor="parentName" className={styles.label}>
-              Parent Name *
+              {t('parentName')} *
             </label>
             <input
               id="parentName"
@@ -557,7 +559,7 @@ export default function ClientForm({
 
           <div className={styles.field}>
             <label htmlFor="childName" className={styles.label}>
-              Child Name *
+              {t('childName')} *
             </label>
             <input
               id="childName"
@@ -581,7 +583,7 @@ export default function ClientForm({
 
           <div className={styles.field}>
             <label htmlFor="phone" className={styles.label}>
-              Phone
+              {t('phone')}
             </label>
             <input
               id="phone"
@@ -604,7 +606,7 @@ export default function ClientForm({
 
           <div className={styles.field}>
             <label htmlFor="telegram" className={styles.label}>
-              Telegram
+              {t('telegram')}
             </label>
             <input
               id="telegram"
@@ -627,7 +629,7 @@ export default function ClientForm({
 
           <div className={styles.field}>
             <label htmlFor="instagram" className={styles.label}>
-              Instagram
+              {t('instagram')}
             </label>
             <input
               id="instagram"
@@ -651,9 +653,9 @@ export default function ClientForm({
           {mode === 'edit' && initial?.id && (
             <>
               <div className={styles.clientQrSection}>
-                <h3 className={styles.sectionTitle}>Client Pass Card</h3>
+                <h3 className={styles.sectionTitle}>{t('clientPassCard')}</h3>
                 <p className={styles.sectionDescription}>
-                  Share this QR code or link with the parent to access their swimming pass
+                  {t('sharePassCard')}
                 </p>
                 
                 {loadingToken ? (
@@ -671,7 +673,7 @@ export default function ClientForm({
                     </div>
                     
                     <div className={styles.urlSection}>
-                      <label className={styles.urlLabel}>Pass URL:</label>
+                      <label className={styles.urlLabel}>{t('passUrl')}</label>
                       <div className={styles.urlContainer}>
                         <input
                           type="text"
@@ -684,7 +686,7 @@ export default function ClientForm({
                           type="button"
                           onClick={() => copyToClipboard(passUrl)}
                           className={styles.copyButton}
-                          title="Copy link"
+                          title={t('copyLink')}
                         >
                           📋
                         </button>
@@ -699,8 +701,8 @@ export default function ClientForm({
                       >
                         <span className={styles.shareIcon}>📱</span>
                         <span className={styles.shareText}>
-                          <span className={styles.shareLabel}>Share via Telegram</span>
-                          <span className={styles.shareSubtext}>Send to parent</span>
+                          <span className={styles.shareLabel}>{t('shareViaTelegram')}</span>
+                          <span className={styles.shareSubtext}>{t('sendToParent')}</span>
                         </span>
                         <span className={styles.shareArrow}>→</span>
                       </button>
@@ -711,7 +713,7 @@ export default function ClientForm({
                         className={styles.downloadButton}
                       >
                         <span className={styles.downloadIcon}>💾</span>
-                        Download QR
+                        {t('downloadQr')}
                       </button>
                     </div>
                   </div>
@@ -724,9 +726,9 @@ export default function ClientForm({
               </div>
 
               <div className={styles.ticketSection}>
-                <h3 className={styles.sectionTitle}>Swimming Pass Ticket</h3>
+                <h3 className={styles.sectionTitle}>{t('swimmingPassTicket')}</h3>
                 <p className={styles.sectionDescription}>
-                  Professional ticket with client info, QR code, and business details
+                  {t('professionalTicket')}
                 </p>
                 
                 {loadingToken ? (
@@ -756,8 +758,8 @@ export default function ClientForm({
                       >
                         <span className={styles.shareIcon}>📤</span>
                         <span className={styles.shareText}>
-                          <span className={styles.shareLabel}>Share Ticket</span>
-                          <span className={styles.shareSubtext}>Send as image</span>
+                          <span className={styles.shareLabel}>{t('shareTicket')}</span>
+                          <span className={styles.shareSubtext}>{t('sendAsImage')}</span>
                         </span>
                         <span className={styles.shareArrow}>→</span>
                       </button>
@@ -768,7 +770,7 @@ export default function ClientForm({
                         className={styles.downloadTicketButton}
                       >
                         <span className={styles.downloadIcon}>🖨️</span>
-                        Print Ticket
+                        {t('printTicket')}
                       </button>
                     </div>
                   </div>
@@ -780,15 +782,15 @@ export default function ClientForm({
                 )}
               </div>
               <div className={styles.passesSection}>
-                <h3 className={styles.sectionTitle}>Active Passes</h3>
+                <h3 className={styles.sectionTitle}>{t('activePasses')}</h3>
                 <p className={styles.sectionDescription}>
-                  Current swimming passes for this client
+                  {t('currentSwimmingPasses')}
                 </p>
                 
                 {loadingPasses ? (
                   <div className={styles.loadingPasses}>
                     <div className={styles.passSpinner} />
-                    <p>Loading passes...</p>
+                    <p>{t('loadingPasses')}</p>
                   </div>
                 ) : passes.length > 0 ? (
                   <div className={styles.passesList}>
@@ -817,7 +819,7 @@ export default function ClientForm({
                 ) : (
                   <div className={styles.noPasses}>
                     <span className={styles.noPassesIcon}>🎫</span>
-                    <p>No active passes found</p>
+                    <p>{t('noActivePassesFound')}</p>
                   </div>
                 )}
                 <div className={styles.addPassForm}>
@@ -827,7 +829,7 @@ export default function ClientForm({
                     className={styles.btnSellPass}
                   >
                     <span className={styles.addIcon}>+</span>
-                    Sell New Pass
+                    {t('sellNewPass')}
                   </button>
                 </div>
               </div>
@@ -841,14 +843,14 @@ export default function ClientForm({
               disabled={submitting}
               className={styles.cancelButton}
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting || hasValidationErrors}
               className={styles.submitButton}
             >
-              {submitting ? 'Saving...' : 'Save'}
+              {submitting ? t('saving') : t('save')}
             </button>
           </div>
         </form>

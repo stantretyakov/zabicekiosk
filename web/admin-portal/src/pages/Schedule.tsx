@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from '../lib/i18n';
 import styles from './Schedule.module.css';
 
 interface TimeSlot {
@@ -29,6 +30,7 @@ interface BookingSet {
 }
 
 export default function Schedule() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -279,8 +281,8 @@ export default function Schedule() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Schedule Management</h1>
-        <p className={styles.subtitle}>Configure regular schedules and booking options</p>
+        <h1 className={styles.title}>{t('scheduleTitle')}</h1>
+        <p className={styles.subtitle}>{t('scheduleSubtitle')}</p>
       </div>
 
       {error && (
@@ -304,14 +306,14 @@ export default function Schedule() {
           onClick={() => setActiveTab('schedule')}
         >
           <span className={styles.tabIcon}>📅</span>
-          Weekly Schedule
+          {t('weeklySchedule')}
         </button>
         <button
           className={`${styles.tabButton} ${activeTab === 'booking-sets' ? styles.tabActive : ''}`}
           onClick={() => setActiveTab('booking-sets')}
         >
           <span className={styles.tabIcon}>🎯</span>
-          Booking Sets
+          {t('bookingSets')}
         </button>
       </div>
 
@@ -321,10 +323,10 @@ export default function Schedule() {
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionIcon}>📅</span>
-                Weekly Schedule
+                {t('weeklySchedule')}
               </h2>
               <p className={styles.sectionDescription}>
-                Configure regular time slots for each day of the week
+                {t('weeklyScheduleDescription')}
               </p>
             </div>
 
@@ -339,7 +341,7 @@ export default function Schedule() {
                       type="button"
                     >
                       <span className={styles.addIcon}>+</span>
-                      Add Slot
+                      {t('addSlot')}
                     </button>
                   </div>
 
@@ -347,7 +349,7 @@ export default function Schedule() {
                     {day.slots.length === 0 ? (
                       <div className={styles.noSlots}>
                         <span className={styles.noSlotsIcon}>📭</span>
-                        No time slots configured
+                        {t('noTimeSlotsConfigured')}
                       </div>
                     ) : (
                       day.slots.map((slot) => (
@@ -355,7 +357,7 @@ export default function Schedule() {
                           <div className={styles.slotForm}>
                             <div className={styles.slotFormGrid}>
                               <div className={styles.formGroup}>
-                                <label className={styles.label}>Start Time</label>
+                                <label className={styles.label}>{t('startTime')}</label>
                                 <input
                                   type="time"
                                   value={slot.startTime}
@@ -365,7 +367,7 @@ export default function Schedule() {
                               </div>
 
                               <div className={styles.formGroup}>
-                                <label className={styles.label}>End Time</label>
+                                <label className={styles.label}>{t('endTime')}</label>
                                 <input
                                   type="time"
                                   value={slot.endTime}
@@ -375,7 +377,7 @@ export default function Schedule() {
                               </div>
 
                               <div className={styles.formGroup}>
-                                <label className={styles.label}>Capacity</label>
+                                <label className={styles.label}>{t('capacity')}</label>
                                 <input
                                   type="number"
                                   value={slot.capacity}
@@ -387,26 +389,26 @@ export default function Schedule() {
                               </div>
 
                               <div className={styles.formGroup}>
-                                <label className={styles.label}>Type</label>
+                                <label className={styles.label}>{t('type')}</label>
                                 <select
                                   value={slot.type}
                                   onChange={(e) => updateTimeSlot(day.dayIndex, slot.id, { type: e.target.value as TimeSlot['type'] })}
                                   className={styles.select}
                                 >
-                                  <option value="regular">Regular</option>
-                                  <option value="private">Private</option>
-                                  <option value="group">Group</option>
+                                  <option value="regular">{t('regular')}</option>
+                                  <option value="private">{t('private')}</option>
+                                  <option value="group">{t('group')}</option>
                                 </select>
                               </div>
 
                               <div className={styles.formGroup}>
-                                <label className={styles.label}>Instructor</label>
+                                <label className={styles.label}>{t('instructor')}</label>
                                 <input
                                   type="text"
                                   value={slot.instructor || ''}
                                   onChange={(e) => updateTimeSlot(day.dayIndex, slot.id, { instructor: e.target.value })}
                                   className={styles.input}
-                                  placeholder="Instructor name"
+                                  placeholder={t('instructorName')}
                                 />
                               </div>
                             </div>
@@ -414,7 +416,7 @@ export default function Schedule() {
                             <div className={styles.slotActions}>
                               <div className={styles.slotInfo}>
                                 <span className={styles.slotType}>
-                                  {getTypeIcon(slot.type)} {slot.type}
+                                  {getTypeIcon(slot.type)} {t(slot.type)}
                                 </span>
                                 <span className={styles.slotDuration}>
                                   {slot.startTime} - {slot.endTime}
@@ -430,7 +432,7 @@ export default function Schedule() {
                                     className={styles.toggleInput}
                                   />
                                   <span className={styles.toggleSlider}></span>
-                                  <span className={styles.toggleText}>Active</span>
+                                  <span className={styles.toggleText}>{t('active')}</span>
                                 </label>
 
                                 <button
@@ -458,23 +460,23 @@ export default function Schedule() {
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>
                 <span className={styles.sectionIcon}>🎯</span>
-                Booking Sets
+                {t('bookingSets')}
               </h2>
               <p className={styles.sectionDescription}>
-                Configure available booking options and their properties
+                {t('bookingSetsDescription')}
               </p>
             </div>
 
             <div className={styles.card}>
               <div className={styles.bookingSetsHeader}>
-                <h3 className={styles.bookingSetsTitle}>Available Booking Sets</h3>
+                <h3 className={styles.bookingSetsTitle}>{t('availableBookingSets')}</h3>
                 <button
                   onClick={addBookingSet}
                   className={styles.addButton}
                   type="button"
                 >
                   <span className={styles.addIcon}>+</span>
-                  Add Booking Set
+                  {t('addBookingSet')}
                 </button>
               </div>
 
@@ -492,24 +494,24 @@ export default function Schedule() {
                           value={set.name}
                           onChange={(e) => updateBookingSet(set.id, { name: e.target.value })}
                           className={styles.nameInput}
-                          placeholder="Booking set name"
+                          placeholder="Название набора бронирования"
                         />
                       </div>
 
                       <div className={styles.bookingSetGrid}>
                         <div className={styles.formGroup}>
-                          <label className={styles.label}>Description</label>
+                          <label className={styles.label}>{t('description')}</label>
                           <textarea
                             value={set.description}
                             onChange={(e) => updateBookingSet(set.id, { description: e.target.value })}
                             className={styles.textarea}
                             rows={2}
-                            placeholder="Description of this booking set"
+                            placeholder="Описание этого набора бронирования"
                           />
                         </div>
 
                         <div className={styles.formGroup}>
-                          <label className={styles.label}>Duration (minutes)</label>
+                          <label className={styles.label}>{t('durationMinutes')}</label>
                           <input
                             type="number"
                             value={set.duration}
@@ -522,7 +524,7 @@ export default function Schedule() {
                         </div>
 
                         <div className={styles.formGroup}>
-                          <label className={styles.label}>Capacity</label>
+                          <label className={styles.label}>{t('capacity')}</label>
                           <input
                             type="number"
                             value={set.capacity}
@@ -534,7 +536,7 @@ export default function Schedule() {
                         </div>
 
                         <div className={styles.formGroup}>
-                          <label className={styles.label}>Price (RSD)</label>
+                          <label className={styles.label}>{t('priceRsd')}</label>
                           <input
                             type="number"
                             value={set.price}
@@ -546,7 +548,7 @@ export default function Schedule() {
                         </div>
 
                         <div className={styles.formGroup}>
-                          <label className={styles.label}>Color</label>
+                          <label className={styles.label}>{t('color')}</label>
                           <input
                             type="color"
                             value={set.color}
@@ -558,15 +560,15 @@ export default function Schedule() {
 
                       <div className={styles.bookingSetStats}>
                         <div className={styles.statItem}>
-                          <span className={styles.statLabel}>Duration:</span>
-                          <span className={styles.statValue}>{set.duration} min</span>
+                          <span className={styles.statLabel}>Продолжительность:</span>
+                          <span className={styles.statValue}>{set.duration} {t('duration')}</span>
                         </div>
                         <div className={styles.statItem}>
-                          <span className={styles.statLabel}>Capacity:</span>
-                          <span className={styles.statValue}>{set.capacity} people</span>
+                          <span className={styles.statLabel}>Вместимость:</span>
+                          <span className={styles.statValue}>{set.capacity} {t('people')}</span>
                         </div>
                         <div className={styles.statItem}>
-                          <span className={styles.statLabel}>Price:</span>
+                          <span className={styles.statLabel}>Цена:</span>
                           <span className={styles.statValue}>{formatPrice(set.price)}</span>
                         </div>
                       </div>
@@ -580,7 +582,7 @@ export default function Schedule() {
                             className={styles.toggleInput}
                           />
                           <span className={styles.toggleSlider}></span>
-                          <span className={styles.toggleText}>Active</span>
+                          <span className={styles.toggleText}>{t('active')}</span>
                         </label>
 
                         <button
@@ -589,7 +591,7 @@ export default function Schedule() {
                           type="button"
                         >
                           <span className={styles.deleteIcon}>🗑️</span>
-                          Delete
+                          {t('delete')}
                         </button>
                       </div>
                     </div>
@@ -612,12 +614,12 @@ export default function Schedule() {
           {saving ? (
             <>
               <div className={styles.saveSpinner} />
-              Saving...
+              {t('saving')}
             </>
           ) : (
             <>
               <span className={styles.saveIcon}>💾</span>
-              Save Schedule
+              {t('saveSchedule')}
             </>
           )}
         </button>

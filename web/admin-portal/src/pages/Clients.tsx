@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { listClients, createClient, updateClient, archiveClient } from '../lib/api';
 import { Client } from '../types';
+import { useTranslation } from '../lib/i18n';
 import DataTable from '../components/ui/DataTable';
 import ClientForm from '../components/ui/ClientForm';
 import ClientImport from '../components/ui/ClientImport';
 
 export default function Clients() {
+  const { t } = useTranslation();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export default function Clients() {
   const columns = [
     {
       key: 'name',
-      title: 'Client',
+      title: t('client'),
       render: (client: Client) => (
         <div
           style={{ cursor: 'pointer' }}
@@ -120,7 +122,7 @@ export default function Clients() {
     },
     {
       key: 'contact',
-      title: 'Contact',
+      title: t('contact'),
       render: (client: Client) => (
         <div style={{ fontSize: '0.875rem' }}>
           {client.phone && (
@@ -143,7 +145,7 @@ export default function Clients() {
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('status'),
       render: (client: Client) => (
         <span style={{
           padding: '0.25rem 0.75rem',
@@ -157,13 +159,13 @@ export default function Clients() {
             : 'linear-gradient(135deg, var(--muted), rgba(154, 165, 177, 0.8))',
           color: 'var(--text)'
         }}>
-          {client.active ? 'Active' : 'Inactive'}
+          {client.active ? t('active') : t('inactive')}
         </span>
       )
     },
     {
       key: 'created',
-      title: 'Created',
+      title: t('created'),
       render: (client: Client) => (
         <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
           {formatDate(client.createdAt)}
@@ -172,7 +174,7 @@ export default function Clients() {
     },
     {
       key: 'actions',
-      title: 'Actions',
+      title: t('actions'),
       render: (client: Client) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button
@@ -193,7 +195,7 @@ export default function Clients() {
               letterSpacing: '0.5px'
             }}
           >
-            Edit
+            {t('edit')}
           </button>
           <button
             onClick={() => handleArchiveClient(client.id)}
@@ -210,7 +212,7 @@ export default function Clients() {
               letterSpacing: '0.5px'
             }}
           >
-            Archive
+            {t('archive')}
           </button>
         </div>
       )
@@ -233,7 +235,7 @@ export default function Clients() {
           WebkitTextFillColor: 'transparent',
           margin: 0
         }}>
-          Clients
+          {t('clientsTitle')}
         </h1>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button
@@ -253,7 +255,7 @@ export default function Clients() {
               letterSpacing: '0.5px'
             }}
           >
-            Import
+            {t('importClients')}
           </button>
           <button
             onClick={() => {
@@ -275,7 +277,7 @@ export default function Clients() {
               letterSpacing: '0.5px'
             }}
           >
-            Add Client
+            {t('addClientButton')}
           </button>
         </div>
       </div>
@@ -283,7 +285,7 @@ export default function Clients() {
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search by name..."
+          placeholder={t('searchByName')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ flex: 1, minWidth: '200px' }}
@@ -293,9 +295,9 @@ export default function Clients() {
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value as 'all' | 'true' | 'false')}
         >
-          <option value="all">All Clients</option>
-          <option value="true">Active Only</option>
-          <option value="false">Inactive Only</option>
+          <option value="all">{t('allClients')}</option>
+          <option value="true">{t('activeOnly')}</option>
+          <option value="false">{t('inactiveOnly')}</option>
         </select>
       </div>
 
@@ -309,7 +311,7 @@ export default function Clients() {
         columns={columns}
         rows={clients}
         loading={loading}
-        emptyText="No clients found"
+        emptyText={t('noClientsFound')}
         onNextPage={hasNextPage ? () => loadClients(pageToken) : undefined}
         hasNext={hasNextPage}
       />

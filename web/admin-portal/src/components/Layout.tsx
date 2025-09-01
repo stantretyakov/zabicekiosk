@@ -1,12 +1,15 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import styles from './Layout.module.css';
 import { useState, useEffect } from 'react';
+import { useTranslation } from '../lib/i18n';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface Props {
   onLogout?: () => void;
 }
 
 export default function Layout({ onLogout }: Props) {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -77,39 +80,43 @@ export default function Layout({ onLogout }: Props) {
         <nav className={styles.nav}>
           <NavLink to="/" end className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>📊</span>
-            <span className={styles.navText}>Dashboard</span>
+            <span className={styles.navText}>{t('dashboard')}</span>
           </NavLink>
           <NavLink to="/clients" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>👥</span>
-            <span className={styles.navText}>Clients</span>
+            <span className={styles.navText}>{t('clients')}</span>
           </NavLink>
           <NavLink to="/passes" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>🎫</span>
-            <span className={styles.navText}>Passes</span>
+            <span className={styles.navText}>{t('passes')}</span>
           </NavLink>
           <NavLink to="/redeems" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>💳</span>
-            <span className={styles.navText}>Redeems</span>
+            <span className={styles.navText}>{t('redeems')}</span>
           </NavLink>
           <NavLink to="/settings" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>⚙️</span>
-            <span className={styles.navText}>Settings</span>
+            <span className={styles.navText}>{t('settings')}</span>
           </NavLink>
           <NavLink to="/schedule" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>📅</span>
-            <span className={styles.navText}>Schedule</span>
+            <span className={styles.navText}>{t('schedule')}</span>
           </NavLink>
           <NavLink to="/content" className={linkClass} onClick={closeMobileMenu}>
             <span className={styles.navIcon}>📝</span>
-            <span className={styles.navText}>Content</span>
+            <span className={styles.navText}>{t('content')}</span>
           </NavLink>
         </nav>
+
+        <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <LanguageSwitcher />
+        </div>
 
         {onLogout && (
           <div className={styles.sidebarFooter}>
             <button className={styles.logout} onClick={() => { onLogout(); closeMobileMenu(); }}>
               <span className={styles.logoutIcon}>🚪</span>
-              <span className={styles.logoutText}>Logout</span>
+              <span className={styles.logoutText}>{t('logout')}</span>
             </button>
           </div>
         )}

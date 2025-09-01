@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
 import { fetchSettings, updateSettings } from '../lib/api';
+import { useTranslation } from '../lib/i18n';
 import KioskRegistration from '../components/ui/KioskRegistration';
 
 interface PriceSettings {
@@ -29,6 +30,7 @@ interface GeneralSettings {
 }
 
 export default function Settings() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,8 +172,8 @@ export default function Settings() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Settings</h1>
-        <p className={styles.subtitle}>Configure passes, prices, and business settings</p>
+        <h1 className={styles.title}>{t('settingsTitle')}</h1>
+        <p className={styles.subtitle}>{t('settingsSubtitle')}</p>
       </div>
 
       {error && (
@@ -194,17 +196,17 @@ export default function Settings() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionIcon}>💰</span>
-              Price Settings
+              {t('priceSettings')}
             </h2>
             <p className={styles.sectionDescription}>
-              Configure drop-in session pricing and currency
+              {t('priceSettingsDescription')}
             </p>
           </div>
 
           <div className={styles.card}>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Drop-in Session Price</label>
+                <label className={styles.label}>{t('dropInSessionPrice')}</label>
                 <div className={styles.inputGroup}>
                   <input
                     type="number"
@@ -220,12 +222,12 @@ export default function Settings() {
                   <span className={styles.inputSuffix}>RSD</span>
                 </div>
                 <p className={styles.fieldHint}>
-                  Price for single session without a pass
+                  {t('dropInPriceHint')}
                 </p>
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Currency</label>
+                <label className={styles.label}>{t('currency')}</label>
                 <select
                   value={priceSettings.currency}
                   onChange={(e) => setPriceSettings(prev => ({
@@ -248,23 +250,23 @@ export default function Settings() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionIcon}>🎫</span>
-              Pass Configurations
+              {t('passConfigurations')}
             </h2>
             <p className={styles.sectionDescription}>
-              Manage available pass types, pricing, and validity periods
+              {t('passConfigurationsDescription')}
             </p>
           </div>
 
           <div className={styles.card}>
             <div className={styles.passesHeader}>
-              <h3 className={styles.passesTitle}>Available Passes</h3>
+              <h3 className={styles.passesTitle}>{t('availablePasses')}</h3>
               <button
                 onClick={addNewPass}
                 className={styles.addButton}
                 type="button"
               >
                 <span className={styles.addIcon}>+</span>
-                Add New Pass
+                {t('addNewPass')}
               </button>
             </div>
 
@@ -274,7 +276,7 @@ export default function Settings() {
                   <div className={styles.passForm}>
                     <div className={styles.passFormGrid}>
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Pass Name</label>
+                        <label className={styles.label}>{t('passName')}</label>
                         <input
                           type="text"
                           value={pass.name}
@@ -285,7 +287,7 @@ export default function Settings() {
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Sessions</label>
+                        <label className={styles.label}>{t('sessions')}</label>
                         <input
                           type="number"
                           value={pass.sessions}
@@ -297,7 +299,7 @@ export default function Settings() {
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Price (RSD)</label>
+                        <label className={styles.label}>{t('priceRsd')}</label>
                         <input
                           type="number"
                           value={pass.priceRSD}
@@ -309,7 +311,7 @@ export default function Settings() {
                       </div>
 
                       <div className={styles.formGroup}>
-                        <label className={styles.label}>Validity (Days)</label>
+                        <label className={styles.label}>{t('validity')}</label>
                         <input
                           type="number"
                           value={pass.validityDays}
@@ -323,13 +325,13 @@ export default function Settings() {
 
                     <div className={styles.passStats}>
                       <div className={styles.statItem}>
-                        <span className={styles.statLabel}>Price per session:</span>
+                        <span className={styles.statLabel}>{t('pricePerSession')}</span>
                         <span className={styles.statValue}>
                           {formatPrice(pass.priceRSD / pass.sessions)}
                         </span>
                       </div>
                       <div className={styles.statItem}>
-                        <span className={styles.statLabel}>Total price:</span>
+                        <span className={styles.statLabel}>{t('totalPrice')}</span>
                         <span className={styles.statValue}>
                           {formatPrice(pass.priceRSD)}
                         </span>
@@ -345,7 +347,7 @@ export default function Settings() {
                           className={styles.toggleInput}
                         />
                         <span className={styles.toggleSlider}></span>
-                        <span className={styles.toggleText}>Active</span>
+                        <span className={styles.toggleText}>{t('active')}</span>
                       </label>
 
                       <button
@@ -354,7 +356,7 @@ export default function Settings() {
                         type="button"
                       >
                         <span className={styles.deleteIcon}>🗑️</span>
-                        Delete
+                        {t('delete')}
                       </button>
                     </div>
                   </div>
@@ -369,17 +371,17 @@ export default function Settings() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionIcon}>⚙️</span>
-              General Settings
+              {t('generalSettings')}
             </h2>
             <p className={styles.sectionDescription}>
-              Configure business information and system behavior
+              {t('generalSettingsDescription')}
             </p>
           </div>
 
           <div className={styles.card}>
             <div className={styles.formGrid}>
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Name</label>
+                <label className={styles.label}>{t('businessName')}</label>
                 <input
                   type="text"
                   value={generalSettings.businessName}
@@ -393,7 +395,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Address</label>
+                <label className={styles.label}>{t('businessAddress')}</label>
                 <input
                   type="text"
                   value={generalSettings.businessAddress}
@@ -407,7 +409,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Phone</label>
+                <label className={styles.label}>{t('businessPhone')}</label>
                 <input
                   type="tel"
                   value={generalSettings.businessPhone}
@@ -421,7 +423,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Business Email</label>
+                <label className={styles.label}>{t('businessEmail')}</label>
                 <input
                   type="email"
                   value={generalSettings.businessEmail}
@@ -435,7 +437,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Telegram</label>
+                <label className={styles.label}>{t('telegram')}</label>
                 <input
                   type="text"
                   value={generalSettings.businessTelegram}
@@ -449,7 +451,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Instagram</label>
+                <label className={styles.label}>{t('instagram')}</label>
                 <input
                   type="text"
                   value={generalSettings.businessInstagram}
@@ -463,7 +465,7 @@ export default function Settings() {
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Cooldown Period (seconds)</label>
+                <label className={styles.label}>{t('cooldownPeriod')}</label>
                 <input
                   type="number"
                   value={generalSettings.cooldownSec}
@@ -476,12 +478,12 @@ export default function Settings() {
                   max="3600"
                 />
                 <p className={styles.fieldHint}>
-                  Minimum time between consecutive scans
+                  {t('cooldownHint')}
                 </p>
               </div>
 
               <div className={styles.formGroup}>
-                <label className={styles.label}>Max Daily Redeems</label>
+                <label className={styles.label}>{t('maxDailyRedeems')}</label>
                 <input
                   type="number"
                   value={generalSettings.maxDailyRedeems}
@@ -494,7 +496,7 @@ export default function Settings() {
                   max="10"
                 />
                 <p className={styles.fieldHint}>
-                  Maximum sessions per client per day
+                  {t('maxRedeemsHint')}
                 </p>
               </div>
             </div>
@@ -506,10 +508,10 @@ export default function Settings() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
               <span className={styles.sectionIcon}>📱</span>
-              Kiosk Management
+              {t('kioskManagement')}
             </h2>
             <p className={styles.sectionDescription}>
-              Manage kiosk devices and access settings
+              {t('kioskManagementDescription')}
             </p>
           </div>
 
@@ -521,7 +523,7 @@ export default function Settings() {
                 type="button"
               >
                 <span className={styles.addIcon}>📱</span>
-                Manage Kiosks
+                {t('manageKiosks')}
               </button>
               <p style={{ 
                 fontSize: '0.875rem', 
@@ -529,7 +531,7 @@ export default function Settings() {
                 margin: '1rem 0 0 0',
                 fontStyle: 'italic'
               }}>
-                Configure kiosk settings, generate admin PINs, and view registered devices
+                {t('kioskSettingsDescription')}
               </p>
             </div>
           </div>
@@ -547,12 +549,12 @@ export default function Settings() {
           {saving ? (
             <>
               <div className={styles.saveSpinner} />
-              Saving...
+              {t('saving')}
             </>
           ) : (
             <>
               <span className={styles.saveIcon}>💾</span>
-              Save All Settings
+              {t('saveAllSettings')}
             </>
           )}
         </button>

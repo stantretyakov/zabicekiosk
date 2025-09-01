@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { listPasses, deletePass } from '../lib/api';
 import { PassWithClient } from '../types';
+import { useTranslation } from '../lib/i18n';
 import DataTable from '../components/ui/DataTable';
 import SellPassForm from '../components/ui/SellPassForm';
 
 export default function Passes() {
+  const { t } = useTranslation();
   const [passes, setPasses] = useState<PassWithClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +92,7 @@ export default function Passes() {
   const columns = [
     {
       key: 'client',
-      title: 'Client',
+      title: t('client'),
       render: (pass: PassWithClient) => (
         <div>
           <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>
@@ -111,7 +113,7 @@ export default function Passes() {
     },
     {
       key: 'type',
-      title: 'Type',
+      title: t('type'),
       render: (pass: PassWithClient) => (
         <span style={{
           padding: '0.5rem 1rem',
@@ -123,13 +125,13 @@ export default function Passes() {
           textTransform: 'uppercase',
           letterSpacing: '0.5px'
         }}>
-          {pass.type}
+          {t(pass.type)}
         </span>
       )
     },
     {
       key: 'progress',
-      title: 'Progress',
+      title: t('progress'),
       render: (pass: PassWithClient) => {
         const percentage = getProgressPercentage(pass.remaining, pass.planSize);
         return (
@@ -170,7 +172,7 @@ export default function Passes() {
     },
     {
       key: 'purchased',
-      title: 'Purchased',
+      title: t('purchased'),
       render: (pass: PassWithClient) => (
         <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
           {formatDate(pass.purchasedAt)}
@@ -179,7 +181,7 @@ export default function Passes() {
     },
     {
       key: 'lastVisit',
-      title: 'Last Visit',
+      title: t('lastVisit'),
       render: (pass: PassWithClient) => (
         <div style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>
           {formatDate(pass.lastVisit)}
@@ -188,7 +190,7 @@ export default function Passes() {
     },
     {
       key: 'actions',
-      title: 'Actions',
+      title: t('actions'),
       render: (pass: PassWithClient) => (
         <button
           onClick={() => handleDeletePass(pass.id)}
@@ -205,7 +207,7 @@ export default function Passes() {
             letterSpacing: '0.5px'
           }}
         >
-          Revoke
+          {t('revoke')}
         </button>
       )
     }
@@ -227,7 +229,7 @@ export default function Passes() {
           WebkitTextFillColor: 'transparent',
           margin: 0
         }}>
-          Passes
+          {t('passesTitle')}
         </h1>
         <button
           onClick={() => setShowSellForm(true)}
@@ -245,14 +247,14 @@ export default function Passes() {
             letterSpacing: '0.5px'
           }}
         >
-          Sell Pass
+          {t('sellPass')}
         </button>
       </div>
 
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search by client name..."
+          placeholder={t('searchByClientName')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ flex: 1, minWidth: '200px' }}
@@ -269,7 +271,7 @@ export default function Passes() {
         columns={columns}
         rows={filteredPasses}
         loading={loading}
-        emptyText="No passes found"
+        emptyText={t('noPassesFound')}
         onNextPage={hasNextPage ? () => loadPasses(pageToken) : undefined}
         hasNext={hasNextPage}
       />
