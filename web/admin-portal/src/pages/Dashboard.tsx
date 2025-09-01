@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStats } from '../lib/api';
 import type { Stats } from '../types';
 import { useTranslation } from '../lib/i18n';
+import ClientForm from '../components/ui/ClientForm';
+import SellPassForm from '../components/ui/SellPassForm';
 import styles from './Dashboard.module.css';
 
 interface KpiCardProps {
@@ -77,10 +80,13 @@ function DetailModal({ title, isOpen, onClose, children }: DetailModalProps) {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<Stats | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [showClientForm, setShowClientForm] = useState(false);
+  const [showSellPassForm, setShowSellPassForm] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -152,6 +158,27 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateClient = async (clientData: any) => {
+    try {
+      // In dev mode, just close the form
+      if (import.meta.env.DEV) {
+        setShowClientForm(false);
+        return;
+      }
+      
+      // TODO: Implement actual client creation
+      setShowClientForm(false);
+    } catch (err: any) {
+      console.error('Failed to create client:', err);
+    }
+  };
+
+  const handleSellPassSuccess = () => {
+    setShowSellPassForm(false);
+    // Optionally reload stats
+    loadStats();
   };
 
   const formatCurrency = (amount: number) => {
@@ -288,19 +315,31 @@ export default function Dashboard() {
       <div className={styles.quickActions}>
         <h2 className={styles.sectionTitle}>{t('quickActions')}</h2>
         <div className={styles.actionGrid}>
-          <button className={styles.actionButton}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => setShowClientForm(true)}
+          >
             <span className={styles.actionIcon}>👤</span>
             <span className={styles.actionText}>{t('addClient')}</span>
           </button>
-          <button className={styles.actionButton}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => setShowSellPassForm(true)}
+          >
             <span className={styles.actionIcon}>🎫</span>
             <span className={styles.actionText}>{t('createPass')}</span>
           </button>
-          <button className={styles.actionButton}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => navigate('/redeems')}
+          >
             <span className={styles.actionIcon}>📊</span>
             <span className={styles.actionText}>{t('viewReports')}</span>
           </button>
-          <button className={styles.actionButton}>
+          <button 
+            className={styles.actionButton}
+            onClick={() => navigate('/settings')}
+          >
             <span className={styles.actionIcon}>⚙️</span>
             <span className={styles.actionText}>{t('settings')}</span>
           </button>
@@ -433,6 +472,23 @@ export default function Dashboard() {
           </div>
         </div>
       </DetailModal>
+
+      {/* Quick Action Forms */}
+      {showClientForm && (
+        <ClientForm
+          mode="create"
+          onSubmit={handleCreateClient}
+          onCancel={() => setShowClientForm(false)}
+        />
+      )}
+
+      {showSellPassForm && (
+        <SellPassForm
+          open={showSellPassForm}
+          onClose={() => setShowSellPassForm(false)}
+          onSuccess={handleSellPassSuccess}
+        />
+      )}
     </div>
   );
 }
