@@ -1,5 +1,6 @@
 import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useTranslation } from '../lib/i18n';
 import styles from './PassCard.module.css';
 import { FROG_PNG } from '../assets/frog';
 
@@ -33,6 +34,7 @@ interface PassCardProps {
 }
 
 export default function PassCard({ data, promoContent = [] }: PassCardProps) {
+  const { t } = useTranslation();
   const progressPercentage = data.planSize > 0 ? (data.remaining / data.planSize) * 100 : 0;
   const expiryDate = new Date(data.expiresAt);
   const now = new Date();
@@ -40,15 +42,15 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
   
   const getStatusInfo = () => {
     if (daysUntilExpiry < 0) {
-      return { status: 'expired', text: 'Expired', className: styles.expired };
+      return { status: 'expired', text: t('expired'), className: styles.expired };
     }
     if (daysUntilExpiry <= 7) {
-      return { status: 'expiring', text: 'Expiring Soon', className: styles.expiring };
+      return { status: 'expiring', text: t('expiringSoon'), className: styles.expiring };
     }
     if (data.remaining === 0) {
-      return { status: 'expired', text: 'No Visits Left', className: styles.expired };
+      return { status: 'expired', text: t('noVisitsLeft'), className: styles.expired };
     }
-    return { status: 'active', text: 'Active', className: styles.active };
+    return { status: 'active', text: t('active'), className: styles.active };
   };
 
   const statusInfo = getStatusInfo();
@@ -125,13 +127,13 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
 
       <div className={styles.passInfo}>
         <h2 className={styles.passTitle}>
-          {data.passType === 'subscription' ? 'Swimming Pass' : 'Single Visit'}
+          {data.passType === 'subscription' ? t('swimmingPass') : t('singleVisit')}
         </h2>
         
         <div className={styles.progressSection}>
           <div className={styles.progressHeader}>
             <span className={styles.progressText}>
-              {data.remaining} / {data.planSize} visits
+              {data.remaining} / {data.planSize} {t('visits')}
             </span>
             <span className={styles.progressPercentage}>
               {Math.round(progressPercentage)}%
@@ -147,21 +149,21 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
 
         <div className={styles.detailsGrid}>
           <div className={styles.detailItem}>
-            <div className={styles.detailLabel}>Plan Size</div>
+            <div className={styles.detailLabel}>{t('planSize')}</div>
             <div className={styles.detailValue}>{data.planSize}</div>
           </div>
           <div className={styles.detailItem}>
-            <div className={styles.detailLabel}>Used</div>
+            <div className={styles.detailLabel}>{t('used')}</div>
             <div className={styles.detailValue}>{data.used}</div>
           </div>
           <div className={styles.detailItem}>
-            <div className={styles.detailLabel}>Expires</div>
+            <div className={styles.detailLabel}>{t('expires')}</div>
             <div className={`${styles.detailValue} ${styles.expiryDate} ${getExpiryClassName()}`}>
               {formatDate(data.expiresAt)}
             </div>
           </div>
           <div className={styles.detailItem}>
-            <div className={styles.detailLabel}>Days Left</div>
+            <div className={styles.detailLabel}>{t('daysLeft')}</div>
             <div className={`${styles.detailValue} ${getExpiryClassName()}`}>
               {daysUntilExpiry > 0 ? daysUntilExpiry : 0}
             </div>
@@ -170,7 +172,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
 
         {data.lastVisit && (
           <div className={styles.detailItem}>
-            <div className={styles.detailLabel}>Last Visit</div>
+            <div className={styles.detailLabel}>{t('lastVisit')}</div>
             <div className={styles.detailValue}>{formatDate(data.lastVisit)}</div>
           </div>
         )}
@@ -181,7 +183,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
         <div className={styles.promoSection}>
           <h3 className={styles.promoTitle}>
             <span className={styles.promoIcon}>📢</span>
-            News & Updates
+            {t('newsUpdates')}
           </h3>
           <div className={styles.promoList}>
             {relevantPromo.map((content) => (
@@ -201,7 +203,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
                 <p className={styles.promoMessage}>{content.message}</p>
                 {content.expiresAt && (
                   <div className={styles.promoExpiry}>
-                    Valid until {formatDate(content.expiresAt)}
+                    {t('validUntilDate')} {formatDate(content.expiresAt)}
                   </div>
                 )}
               </div>
@@ -210,7 +212,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
         </div>
       )}
       <div className={styles.qrSection}>
-        <h3 className={styles.qrTitle}>Scan at Kiosk</h3>
+        <h3 className={styles.qrTitle}>{t('scanAtKiosk')}</h3>
         <div className={styles.qrContainer}>
           <QRCodeCanvas
             value={data.token}
@@ -226,7 +228,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
           />
         </div>
         <p className={styles.qrHint}>
-          Show this QR code at the swimming facility to check in
+          {t('scanHint')}
         </p>
       </div>
 
@@ -234,10 +236,10 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
       <div className={styles.contactSection}>
         <h3 className={styles.contactTitle}>
           <span className={styles.contactIcon}>💬</span>
-          Need Help?
+          {t('needHelp')}
         </h3>
         <p className={styles.contactDescription}>
-          Have questions about your pass or need assistance?
+          {t('contactDescription')}
         </p>
         <a
           href="https://t.me/Tretiakovaanny"
@@ -247,7 +249,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
         >
           <span className={styles.telegramIcon}>📱</span>
           <span className={styles.telegramText}>
-            <span className={styles.telegramLabel}>Contact Admin</span>
+            <span className={styles.telegramLabel}>{t('contactAdmin')}</span>
             <span className={styles.telegramHandle}>@Tretiakovaanny</span>
           </span>
           <span className={styles.telegramArrow}>→</span>
@@ -256,7 +258,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
 
       <div className={styles.footer}>
         <p className={styles.footerText}>
-          Swimming Pass • Valid until {formatDate(data.expiresAt)}
+          {t('swimmingPass')} • {t('validUntil')} {formatDate(data.expiresAt)}
         </p>
       </div>
     </div>

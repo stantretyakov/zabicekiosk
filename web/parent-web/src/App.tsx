@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import PassCard, { PassData, PromoContent } from './components/PassCard';
 import LoadingCard from './components/LoadingCard';
 import ErrorCard from './components/ErrorCard';
+import LanguageSwitcher from './components/LanguageSwitcher';
+import { useTranslation } from './lib/i18n';
 import { getMockDataByToken, getRandomMockData } from './lib/mockData';
 import './App.css';
 
 export default function App() {
+  const { t } = useTranslation();
   const [passData, setPassData] = useState<PassData | null>(null);
   const [promoContent, setPromoContent] = useState<PromoContent[]>([]);
   const [error, setError] = useState('');
@@ -130,16 +133,17 @@ export default function App() {
   }
   
   if (!passData) {
-    return <ErrorCard message="No pass data available" />;
+    return <ErrorCard message={t('noPassDataAvailable')} />;
   }
 
   return (
     <div className="app">
+      <LanguageSwitcher />
       <PassCard data={passData} promoContent={promoContent} />
       {isDev && (
         <div className="dev-info">
-          <p>🚧 Development Mode - Using Mock Data</p>
-          <p>Token: {token || 'No token (showing random data)'}</p>
+          <p>🚧 Режим разработки - Используются тестовые данные</p>
+          <p>Токен: {token || 'Нет токена (показываются случайные данные)'}</p>
         </div>
       )}
     </div>

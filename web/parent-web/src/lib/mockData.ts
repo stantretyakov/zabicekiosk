@@ -3,8 +3,8 @@ import { PassData } from '../components/PassCard';
 // Mock data for development
 export const mockPassData: PassData[] = [
   {
-    name: 'Ana Petrović',
-    childName: 'Marko Petrović',
+    name: 'Анна Петрович',
+    childName: 'Марко Петрович',
     planSize: 10,
     used: 3,
     remaining: 7,
@@ -14,8 +14,8 @@ export const mockPassData: PassData[] = [
     lastVisit: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
   },
   {
-    name: 'Milica Jovanović',
-    childName: 'Stefan Jovanović',
+    name: 'Милица Йованович',
+    childName: 'Стефан Йованович',
     planSize: 5,
     used: 4,
     remaining: 1,
@@ -25,8 +25,8 @@ export const mockPassData: PassData[] = [
     lastVisit: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
   },
   {
-    name: 'Nikola Stojanović',
-    childName: 'Luka Stojanović',
+    name: 'Никола Стоянович',
+    childName: 'Лука Стоянович',
     planSize: 1,
     used: 0,
     remaining: 1,
@@ -35,8 +35,8 @@ export const mockPassData: PassData[] = [
     passType: 'single',
   },
   {
-    name: 'Jelena Nikolić',
-    childName: 'Mina Nikolić',
+    name: 'Елена Николич',
+    childName: 'Мина Николич',
     planSize: 20,
     used: 15,
     remaining: 5,
@@ -46,8 +46,8 @@ export const mockPassData: PassData[] = [
     lastVisit: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
   },
   {
-    name: 'Marija Đorđević',
-    childName: 'Teodora Đorđević',
+    name: 'Мария Джорджевич',
+    childName: 'Теодора Джорджевич',
     planSize: 8,
     used: 8,
     remaining: 0,
