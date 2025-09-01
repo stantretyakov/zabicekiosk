@@ -219,18 +219,18 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
             size={180}
             level="M"
             includeMargin={false}
+            imageSettings={{
+              src: "data:image/svg+xml;base64," + btoa(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="14" fill="white" stroke="#2BE090" stroke-width="2"/>
+                  <text x="16" y="22" text-anchor="middle" font-size="16" fill="#2BE090">🐸</text>
+                </svg>
+              `),
+              height: 32,
+              width: 32,
+              excavate: true,
+            }}
           />
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            fontSize: '24px',
-            pointerEvents: 'none',
-            textShadow: '0 0 4px rgba(255, 255, 255, 0.8)'
-          }}>
-            🐸
-          </div>
         </div>
         <p className={styles.qrHint}>
           {t('scanHint')}
