@@ -23,7 +23,8 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "clientId", "order": "ASCENDING" },
-        { "fieldPath": "ts", "order": "DESCENDING" }
+        { "fieldPath": "ts", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "ASCENDING" }
       ]
     }
   ],
