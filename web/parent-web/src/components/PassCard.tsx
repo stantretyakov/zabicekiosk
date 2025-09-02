@@ -2,7 +2,7 @@ import React from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useTranslation } from '../lib/i18n';
 import styles from './PassCard.module.css';
-import frogImage from '../assets/frog.png';
+import frogImage from '../assets/frog';
 
 export interface PassData {
   name: string;
