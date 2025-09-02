@@ -56,6 +56,20 @@ export default function Kiosk() {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [kioskConfig, setKioskConfig] = useState<any>(null);
 
+  // Development mode QR scan simulation
+  useEffect(() => {
+    if (import.meta.env.DEV && cameraReady) {
+      // Auto-trigger a mock scan after 3 seconds in dev mode
+      const timer = setTimeout(() => {
+        const mockToken = 'dev-token-' + Math.random().toString(36).substr(2, 9);
+        addLog(`Mock scan triggered: ${mockToken}`, 'info');
+        handleScan(mockToken);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [cameraReady]);
+
   useEffect(() => {
     // Check if kiosk is configured
     const savedConfig = localStorage.getItem('kioskConfig');
@@ -449,6 +463,16 @@ export default function Kiosk() {
               
               <div className={styles.prompt}>
                 {cameraReady ? 'Position QR code in the frame' : 'Starting camera...'}
+                {import.meta.env.DEV && cameraReady && (
+                  <div style={{ 
+                    marginTop: '0.5rem', 
+                    fontSize: '12px', 
+                    color: 'var(--warn)',
+                    fontWeight: '500'
+                  }}>
+                    DEV: Auto-scan in 3s
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -535,6 +559,30 @@ export default function Kiosk() {
             >
               {showLogs ? 'Hide' : 'Show'} Activity ({logs.length})
             </button>
+            {import.meta.env.DEV && (
+              <button
+                onClick={() => {
+                  const mockToken = 'manual-test-' + Math.random().toString(36).substr(2, 9);
+                  addLog(`Manual test scan: ${mockToken}`, 'info');
+                  handleScan(mockToken);
+                }}
+                style={{
+                  background: 'rgba(255, 209, 102, 0.8)',
+                  color: 'var(--bg)',
+                  border: '1px solid var(--warn)',
+                  padding: '12px 24px',
+                  borderRadius: '24px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  backdropFilter: 'blur(8px)',
+                  marginLeft: '1rem'
+                }}
+              >
+                🧪 Test Scan
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -60,6 +60,51 @@ export async function redeem(data: {
   token?: string;
   clientId?: string;
 }): Promise<RedeemResponse> {
+  // Mock response in development mode
+  if (import.meta.env.DEV) {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+    
+    // Generate different mock responses based on token
+    const token = data.token || data.clientId || '';
+    const random = Math.random();
+    
+    if (random < 0.7) {
+      // 70% chance of successful pass redemption
+      const remaining = Math.floor(Math.random() * 10) + 1;
+      const planSize = remaining + Math.floor(Math.random() * 5) + 1;
+      return {
+        status: 'ok',
+        type: 'pass',
+        message: 'Абонемент использован успешно!',
+        remaining,
+        planSize,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
+    } else if (random < 0.85) {
+      // 15% chance of single visit
+      return {
+        status: 'ok',
+        type: 'single',
+        message: 'Разовое посещение зарегистрировано'
+      };
+    } else if (random < 0.95) {
+      // 10% chance of cooldown error
+      return {
+        status: 'error',
+        code: 'COOLDOWN',
+        message: 'Попробуйте позже'
+      };
+    } else {
+      // 5% chance of other error
+      return {
+        status: 'error',
+        code: 'INVALID_TOKEN',
+        message: 'Недействительный QR код'
+      };
+    }
+  }
+  
   const res = await fetch(`${API_BASE_URL}/redeem`, {
     method: 'POST',
     mode: 'cors',
