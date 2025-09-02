@@ -279,24 +279,36 @@ export default function Kiosk() {
         setFlashEffect('success');
         setTimeout(() => setFlashEffect(null), 800);
 
-        if (result.type === 'pass') {
-          const message = `Pass redeemed successfully!`;
-          const details = `${result.remaining}/${result.planSize} visits remaining`;
+        const isPass = result.type === 'pass';
+        const message = isPass
+          ? 'Pass redeemed successfully!'
+          : result.message;
+        const details = isPass
+          ? `${result.remaining}/${result.planSize} visits remaining`
+          : '';
 
-          setSuccessData({ 
-            message, 
-            details, 
-            remaining: result.remaining, 
-            planSize: result.planSize, 
-            expiresAt: result.expiresAt 
+        setSuccessData({
+          message,
+          details,
+          remaining: isPass ? result.remaining : undefined,
+          planSize: isPass ? result.planSize : undefined,
+          expiresAt: isPass ? result.expiresAt : undefined
+        });
+        setShowSuccess(true);
+        addLog(
+          isPass
+            ? `Pass redeemed: ${result.remaining}/${result.planSize} remaining`
+            : `Drop-in payment: ${result.message}`,
+          'success'
+        );
+
+        setTimeout(() => setShowSuccess(false), 4000);
+
+        if (!isPass) {
+          setToast({
+            kind: 'pass',
+            message: `${result.message} - Drop-in payment processed`
           });
-          setShowSuccess(true);
-          addLog(`Pass redeemed: ${result.remaining}/${result.planSize} remaining`, 'success');
-
-          setTimeout(() => setShowSuccess(false), 4000);
-        } else {
-          setToast({ kind: 'pass', message: `${result.message} - Drop-in payment processed` });
-          addLog(`Drop-in payment: ${result.message}`, 'success');
           setTimeout(() => setToast(null), 4000);
         }
       } else {
