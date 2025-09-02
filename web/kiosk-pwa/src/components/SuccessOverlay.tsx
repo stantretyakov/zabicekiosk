@@ -4,11 +4,12 @@ import styles from './SuccessOverlay.module.css';
 interface SuccessOverlayProps {
   isVisible: boolean;
   message: string;
-  details: string;
+  details?: string;
   remaining?: number;
   planSize?: number;
   expiresAt?: string;
-}
+  }
+
 
 export default function SuccessOverlay({ 
   isVisible, 
@@ -30,7 +31,7 @@ export default function SuccessOverlay({
   };
 
   return (
-    <div className={styles.overlay} tabIndex={0} role="dialog" aria-label="Успешное сканирование">
+  <div className={styles.overlay} tabIndex={0} role="dialog" aria-label="Успешное сканирование">
       {/* Floating particles */}
       <div className={styles.particles}>
         <div className={styles.particle}></div>
@@ -58,9 +59,15 @@ export default function SuccessOverlay({
         УСПЕШНАЯ ОПЛАТА
       </h1>
 
-      <p className={styles.successDetails}>
+      <p className={styles.successMessage}>
         {message}
       </p>
+
+      {details && (
+        <p className={styles.successDetails}>
+          {details}
+        </p>
+      )}
 
       {/* Pass information */}
       {(remaining !== undefined && planSize !== undefined) && (
