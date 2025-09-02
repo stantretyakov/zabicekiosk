@@ -280,9 +280,7 @@ export default function Kiosk() {
         setTimeout(() => setFlashEffect(null), 800);
 
         const isPass = result.type === 'pass';
-        const message = isPass
-          ? 'Pass redeemed successfully!'
-          : result.message;
+        const message = result.message;
         const details = isPass
           ? `${result.remaining}/${result.planSize} visits remaining`
           : '';
