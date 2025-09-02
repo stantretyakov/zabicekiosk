@@ -108,7 +108,7 @@ export default function Redeems() {
                 alignItems: 'center',
                 gap: '0.5rem'
               }}>
-                <span>👶</span>
+                <span>🐸</span>
                 {redeem.client.childName}
               </div>
             </>
