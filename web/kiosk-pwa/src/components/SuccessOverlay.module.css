@@ -1,0 +1,391 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #2BE090, #34D399);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes overlayEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.checkmarkContainer {
+  width: 120px;
+  height: 120px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  animation: checkmarkBounce 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
+}
+
+@keyframes checkmarkBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.checkmark {
+  width: 60px;
+  height: 60px;
+  position: relative;
+}
+
+.checkmarkPath {
+  stroke: #2BE090;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: drawCheckmark 0.8s ease-in-out 0.8s both;
+}
+
+@keyframes drawCheckmark {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.successTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-align: center;
+  margin: 0 0 1rem 0;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: titleSlideUp 0.6s ease-out 1.2s both;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+@keyframes titleSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.successDetails {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  margin: 0;
+  font-weight: 600;
+  animation: detailsSlideUp 0.6s ease-out 1.4s both;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes detailsSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.passInfo {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  margin-top: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: passInfoSlideUp 0.6s ease-out 1.6s both;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes passInfoSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.passInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  text-align: center;
+}
+
+.passInfoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.passInfoLabel {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.passInfoValue {
+  font-size: 1.25rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.remainingValue {
+  font-size: 2rem;
+  color: #ffffff;
+  font-weight: 800;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.expiryValue {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Floating particles effect */
+.particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: floatParticle 3s ease-in-out infinite;
+}
+
+.particle:nth-child(1) {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 2.5s;
+}
+
+.particle:nth-child(2) {
+  top: 60%;
+  left: 20%;
+  animation-delay: 0.5s;
+  animation-duration: 3s;
+}
+
+.particle:nth-child(3) {
+  top: 30%;
+  right: 15%;
+  animation-delay: 1s;
+  animation-duration: 2.8s;
+}
+
+.particle:nth-child(4) {
+  top: 70%;
+  right: 25%;
+  animation-delay: 1.5s;
+  animation-duration: 3.2s;
+}
+
+.particle:nth-child(5) {
+  top: 15%;
+  left: 50%;
+  animation-delay: 2s;
+  animation-duration: 2.7s;
+}
+
+.particle:nth-child(6) {
+  top: 80%;
+  left: 60%;
+  animation-delay: 0.8s;
+  animation-duration: 3.1s;
+}
+
+@keyframes floatParticle {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Ripple effect */
+.ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  animation: rippleExpand 2s ease-out infinite;
+}
+
+@keyframes rippleExpand {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 400px;
+    height: 400px;
+    opacity: 0;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .checkmarkContainer {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1.5rem;
+  }
+  
+  .checkmark {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .checkmarkPath {
+    stroke-width: 5;
+  }
+  
+  .successTitle {
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+  
+  .successDetails {
+    font-size: 1.25rem;
+  }
+  
+  .passInfo {
+    padding: 1rem 1.5rem;
+    margin-top: 1rem;
+  }
+  
+  .passInfoGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .remainingValue {
+    font-size: 1.75rem;
+  }
+  
+  .passInfoValue {
+    font-size: 1.125rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkmarkContainer {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1rem;
+  }
+  
+  .checkmark {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .successTitle {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .successDetails {
+    font-size: 1.125rem;
+  }
+  
+  .passInfo {
+    padding: 0.875rem 1.25rem;
+    margin: 0.75rem 1rem 0;
+  }
+  
+  .remainingValue {
+    font-size: 1.5rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .checkmarkContainer {
+    border: 2px solid #ffffff;
+  }
+  
+  .passInfo {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .checkmarkContainer,
+  .checkmarkPath,
+  .successTitle,
+  .successDetails,
+  .passInfo,
+  .particle,
+  .ripple {
+    animation: none;
+    transition: none;
+  }
+  
+  .checkmarkContainer,
+  .successTitle,
+  .successDetails,
+  .passInfo {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Focus and accessibility */
+.overlay:focus {
+  outline: 2px solid #ffffff;
+  outline-offset: 4px;
+}

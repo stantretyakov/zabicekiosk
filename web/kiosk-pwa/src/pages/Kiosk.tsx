@@ -5,6 +5,7 @@ import beep from '../lib/beep';
 import Toast from '../components/Toast';
 import KioskSetup from '../components/KioskSetup';
 import CameraSettings from '../components/CameraSettings';
+import SuccessOverlay from '../components/SuccessOverlay';
 import styles from './Kiosk.module.css';
 
 interface LogEntry {
@@ -33,7 +34,13 @@ export default function Kiosk() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [toast, setToast] = useState<{ kind: 'pass' | 'cooldown' | 'out' | 'error'; message: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [successData, setSuccessData] = useState<{ message: string; details: string } | null>(null);
+  const [successData, setSuccessData] = useState<{ 
+    message: string; 
+    details: string; 
+    remaining?: number; 
+    planSize?: number; 
+    expiresAt?: string; 
+  } | null>(null);
   const [flashEffect, setFlashEffect] = useState<'success' | 'error' | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -276,11 +283,17 @@ export default function Kiosk() {
           const message = `Pass redeemed successfully!`;
           const details = `${result.remaining}/${result.planSize} visits remaining`;
 
-          setSuccessData({ message, details });
+          setSuccessData({ 
+            message, 
+            details, 
+            remaining: result.remaining, 
+            planSize: result.planSize, 
+            expiresAt: result.expiresAt 
+          });
           setShowSuccess(true);
           addLog(`Pass redeemed: ${result.remaining}/${result.planSize} remaining`, 'success');
 
-          setTimeout(() => setShowSuccess(false), 3000);
+          setTimeout(() => setShowSuccess(false), 4000);
         } else {
           setToast({ kind: 'pass', message: `${result.message} - Drop-in payment processed` });
           addLog(`Drop-in payment: ${result.message}`, 'success');
@@ -516,13 +529,14 @@ export default function Kiosk() {
         </div>
       </div>
 
-      {showSuccess && successData && (
-        <div className={styles.successOverlay}>
-          <div className={styles.successIcon}>✅</div>
-          <div className={styles.successMessage}>{successData.message}</div>
-          <div className={styles.successDetails}>{successData.details}</div>
-        </div>
-      )}
+      <SuccessOverlay
+        isVisible={showSuccess}
+        message={successData?.message || ''}
+        details={successData?.details || ''}
+        remaining={successData?.remaining}
+        planSize={successData?.planSize}
+        expiresAt={successData?.expiresAt}
+      />
 
       {toast && <Toast kind={toast.kind} message={toast.message} />}
       
