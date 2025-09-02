@@ -56,7 +56,7 @@ export default function SuccessOverlay({
       </div>
 
       <h1 className={styles.successTitle}>
-        УСПЕШНАЯ ОПЛАТА
+        УСПЕШНОЕ СПИСАНИЕ
       </h1>
 
       <p className={styles.successMessage}>
