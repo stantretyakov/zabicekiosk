@@ -129,6 +129,89 @@ export default async function adminPasses(app: FastifyInstance) {
     return { status: 'created' };
   });
 
+  app.post<{ Params: { id: string } }>(
+    '/passes/:id/convert-last',
+    { preHandler: requireAdmin },
+    async req => {
+      const { id } = z.object({ id: z.string() }).parse(req.params);
+      const passRef = db.collection('passes').doc(id);
+      await db.runTransaction(async tx => {
+        const passSnap = await tx.get(passRef);
+        if (!passSnap.exists) {
+          const err: any = new Error('Not Found');
+          err.statusCode = 404;
+          throw err;
+        }
+        const pass = passSnap.data() as any;
+        const dropinSnap = await tx.get(
+          db
+            .collection('redeems')
+            .where('clientId', '==', pass.clientId)
+            .where('kind', '==', 'dropin')
+            .orderBy('ts', 'desc')
+            .limit(1),
+        );
+        const dropinDoc = dropinSnap.docs[0];
+        if (!dropinDoc) {
+          const err: any = new Error('Drop-in not found');
+          err.statusCode = 404;
+          throw err;
+        }
+        tx.update(passRef, {
+          used: FieldValue.increment(1),
+          lastRedeemTs: dropinDoc.get('ts'),
+        });
+        tx.update(dropinDoc.ref, {
+          kind: 'pass',
+          passId: passRef.id,
+          delta: -1,
+          priceRSD: FieldValue.delete(),
+        });
+      });
+      return { status: 'ok' };
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { count: number } }>(
+    '/passes/:id/deduct',
+    { preHandler: requireAdmin },
+    async req => {
+      const { id } = z.object({ id: z.string() }).parse(req.params);
+      const { count } = z
+        .object({ count: z.coerce.number().min(1) })
+        .parse(req.body);
+      const passRef = db.collection('passes').doc(id);
+      await db.runTransaction(async tx => {
+        const passSnap = await tx.get(passRef);
+        if (!passSnap.exists) {
+          const err: any = new Error('Not Found');
+          err.statusCode = 404;
+          throw err;
+        }
+        const pass = passSnap.data() as any;
+        if (pass.used + count > pass.planSize) {
+          const err: any = new Error('Not enough remaining visits');
+          err.statusCode = 400;
+          throw err;
+        }
+        const now = Timestamp.now();
+        tx.update(passRef, {
+          used: FieldValue.increment(count),
+          lastRedeemTs: now,
+        });
+        const redeemRef = db.collection('redeems').doc();
+        tx.set(redeemRef, {
+          ts: now,
+          passId: passRef.id,
+          clientId: pass.clientId,
+          delta: -count,
+          kind: 'manual',
+        });
+      });
+      return { status: 'ok' };
+    },
+  );
+
   app.delete<{ Params: { id: string } }>(
     '/passes/:id',
     { preHandler: requireAdmin },

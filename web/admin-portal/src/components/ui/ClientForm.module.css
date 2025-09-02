@@ -855,6 +855,28 @@
   box-shadow: 0 8px 24px rgba(74, 214, 255, 0.4);
 }
 
+.passActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.passActionButton {
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.passActionButton:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .addIcon {
   font-size: 1.25rem;
   font-weight: bold;
