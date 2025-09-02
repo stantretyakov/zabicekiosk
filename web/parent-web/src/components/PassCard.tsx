@@ -120,7 +120,7 @@ export default function PassCard({ data, promoContent = [] }: PassCardProps) {
         </div>
         <h1 className={styles.clientName}>{data.name}</h1>
         <p className={styles.childName}>
-          <span>👶</span>
+          <span>🐸</span>
           {data.childName}
         </p>
       </div>

@@ -114,7 +114,7 @@ export default function Clients() {
               gap: '0.5rem',
             }}
           >
-            <span>👶</span>
+            <span>🐸</span>
             {client.childName}
           </div>
         </div>

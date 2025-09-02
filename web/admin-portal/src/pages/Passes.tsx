@@ -105,7 +105,7 @@ export default function Passes() {
             alignItems: 'center',
             gap: '0.5rem'
           }}>
-            <span>👶</span>
+            <span>🐸</span>
             {pass.client.childName}
           </div>
         </div>

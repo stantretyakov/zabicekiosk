@@ -266,13 +266,13 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                   )}
                 </div>
                 <div className={styles.selectedClientChild}>
-                  <span>👶</span>
+                  <span>🐸</span>
                   {selectedClient.childName}
                 </div>
                 {preselectedClient && (
-                  <div style={{ 
-                    fontSize: '0.75rem', 
-                    color: 'var(--muted)', 
+                  <div style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--muted)',
                     marginTop: '0.5rem',
                     fontStyle: 'italic'
                   }}>
@@ -310,7 +310,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
                             {client.parentName}
                           </div>
                           <div className={styles.clientChild}>
-                            <span>👶</span>
+                            <span>🐸</span>
                             {client.childName}
                           </div>
                         </div>
