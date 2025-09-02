@@ -53,6 +53,7 @@ export const frogSvg = `<?xml version="1.0" encoding="UTF-8"?>
 
 // Data URL for use in <img src=...> or QR renderers expecting an image string
 export const frogDataUrl: string = `data:image/svg+xml;utf8,${encodeURIComponent(frogSvg)}`;
+export default frogDataUrl;
 
 // Utility to build a sized HTMLImageElement (optional helper)
 export function makeFrogImage(size: number = 128): HTMLImageElement {
