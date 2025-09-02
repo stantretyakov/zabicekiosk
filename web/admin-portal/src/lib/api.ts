@@ -274,6 +274,52 @@ export async function listPasses(q?: {
   return fetchJSON(`/admin/passes${qs ? `?${qs}` : ''}`);
 }
 
+export async function convertLastVisit(passId: string): Promise<void> {
+  if (import.meta.env.DEV) {
+    const pass = mockPasses.find(p => p.id === passId);
+    if (!pass) return;
+    const dropinIndex = mockRedeems.findIndex(
+      r => r.clientId === pass.clientId && r.kind === 'dropin'
+    );
+    if (dropinIndex !== -1) {
+      const dropin = mockRedeems[dropinIndex];
+      dropin.kind = 'pass';
+      (dropin as any).passId = passId;
+      dropin.delta = -1;
+      delete dropin.priceRSD;
+      pass.remaining = Math.max(0, pass.remaining - 1);
+    }
+    return;
+  }
+  await fetchJSON(`/admin/passes/${passId}/convert-last`, { method: 'POST' });
+}
+
+export async function deductPassSessions(
+  passId: string,
+  count: number,
+): Promise<void> {
+  if (import.meta.env.DEV) {
+    const pass = mockPasses.find(p => p.id === passId);
+    if (pass) {
+      pass.remaining = Math.max(0, pass.remaining - count);
+      mockRedeems.unshift({
+        id: `redeem-${Date.now()}`,
+        ts: new Date().toISOString(),
+        kind: 'manual',
+        clientId: pass.clientId,
+        delta: -count,
+        client: pass.client,
+      });
+    }
+    return;
+  }
+  await fetchJSON(`/admin/passes/${passId}/deduct`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ count }),
+  });
+}
+
 export async function getClientToken(id: string): Promise<{ token: string }> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {

@@ -7,6 +7,8 @@ import {
   listPasses,
   fetchSettings,
   type SettingsResponse,
+  convertLastVisit,
+  deductPassSessions,
 } from '../../lib/api';
 import styles from './ClientForm.module.css';
 import type { PassWithClient, Client as ApiClient } from '../../types';
@@ -169,6 +171,28 @@ export default function ClientForm({
   const handleSellPassSuccess = async () => {
     if (initial?.id) {
       await loadClientPasses(initial.id as string);
+    }
+  };
+
+  const handleConvertLastVisit = async (passId: string) => {
+    try {
+      await convertLastVisit(passId);
+      if (initial?.id) await loadClientPasses(initial.id as string);
+    } catch (err) {
+      console.error('Failed to convert last visit:', err);
+    }
+  };
+
+  const handleDeductSessions = async (passId: string) => {
+    const input = prompt(t('deductSessions'));
+    if (!input) return;
+    const count = Number(input);
+    if (!count || count <= 0) return;
+    try {
+      await deductPassSessions(passId, count);
+      if (initial?.id) await loadClientPasses(initial.id as string);
+    } catch (err) {
+      console.error('Failed to deduct sessions:', err);
     }
   };
 
@@ -813,10 +837,26 @@ export default function ClientForm({
                           </div>
                         </div>
                         <div className={styles.passProgress}>
-                          <div 
+                          <div
                             className={styles.passProgressBar}
                             style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
                           />
+                        </div>
+                        <div className={styles.passActions}>
+                          <button
+                            type="button"
+                            className={styles.passActionButton}
+                            onClick={() => handleConvertLastVisit(pass.id)}
+                          >
+                            {t('convertLastVisit')}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.passActionButton}
+                            onClick={() => handleDeductSessions(pass.id)}
+                          >
+                            {t('deductSessions')}
+                          </button>
                         </div>
                       </div>
                     ))}

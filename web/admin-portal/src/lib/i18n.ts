@@ -95,6 +95,8 @@ export interface Translations {
   loadingPasses: string;
   noActivePassesFound: string;
   sellNewPass: string;
+  convertLastVisit: string;
+  deductSessions: string;
 
   // Passes
   passesTitle: string;
@@ -344,6 +346,8 @@ const translations: Record<Language, Translations> = {
     loadingPasses: 'Загрузка абонементов...',
     noActivePassesFound: 'Активные абонементы не найдены',
     sellNewPass: 'Продать новый абонемент',
+    convertLastVisit: 'Конвертировать последнее посещение',
+    deductSessions: 'Списать занятия',
 
     // Passes
     passesTitle: 'Абонементы',
@@ -591,6 +595,8 @@ const translations: Record<Language, Translations> = {
     loadingPasses: 'Loading passes...',
     noActivePassesFound: 'No active passes found',
     sellNewPass: 'Sell New Pass',
+    convertLastVisit: 'Convert Last Visit',
+    deductSessions: 'Deduct Sessions',
 
     // Passes
     passesTitle: 'Passes',
