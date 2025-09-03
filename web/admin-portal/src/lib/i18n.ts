@@ -97,6 +97,12 @@ export interface Translations {
   sellNewPass: string;
   convertLastVisit: string;
   deductSessions: string;
+  convertLastVisitTooltip: string;
+  deductSessionsTooltip: string;
+  sessionsLabel: string;
+  activeStatus: string;
+  expiredStatus: string;
+  daysShort: string;
 
   // Passes
   passesTitle: string;
@@ -354,6 +360,12 @@ const translations: Record<Language, Translations> = {
     activeStatus: 'Активен',
     expiredStatus: 'Исчерпан',
     daysShort: 'дн.',
+    convertLastVisitTooltip: 'Конвертировать последнее разовое посещение в использование абонемента',
+    deductSessionsTooltip: 'Вручную списать занятия с абонемента',
+    sessionsLabel: 'Занятий',
+    activeStatus: 'Активен',
+    expiredStatus: 'Исчерпан',
+    daysShort: 'дн.',
 
     // Passes
     passesTitle: 'Абонементы',
@@ -603,6 +615,12 @@ const translations: Record<Language, Translations> = {
     sellNewPass: 'Sell New Pass',
     convertLastVisit: 'Convert Last Visit',
     deductSessions: 'Deduct Sessions',
+    convertLastVisitTooltip: 'Convert last drop-in visit to pass usage',
+    deductSessionsTooltip: 'Manually deduct sessions from pass',
+    sessionsLabel: 'Sessions',
+    activeStatus: 'Active',
+    expiredStatus: 'Expired',
+    daysShort: 'days',
     convertLastVisitTooltip: 'Convert last drop-in visit to pass usage',
     deductSessionsTooltip: 'Manually deduct sessions from pass',
     sessionsLabel: 'Sessions',

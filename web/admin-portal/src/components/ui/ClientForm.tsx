@@ -407,6 +407,7 @@ export default function ClientForm({
     ctx.font = '14px Inter, sans-serif';
     ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, canvas.width/2, canvas.height - 20);
   };
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -422,6 +423,7 @@ export default function ClientForm({
       document.body.removeChild(textArea);
     }
   };
+
   const copyClientInfo = () => {
     if (!passUrl) return;
     copyToClipboard(passUrl);
@@ -481,6 +483,7 @@ export default function ClientForm({
       downloadTicket();
     }
   };
+
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case 'parentName':
@@ -568,6 +571,21 @@ export default function ClientForm({
   };
 
   const hasValidationErrors = Object.values(validationErrors).some(error => error);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getDaysUntilExpiry = (purchasedAt: string, validityDays: number = 30) => {
+    const purchaseDate = new Date(purchasedAt);
+    const expiryDate = new Date(purchaseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
+    const now = new Date();
+    return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  };
 
   return (
     <div className={styles.backdrop} onClick={onCancel} onKeyDown={handleKeyDown}>
@@ -831,6 +849,7 @@ export default function ClientForm({
                   </div>
                 )}
               </div>
+
               <div className={styles.passesSection}>
                 <h3 className={styles.sectionTitle}>{t('activePasses')}</h3>
                 <p className={styles.sectionDescription}>
@@ -844,84 +863,82 @@ export default function ClientForm({
                   </div>
                 ) : passes.length > 0 ? (
                   <div className={styles.passesList}>
-                    {passes.map((pass) => (
-                      <div key={pass.id} className={styles.passItem}>
-                        <div className={styles.passInfo}>
-                          <div className={styles.passInfoNumbers}>
-                            <span className={styles.passRemaining}>{pass.remaining}</span>
-                            <span className={styles.passSeparator}>/</span>
-                            <span className={styles.passTotal}>{pass.planSize}</span>
+                    {passes.map((pass) => {
+                      const daysLeft = getDaysUntilExpiry(pass.purchasedAt);
+                      const isActive = pass.remaining > 0 && daysLeft > 0;
+                      
+                      return (
+                        <div key={pass.id} className={styles.passItem}>
+                          <div className={styles.passInfo}>
+                            <div className={styles.passInfoNumbers}>
+                              <span className={styles.passRemaining}>{pass.remaining}</span>
+                              <span className={styles.passSeparator}>/</span>
+                              <span className={styles.passTotal}>{pass.planSize}</span>
+                            </div>
+                            <div className={styles.passInfoLabel}>{t('sessionsLabel')}</div>
                           </div>
-                          <div className={styles.passInfoLabel}>Занятий</div>
-                        </div>
-                        <div className={styles.passDetails}>
-                          <div className={styles.passType}>
-                            {pass.type === 'subscription' ? '🎫' : '🎟️'} {pass.type}
+                          
+                          <div className={styles.passDetails}>
+                            <div className={styles.passType}>
+                              {pass.type === 'subscription' ? '🎫' : '🎟️'} {t(pass.type)}
+                            </div>
+                            <div className={styles.passDate}>
+                              📅 {formatDate(pass.purchasedAt)}
+                            </div>
+                            {pass.lastVisit && (
+                              <div className={styles.passLastVisit}>
+                                🏊‍♀️ {formatDate(pass.lastVisit)}
+                              </div>
+                            )}
                           </div>
-                          <div className={styles.passDate}>
-                            📅 {new Date(pass.purchasedAt).toLocaleDateString('ru-RU', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
+                          
+                          <div className={styles.passStatus}>
+                            {isActive ? (
+                              <span className={styles.statusActive}>
+                                ✅ {t('activeStatus')}
+                              </span>
+                            ) : (
+                              <span className={styles.statusExpired}>
+                                ❌ {t('expiredStatus')}
+                              </span>
+                            )}
+                            <div className={styles.passExpiryInfo}>
+                              ⏰ {Math.max(0, daysLeft)} {t('daysShort')}
+                            </div>
                           </div>
-                          {pass.lastVisit && (
-                            <div className={styles.passLastVisit}>
-                              🏊‍♀️ {new Date(pass.lastVisit).toLocaleDateString('ru-RU', {
-                                month: 'short',
-                                day: 'numeric'
-                              })}
+                          
+                          <div className={styles.passProgress}>
+                            <div
+                              className={styles.passProgressBar}
+                              style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
+                            />
+                          </div>
+                          
+                          {pass.remaining > 0 && (
+                            <div className={styles.passActions}>
+                              <button
+                                type="button"
+                                className={`${styles.passActionButton} ${styles.convert}`}
+                                onClick={() => handleConvertLastVisit(pass.id)}
+                                title={t('convertLastVisitTooltip')}
+                              >
+                                <span className={styles.actionIcon}>🔄</span>
+                                {t('convertLastVisit')}
+                              </button>
+                              <button
+                                type="button"
+                                className={`${styles.passActionButton} ${styles.deduct}`}
+                                onClick={() => handleDeductSessions(pass.id)}
+                                title={t('deductSessionsTooltip')}
+                              >
+                                <span className={styles.actionIcon}>➖</span>
+                                {t('deductSessions')}
+                              </button>
                             </div>
                           )}
                         </div>
-                        <div className={styles.passStatus}>
-                          {pass.remaining > 0 ? (
-                            <span className={styles.statusActive}>
-                              ✅ Активен
-                            </span>
-                          ) : (
-                            <span className={styles.statusExpired}>
-                              ❌ Исчерпан
-                            </span>
-                          )}
-                          <div className={styles.passExpiryInfo}>
-                            ⏰ {Math.ceil((new Date(pass.purchasedAt).getTime() + 30 * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60 * 24))} дн.
-                          </div>
-                        </div>
-                        <div className={styles.passProgress}>
-                          <div
-                            className={styles.passProgressBar}
-                            style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
-                          />
-                        </div>
-                        <div className={styles.passActions}>
-                          <button
-                            type="button"
-                            className={`${styles.passActionButton} ${styles.convert}`}
-                        {pass.remaining > 0 && (
-                          <div className={styles.passActions}>
-                            <button
-                              type="button"
-                              className={`${styles.passActionButton} ${styles.convert}`}
-                              onClick={() => handleConvertLastVisit(pass.id)}
-                              title="Конвертировать последнее разовое посещение в использование абонемента"
-                            >
-                              <span className={styles.actionIcon}>🔄</span>
-                              {t('convertLastVisit')}
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.passActionButton} ${styles.deduct}`}
-                              onClick={() => handleDeductSessions(pass.id)}
-                              title="Вручную списать занятия с абонемента"
-                            >
-                              <span className={styles.actionIcon}>➖</span>
-                              {t('deductSessions')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className={styles.noPasses}>
@@ -929,6 +946,7 @@ export default function ClientForm({
                     <p>{t('noActivePassesFound')}</p>
                   </div>
                 )}
+                
                 <div className={styles.addPassForm}>
                   <button
                     type="button"
