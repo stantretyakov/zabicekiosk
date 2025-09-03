@@ -991,7 +991,30 @@ export default function ClientForm({
                       
                       <button
                         type="button"
-                        onClick={handleConvertLastVisit}
+                        onClick={() => handleConvertLastVisit()}
+                        className={styles.btnConvertVisit}
+                      >
+                        <span className={styles.convertIcon}>🔄</span>
+                        {t('convertLastVisit')}
+                      </button>
+                    </div>
+                    
+                    <div className={styles.noPassesActions}>
+                      <button
+                        type="button"
+                        onClick={() => setShowSellPassForm(true)}
+                        className={styles.btnSellPass}
+                      >
+                        <span className={styles.addIcon}>+</span>
+                        {t('sellNewPass')}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConvertAfterSale('new');
+                          setShowSellPassForm(true);
+                        }}
                         className={styles.btnConvertVisit}
                       >
                         <span className={styles.convertIcon}>🔄</span>
@@ -1000,17 +1023,6 @@ export default function ClientForm({
                     </div>
                   </div>
                 )}
-                
-                <div className={styles.passesActions}>
-                  <button
-                    type="button"
-                    onClick={() => setShowSellPassForm(true)}
-                    className={styles.btnSellPass}
-                  >
-                    <span className={styles.addIcon}>+</span>
-                    {t('sellNewPass')}
-                  </button>
-                </div>
               </div>
             </>
           )}
