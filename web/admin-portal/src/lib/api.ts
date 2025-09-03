@@ -329,13 +329,14 @@ export async function deductPassSessions(
       throw new Error('Количество занятий должно быть положительным числом');
     }
     
+    // Update pass
     pass.remaining = Math.max(0, pass.remaining - count);
     
     // Add manual deduction record
     mockRedeems.unshift({
       id: `redeem-${Date.now()}`,
       ts: new Date().toISOString(),
-      kind: 'manual',
+      kind: 'pass',
       clientId: pass.clientId,
       delta: -count,
       client: pass.client,
@@ -343,6 +344,7 @@ export async function deductPassSessions(
     
     // Update last visit time
     pass.lastVisit = new Date().toISOString();
+    
     return;
   }
   await fetchJSON(`/admin/passes/${passId}/deduct`, {

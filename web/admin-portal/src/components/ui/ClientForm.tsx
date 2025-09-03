@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 import SellPassForm from './SellPassForm';
+import PassActionDialog from './PassActionDialog';
 import { useTranslation } from '../../lib/i18n';
 import {
   getClientToken,
