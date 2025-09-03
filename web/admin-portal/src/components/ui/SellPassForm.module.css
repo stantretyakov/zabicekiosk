@@ -357,6 +357,55 @@
   font-weight: 500;
 }
 
+.conversionNotice {
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.1), rgba(255, 209, 102, 0.05));
+  border: 2px solid var(--warn);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  animation: conversionPulse 2s ease-in-out infinite;
+}
+
+@keyframes conversionPulse {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(255, 209, 102, 0.2);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(255, 209, 102, 0.4);
+  }
+}
+
+.conversionIcon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.conversionText {
+  flex: 1;
+}
+
+.conversionText strong {
+  display: block;
+  color: var(--warn);
+  font-weight: 700;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.conversionText p {
+  color: var(--text);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  margin: 0;
+  opacity: 0.9;
+}
+
 .priceValue {
   font-size: 1.5rem;
   font-weight: 700;

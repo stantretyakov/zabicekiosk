@@ -56,9 +56,10 @@ export default function ClientForm({
   const [loadingPasses, setLoadingPasses] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);
   const [showSellPassForm, setShowSellPassForm] = useState(false);
+  const [convertAfterSale, setConvertAfterSale] = useState<string | null>(null); // passId to convert after sale
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [currentAction, setCurrentAction] = useState<{
-    type: 'convert' | 'deduct';
+    type: 'deduct';
     passId: string;
     passInfo: {
       remaining: number;
@@ -182,23 +183,60 @@ export default function ClientForm({
   const handleSellPassSuccess = async () => {
     if (initial?.id) {
       await loadClientPasses(initial.id as string);
+      
+      // If this was triggered by conversion, convert the last visit
+      if (convertAfterSale) {
+        try {
+          // Find the newly created pass (most recent one)
+          const updatedPasses = await listPasses({ clientId: initial.id as string });
+          const newestPass = updatedPasses.items[0]; // Most recent pass
+          
+          if (newestPass) {
+            await performConversion(newestPass.id);
+            // Reload passes again to show updated state
+            await loadClientPasses(initial.id as string);
+          }
+          setConvertAfterSale(null);
+        } catch (err) {
+          console.error('Failed to convert after pass sale:', err);
+          alert('Абонемент продан успешно, но не удалось конвертировать разовое посещение. Попробуйте конвертировать вручную.');
+        }
+      }
     }
+    setShowSellPassForm(false);
   };
 
-  const handleConvertLastVisit = async (passId: string) => {
-    if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
-      return;
-    }
-    
+  const performConversion = async (passId: string) => {
     try {
       await convertLastVisit(passId);
       if (initial?.id) await loadClientPasses(initial.id as string);
     } catch (err) {
       console.error('Failed to convert last visit:', err);
-      alert('Ошибка при конвертации посещения. Проверьте, что у клиента есть недавнее разовое посещение.');
+      throw err;
     }
   };
 
+  const handleConvertLastVisit = async (passId: string) => {
+    if (passId === 'new') {
+      // No active pass - sell pass first, then convert
+      setConvertAfterSale('new');
+      setShowSellPassForm(true);
+    } else {
+      // Has active pass - convert directly
+      const activePass = passes.find(p => p.id === passId && p.remaining > 0);
+      if (activePass) {
+        if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+          return;
+        }
+        
+        try {
+          await performConversion(passId);
+        } catch (err) {
+          alert('Ошибка при конвертации посещения. Проверьте, что у клиента есть недавнее разовое посещение.');
+        }
+      }
+    }
+  };
   const handleDeductSessions = async (passId: string) => {
     const input = prompt('Введите количество занятий для списания:');
     if (!input) return;
@@ -961,6 +999,14 @@ export default function ClientForm({
                 <div className={styles.addPassForm}>
                   <button
                     type="button"
+                    onClick={() => handleConvertLastVisit('new')}
+                    className={styles.btnConvertVisit}
+                  >
+                    <span className={styles.convertIcon}>🔄</span>
+                    {t('convertLastVisit')}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowSellPassForm(true)}
                     className={styles.btnSellPass}
                   >
@@ -994,9 +1040,13 @@ export default function ClientForm({
         {showSellPassForm && initial?.id && (
           <SellPassForm
             open={showSellPassForm}
-            onClose={() => setShowSellPassForm(false)}
+            onClose={() => {
+              setShowSellPassForm(false);
+              setConvertAfterSale(null);
+            }}
             onSuccess={handleSellPassSuccess}
             preselectedClient={initial as ApiClient}
+            isConversion={!!convertAfterSale}
           />
         )}
       </div>
@@ -1004,8 +1054,16 @@ export default function ClientForm({
       {showActionDialog && currentAction && (
         <PassActionDialog
           isOpen={showActionDialog}
-          onClose={handleActionDialogClose}
-          onConfirm={handleActionConfirm}
+          onClose={() => {
+            setShowActionDialog(false);
+            setCurrentAction(null);
+          }}
+          onConfirm={async (count?: number) => {
+            if (currentAction.type === 'deduct' && count) {
+              await deductPassSessions(currentAction.passId, count);
+              if (initial?.id) await loadClientPasses(initial.id as string);
+            }
+          }}
           actionType={currentAction.type}
           passInfo={currentAction.passInfo}
         />

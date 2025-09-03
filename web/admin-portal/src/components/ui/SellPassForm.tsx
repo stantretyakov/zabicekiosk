@@ -9,6 +9,7 @@ export type SellPassFormProps = {
   onClose: () => void;
   onSuccess: () => void;
   preselectedClient?: Client;
+  isConversion?: boolean;
 };
 
 interface PassType {
@@ -26,7 +27,7 @@ const DEFAULT_PASS_TYPES: PassType[] = [
   { id: '20', name: '20 Sessions', sessions: 20, priceRSD: 20000, validityDays: 60 },
 ];
 
-export default function SellPassForm({ open, onClose, onSuccess, preselectedClient }: SellPassFormProps) {
+export default function SellPassForm({ open, onClose, onSuccess, preselectedClient, isConversion = false }: SellPassFormProps) {
   const { t } = useTranslation();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -237,7 +238,19 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     <div className={styles.backdrop} onClick={onClose} onKeyDown={handleKeyDown}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <form onSubmit={handleSubmit} className={styles.form}>
-          <h2 className={styles.title}>{t('sellSwimmingPass')}</h2>
+          <h2 className={styles.title}>
+            {isConversion ? 'Продать абонемент и конвертировать посещение' : t('sellSwimmingPass')}
+          </h2>
+
+          {isConversion && (
+            <div className={styles.conversionNotice}>
+              <div className={styles.conversionIcon}>🔄</div>
+              <div className={styles.conversionText}>
+                <strong>Конвертация разового посещения</strong>
+                <p>После продажи абонемента последнее разовое посещение будет автоматически конвертировано в использование абонемента</p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className={styles.errorMessage} role="alert">

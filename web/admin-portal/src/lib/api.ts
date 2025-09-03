@@ -234,6 +234,8 @@ export async function createPass(body: {
       priceRSD: body.priceRSD,
       client,
     });
+    
+    return { status: 'created', passId: newPass.id };
     return { status: 'created' };
   }
 
