@@ -298,10 +298,14 @@ export async function convertLastVisit(passId: string): Promise<void> {
     }
     
     const dropin = mockRedeems[dropinIndex];
+    
+    // Convert dropin to pass usage
     dropin.kind = 'pass';
     (dropin as any).passId = passId;
     dropin.delta = -1;
     delete dropin.priceRSD;
+    
+    // Update pass remaining count
     pass.remaining = Math.max(0, pass.remaining - 1);
     
     // Update last visit time

@@ -968,7 +968,12 @@ export default function ClientForm({
                               <button
                                 type="button"
                                 className={`${styles.passActionButton} ${styles.convert}`}
-                                onClick={() => handleConvertLastVisit(pass.id)}
+                                onClick={() => {
+                                  if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+                                    return;
+                                  }
+                                  performConversion(pass.id);
+                                }}
                                 title={t('convertLastVisitTooltip')}
                               >
                                 <span className={styles.actionIcon}>🔄</span>
@@ -977,7 +982,18 @@ export default function ClientForm({
                               <button
                                 type="button"
                                 className={`${styles.passActionButton} ${styles.deduct}`}
-                                onClick={() => handleDeductSessions(pass.id)}
+                                onClick={() => {
+                                  setCurrentAction({
+                                    type: 'deduct',
+                                    passId: pass.id,
+                                    passInfo: {
+                                      remaining: pass.remaining,
+                                      planSize: pass.planSize,
+                                      childName: values.childName
+                                    }
+                                  });
+                                  setShowActionDialog(true);
+                                }}
                                 title={t('deductSessionsTooltip')}
                               >
                                 <span className={styles.actionIcon}>➖</span>
@@ -999,19 +1015,22 @@ export default function ClientForm({
                 <div className={styles.addPassForm}>
                   <button
                     type="button"
-                    onClick={() => handleConvertLastVisit('new')}
-                    className={styles.btnConvertVisit}
-                  >
-                    <span className={styles.convertIcon}>🔄</span>
-                    {t('convertLastVisit')}
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setShowSellPassForm(true)}
                     className={styles.btnSellPass}
                   >
                     <span className={styles.addIcon}>+</span>
                     {t('sellNewPass')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConvertAfterSale('new');
+                      setShowSellPassForm(true);
+                    }}
+                    className={styles.btnConvertVisit}
+                  >
+                    <span className={styles.convertIcon}>🔄</span>
+                    {t('convertLastVisit')}
                   </button>
                 </div>
               </div>
