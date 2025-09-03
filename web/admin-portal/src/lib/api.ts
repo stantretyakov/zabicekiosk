@@ -235,7 +235,6 @@ export async function createPass(body: {
       client,
     });
     
-    return { status: 'created', passId: newPass.id };
     return { status: 'created' };
   }
 

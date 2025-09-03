@@ -104,6 +104,22 @@ export interface Translations {
   expiredStatus: string;
   daysShort: string;
 
+  // Pass Actions
+  convertLastVisitTitle: string;
+  convertLastVisitDescription: string;
+  convertVisit: string;
+  deductSessionsTitle: string;
+  deductSessionsDescription: string;
+  sessionsRemaining: string;
+  importantNote: string;
+  convertWarningText: string;
+  sessionsToDeduct: string;
+  maxSessions: string;
+  currentRemaining: string;
+  toDeduct: string;
+  afterDeduction: string;
+  processing: string;
+
   // Passes
   passesTitle: string;
   sellPass: string;
@@ -360,6 +376,22 @@ const translations: Record<Language, Translations> = {
     activeStatus: 'Активен',
     expiredStatus: 'Исчерпан',
     daysShort: 'дн.',
+
+    // Pass Actions
+    convertLastVisitTitle: 'Конвертировать посещение',
+    convertLastVisitDescription: 'Конвертировать последнее разовое посещение этого клиента в использование абонемента',
+    convertVisit: 'Конвертировать посещение',
+    deductSessionsTitle: 'Списать занятия',
+    deductSessionsDescription: 'Вручную списать занятия с абонемента клиента',
+    sessionsToDeduct: 'Количество занятий для списания',
+    maxSessions: 'Максимум',
+    currentRemaining: 'Сейчас осталось',
+    toDeduct: 'Списать',
+    afterDeduction: 'После списания',
+    sessionsRemaining: 'занятий осталось',
+    importantNote: 'Важное примечание',
+    convertWarningText: 'Это действие найдет последнее разовое посещение клиента и конвертирует его в использование абонемента. Отменить нельзя.',
+    processing: 'Обработка...',
 
     // Passes
     passesTitle: 'Абонементы',

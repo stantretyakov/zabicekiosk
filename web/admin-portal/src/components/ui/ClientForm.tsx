@@ -216,55 +216,6 @@ export default function ClientForm({
     }
   };
 
-  const handleConvertLastVisit = async (passId: string) => {
-    if (passId === 'new') {
-      // No active pass - sell pass first, then convert
-      setConvertAfterSale('new');
-      setShowSellPassForm(true);
-    } else {
-      // Has active pass - convert directly
-      const activePass = passes.find(p => p.id === passId && p.remaining > 0);
-      if (activePass) {
-        if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
-          return;
-        }
-        
-        try {
-          await performConversion(passId);
-        } catch (err) {
-          alert('Ошибка при конвертации посещения. Проверьте, что у клиента есть недавнее разовое посещение.');
-        }
-      }
-    }
-  };
-  const handleDeductSessions = async (passId: string) => {
-    const input = prompt('Введите количество занятий для списания:');
-    if (!input) return;
-    
-    const count = Number(input);
-    if (!count || count <= 0 || !Number.isInteger(count)) {
-      alert('Пожалуйста, введите корректное положительное число.');
-      return;
-    }
-    
-    const pass = passes.find(p => p.id === passId);
-    if (pass && count > pass.remaining) {
-      alert(`Нельзя списать больше занятий (${count}), чем осталось в абонементе (${pass.remaining}).`);
-      return;
-    }
-    
-    if (!confirm(`Списать ${count} ${count === 1 ? 'занятие' : count < 5 ? 'занятия' : 'занятий'} с абонемента? Это действие нельзя отменить.`)) {
-      return;
-    }
-    
-    try {
-      await deductPassSessions(passId, count);
-      if (initial?.id) await loadClientPasses(initial.id as string);
-    } catch (err) {
-      console.error('Failed to deduct sessions:', err);
-      alert('Ошибка при списании занятий. Попробуйте еще раз.');
-    }
-  };
 
   const generateTicketCard = async (url: string, parentName: string, childName: string) => {
     if (!ticketCanvasRef.current) return;
