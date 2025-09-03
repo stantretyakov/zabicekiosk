@@ -989,6 +989,16 @@ export default function ClientForm({
           />
         )}
       </div>
+      
+      {showActionDialog && currentAction && (
+        <PassActionDialog
+          isOpen={showActionDialog}
+          onClose={handleActionDialogClose}
+          onConfirm={handleActionConfirm}
+          actionType={currentAction.type}
+          passInfo={currentAction.passInfo}
+        />
+      )}
     </div>
   );
 }

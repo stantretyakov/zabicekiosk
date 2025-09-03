@@ -616,6 +616,22 @@ const translations: Record<Language, Translations> = {
     expiredStatus: 'Expired',
     daysShort: 'days',
 
+    // Pass Actions
+    convertLastVisitTitle: 'Convert Visit',
+    convertLastVisitDescription: 'Convert the last drop-in visit of this client to pass usage',
+    convertVisit: 'Convert Visit',
+    deductSessionsTitle: 'Deduct Sessions',
+    deductSessionsDescription: 'Manually deduct sessions from client pass',
+    sessionsToDeduct: 'Number of sessions to deduct',
+    maxSessions: 'Maximum',
+    currentRemaining: 'Current remaining',
+    toDeduct: 'To deduct',
+    afterDeduction: 'After deduction',
+    sessionsRemaining: 'sessions remaining',
+    importantNote: 'Important Note',
+    convertWarningText: 'This action will find the last drop-in visit of the client and convert it to pass usage. This action cannot be undone.',
+    processing: 'Processing...',
+
     // Passes
     passesTitle: 'Passes',
     sellPass: 'Sell Pass',
