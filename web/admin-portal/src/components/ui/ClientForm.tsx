@@ -217,9 +217,25 @@ export default function ClientForm({
   };
 
   const handleConvertLastVisit = async (passId: string) => {
-    // Always sell pass first, then convert
-    setConvertAfterSale('new');
-    setShowSellPassForm(true);
+    if (passId === 'new') {
+      // No active pass - sell pass first, then convert
+      setConvertAfterSale('new');
+      setShowSellPassForm(true);
+    } else {
+      // Has active pass - convert directly
+      const activePass = passes.find(p => p.id === passId && p.remaining > 0);
+      if (activePass) {
+        if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+          return;
+        }
+        
+        try {
+          await performConversion(passId);
+        } catch (err) {
+          alert('Ошибка при конвертации посещения. Проверьте, что у клиента есть недавнее разовое посещение.');
+        }
+      }
+    }
   };
   const handleDeductSessions = async (passId: string) => {
     const input = prompt('Введите количество занятий для списания:');
@@ -951,6 +967,20 @@ export default function ClientForm({
                             <div className={styles.passActions}>
                               <button
                                 type="button"
+                                className={`${styles.passActionButton} ${styles.convert}`}
+                                onClick={() => {
+                                  if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+                                    return;
+                                  }
+                                  performConversion(pass.id);
+                                }}
+                                title={t('convertLastVisitTooltip')}
+                              >
+                                <span className={styles.actionIcon}>🔄</span>
+                                {t('convertLastVisit')}
+                              </button>
+                              <button
+                                type="button"
                                 className={`${styles.passActionButton} ${styles.deduct}`}
                                 onClick={() => {
                                   setCurrentAction({
@@ -979,31 +1009,30 @@ export default function ClientForm({
                   <div className={styles.noPasses}>
                     <span className={styles.noPassesIcon}>🎫</span>
                     <p>{t('noActivePassesFound')}</p>
-                    
-                    <div className={styles.noPassesActions}>
-                      <button
-                        type="button"
-                        onClick={() => setShowSellPassForm(true)}
-                        className={styles.btnSellPass}
-                      >
-                        <span className={styles.addIcon}>+</span>
-                        {t('sellNewPass')}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setConvertAfterSale('new');
-                          setShowSellPassForm(true);
-                        }}
-                        className={styles.btnConvertVisit}
-                      >
-                        <span className={styles.convertIcon}>🔄</span>
-                        {t('convertLastVisit')}
-                      </button>
-                    </div>
                   </div>
                 )}
+                
+                <div className={styles.addPassForm}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSellPassForm(true)}
+                    className={styles.btnSellPass}
+                  >
+                    <span className={styles.addIcon}>+</span>
+                    {t('sellNewPass')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConvertAfterSale('new');
+                      setShowSellPassForm(true);
+                    }}
+                    className={styles.btnConvertVisit}
+                  >
+                    <span className={styles.convertIcon}>🔄</span>
+                    {t('convertLastVisit')}
+                  </button>
+                </div>
               </div>
             </>
           )}
