@@ -1089,6 +1089,7 @@
   .btnConvertVisit {
     width: 100%;
     flex: none;
+    min-width: auto;
   }
   
   .qrContainer {
