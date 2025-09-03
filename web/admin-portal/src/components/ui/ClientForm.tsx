@@ -1,1070 +1,290 @@
-import React, { useState, useEffect, useRef } from 'react';
-import QRCodeStyling from 'qr-code-styling';
-import SellPassForm from './SellPassForm';
-import PassActionDialog from './PassActionDialog';
-import { useTranslation } from '../../lib/i18n';
-import {
-  getClientToken,
-  listPasses,
-  fetchSettings,
-  type SettingsResponse,
-  convertLastVisit,
-  deductPassSessions,
-} from '../../lib/api';
-import styles from './ClientForm.module.css';
-import type { PassWithClient, Client as ApiClient } from '../../types';
+import React, { useState, useRef, useEffect } from "react";
+import { createPass, listPasses, getClientToken } from "../lib/api";
+import QRCodeStyling from "qr-code-styling";
+import styles from "./ClientForm.module.css";
 
-export type Client = {
+function normPhone(v: string): string {
+  return v.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{4})/, "($1) $2-$3");
+}
+
+interface Pass {
   id: string;
-  parentName: string;
-  childName: string;
-  phone?: string;
-  telegram?: string;
-  instagram?: string;
-  active: boolean;
-};
+  type: string;
+  remaining: number;
+  total: number;
+}
 
-export type ClientFormProps = {
-  initial?: Partial<Client>;
-  mode: 'create' | 'edit';
-  onSubmit: (values: Partial<Client>) => void;
-  onCancel: () => void;
-  submitting?: boolean;
-  error?: string | null;
-};
+interface ClientFormProps {
+  onClose: () => void;
+  onSave: (client: any) => void;
+  client?: any;
+}
 
-export default function ClientForm({
-  initial,
-  mode,
-  onSubmit,
-  onCancel,
-  submitting = false,
-  error = null,
-}: ClientFormProps) {
-  const { t } = useTranslation();
-  const [values, setValues] = useState({
-    parentName: initial?.parentName || '',
-    childName: initial?.childName || '',
-    phone: initial?.phone || '',
-    telegram: initial?.telegram || '',
-    instagram: initial?.instagram || '',
+export default function ClientForm({ onClose, onSave, client }: ClientFormProps) {
+  const [formData, setFormData] = useState({
+    firstName: client?.firstName || "",
+    lastName: client?.lastName || "",
+    email: client?.email || "",
+    phone: client?.phone || "",
+    isActive: client?.isActive ?? true,
   });
-
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [passUrl, setPassUrl] = useState<string | null>(null);
-  const [passes, setPasses] = useState<PassWithClient[]>([]);
-  const [loadingPasses, setLoadingPasses] = useState(false);
-  const [loadingToken, setLoadingToken] = useState(false);
-  const [showSellPassForm, setShowSellPassForm] = useState(false);
-  const [convertAfterSale, setConvertAfterSale] = useState<string | null>(null); // passId to convert after sale
-  const [showActionDialog, setShowActionDialog] = useState(false);
-  const [currentAction, setCurrentAction] = useState<{
-    type: 'deduct';
-    passId: string;
-    passInfo: {
-      remaining: number;
-      planSize: number;
-      childName: string;
-    };
-  } | null>(null);
+  
+  const [passes, setPasses] = useState<Pass[]>([]);
+  const [newPassType, setNewPassType] = useState("10");
+  const [isLoading, setIsLoading] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
-  const qrInstance = useRef<QRCodeStyling | null>(null);
-  const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [settings, setSettings] = useState<SettingsResponse>({});
 
   useEffect(() => {
-    // In dev mode, use mock settings
-    if (import.meta.env.DEV) {
-      setSettings({
-        businessName: 'Swimming Academy',
-        businessAddress: 'Belgrade, Serbia',
-        businessPhone: '+381 60 123 4567',
-        businessEmail: 'info@swimming-academy.rs',
-        businessTelegram: '@Tretiakovaanny',
-        businessInstagram: '@swimmingacademy'
-      });
-    } else {
-      fetchSettings()
-        .then(setSettings)
-        .catch(err => console.error('Failed to load settings:', err));
+    if (client?.id) {
+      loadPasses();
+      loadClientToken();
     }
-  }, []);
+  }, [client?.id]);
 
-  // Reset form when initial values change
-  useEffect(() => {
-    setValues({
-      parentName: initial?.parentName || '',
-      childName: initial?.childName || '',
-      phone: initial?.phone || '',
-      telegram: initial?.telegram || '',
-      instagram: initial?.instagram || '',
-    });
-    setValidationErrors({});
-    setPassUrl(null);
-  }, [initial]);
-
-  // Load token and render QR code when editing an existing client
-  useEffect(() => {
-    if (mode !== 'edit' || !initial?.id) return;
-
-    const clientId = initial.id as string;
-    loadClientPasses(clientId);
-    loadClientToken(clientId);
-  }, [mode, initial?.id]);
-
-  // Generate ticket when values change (for immediate preview)
-  useEffect(() => {
-    if (mode === 'edit' && passUrl && values.parentName && values.childName) {
-      setTimeout(() => {
-        generateTicketCard(passUrl, values.parentName, values.childName);
-      }, 100);
-    }
-  }, [passUrl, values.parentName, values.childName, mode, settings]);
-
-  const loadClientPasses = async (clientId: string) => {
+  const loadPasses = async () => {
+    if (!client?.id) return;
     try {
-      setLoadingPasses(true);
-      const data = await listPasses({ clientId });
-      setPasses(data.items);
-    } catch (err) {
-      console.error('Failed to load client passes:', err);
-    } finally {
-      setLoadingPasses(false);
-    }
-  };
-
-  const loadClientToken = async (clientId: string) => {
-    try {
-      setLoadingToken(true);
-      const { token } = await getClientToken(clientId);
-      const baseUrl =
-        import.meta.env.VITE_PARENT_PORTAL_URL ||
-        window.location.origin.replace(/admin[^.]*/, 'parent-web');
-      const url = `${baseUrl}?token=${token}`;
-      setPassUrl(url);
-
-      // Generate QR code
-      if (qrRef.current) {
-        qrRef.current.innerHTML = '';
-        qrInstance.current = new QRCodeStyling({
-          width: 200,
-          height: 200,
-          data: url,
-          dotsOptions: {
-            color: '#2be090',
-            type: 'rounded',
-          },
-          backgroundOptions: {
-            color: '#1a1a1a',
-          },
-          cornersSquareOptions: {
-            color: '#2be090',
-            type: 'extra-rounded',
-          },
-          cornersDotOptions: {
-            color: '#2be090',
-            type: 'dot',
-          },
-        });
-        qrInstance.current.append(qrRef.current);
-      }
-
-      // Generate ticket card
-      setTimeout(() => {
-        generateTicketCard(url, values.parentName, values.childName);
-      }, 100);
+        const data = await listPasses({ clientId: client.id });
+        setPasses(
+          data.items.map(({ planSize, ...p }) => ({
+            id: p.id,
+            type: p.type,
+            remaining: p.remaining,
+            total: planSize,
+          }))
+        );
     } catch (error) {
-      console.error('Failed to load client token:', error);
-    } finally {
-      setLoadingToken(false);
+      console.error("Failed to load passes:", error);
     }
   };
 
-  const handleSellPassSuccess = async () => {
-    if (initial?.id) {
-      await loadClientPasses(initial.id as string);
-      
-      // If this was triggered by conversion, convert the last visit
-      if (convertAfterSale) {
-        try {
-          // Find the newly created pass (most recent one)
-          const updatedPasses = await listPasses({ clientId: initial.id as string });
-          const newestPass = updatedPasses.items[0]; // Most recent pass
-          
-          if (newestPass) {
-            await performConversion(newestPass.id);
-            // Reload passes again to show updated state
-            await loadClientPasses(initial.id as string);
-          }
-          setConvertAfterSale(null);
-        } catch (err) {
-          console.error('Failed to convert after pass sale:', err);
-          alert('Абонемент продан успешно, но не удалось конвертировать разовое посещение. Попробуйте конвертировать вручную.');
-        }
-      }
-    }
-    setShowSellPassForm(false);
-  };
-
-  const performConversion = async (passId: string) => {
+  const loadClientToken = async () => {
+    if (!client?.id) return;
     try {
-      await convertLastVisit(passId);
-      if (initial?.id) await loadClientPasses(initial.id as string);
-    } catch (err) {
-      console.error('Failed to convert last visit:', err);
-      throw err;
-    }
-  };
+        const { token } = await getClientToken(client.id);
 
-  const handleConvertLastVisit = async (passId: string) => {
-    setConvertAfterSale('new');
-    setShowSellPassForm(true);
-  };
-  const handleDeductSessions = async (passId: string) => {
-    const input = prompt('Введите количество занятий для списания:');
-    if (!input) return;
-    
-    const count = Number(input);
-    if (!count || count <= 0 || !Number.isInteger(count)) {
-      alert('Пожалуйста, введите корректное положительное число.');
-      return;
-    }
-    
-    const pass = passes.find(p => p.id === passId);
-    if (pass && count > pass.remaining) {
-      alert(`Нельзя списать больше занятий (${count}), чем осталось в абонементе (${pass.remaining}).`);
-      return;
-    }
-    
-    if (!confirm(`Списать ${count} ${count === 1 ? 'занятие' : count < 5 ? 'занятия' : 'занятий'} с абонемента? Это действие нельзя отменить.`)) {
-      return;
-    }
-    
-    try {
-      await deductPassSessions(passId, count);
-      if (initial?.id) await loadClientPasses(initial.id as string);
-    } catch (err) {
-      console.error('Failed to deduct sessions:', err);
-      alert('Ошибка при списании занятий. Попробуйте еще раз.');
-    }
-  };
-
-  const generateTicketCard = async (url: string, parentName: string, childName: string) => {
-    if (!ticketCanvasRef.current) return;
-
-    const canvas = ticketCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas size for high quality
-    canvas.width = 900;
-    canvas.height = 600;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Background gradient
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#0F1115');
-    gradient.addColorStop(0.5, '#12161C');
-    gradient.addColorStop(1, '#171E27');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Accent border
-    ctx.strokeStyle = '#2BE090';
-    ctx.lineWidth = 4;
-    ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
-
-    // Header section
-    ctx.fillStyle = '#2BE090';
-    ctx.fillRect(0, 0, canvas.width, 90);
-
-    // Business logo/icon
-    ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 32px Inter, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🏊‍♀️', 40, 60);
-
-    // Business name
-    ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 28px Inter, sans-serif';
-    ctx.fillText(settings.businessName || 'Swimming Academy', 100, 45);
-
-    ctx.font = '18px Inter, sans-serif';
-    ctx.fillText('Professional Swimming Lessons', 100, 70);
-
-    // Client information
-    ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 32px Inter, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Swimming Pass', 40, 140);
-
-    ctx.font = 'bold 24px Inter, sans-serif';
-    ctx.fillStyle = '#2BE090';
-    ctx.fillText(`Parent: ${parentName}`, 40, 180);
-
-    ctx.font = 'bold 22px Inter, sans-serif';
-    ctx.fillStyle = '#4AD6FF';
-    ctx.fillText(`Child: ${childName}`, 40, 210);
-
-    // Pass type indicator
-    ctx.fillStyle = '#2BE090';
-    ctx.fillRect(40, 240, 250, 3);
-    
-    ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 18px Inter, sans-serif';
-    ctx.fillText('Swimming Pass Access', 40, 270);
-    
-    // Business information
-    ctx.fillStyle = '#9AA5B1';
-    ctx.font = '16px Inter, sans-serif';
-    let infoY = 310;
-    const lineHeight = 25;
-    if (settings.businessAddress) {
-      ctx.fillText(`📍 ${settings.businessAddress}`, 40, infoY);
-      infoY += lineHeight;
-    }
-    if (settings.businessPhone) {
-      ctx.fillText(`📞 ${settings.businessPhone}`, 40, infoY);
-      infoY += lineHeight;
-    }
-    if (settings.businessEmail) {
-      ctx.fillText(`📧 ${settings.businessEmail}`, 40, infoY);
-      infoY += lineHeight;
-    }
-    if (settings.businessTelegram) {
-      ctx.fillText(`💬 ${settings.businessTelegram}`, 40, infoY);
-      infoY += lineHeight;
-    }
-    if (settings.businessInstagram) {
-      ctx.fillText(`📸 ${settings.businessInstagram}`, 40, infoY);
-    }
-
-    // Instructions
-    ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 18px Inter, sans-serif';
-    ctx.fillText('How to use:', 40, 430);
-    
-    ctx.fillStyle = '#9AA5B1';
-    ctx.font = '16px Inter, sans-serif';
-    ctx.fillText('1. Scan QR code or visit the link', 40, 455);
-    ctx.fillText('2. Show digital pass at the facility', 40, 480);
-    ctx.fillText('3. Scan at kiosk to check in for sessions', 40, 505);
-
-    // QR Code area
-    const qrSize = 200;
-    const qrX = canvas.width - qrSize - 50;
-    const qrY = 140;
-
-    // QR background
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30);
-    ctx.strokeStyle = '#2BE090';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(qrX - 15, qrY - 15, qrSize + 30, qrSize + 30);
-
-    // QR code placeholder with text
-    ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 18px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('QR CODE', qrX + qrSize/2, qrY + qrSize/2 - 25);
-    ctx.font = '14px Inter, sans-serif';
-    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize/2);
-    ctx.fillText(url.slice(-20), qrX + qrSize/2, qrY + qrSize/2 + 25);
-    
-    // Generate and draw actual QR code
-    setTimeout(() => {
-      try {
-        const qrCodeStyling = new QRCodeStyling({
-          width: qrSize,
-          height: qrSize,
-          data: url,
-          dotsOptions: {
-            color: '#0F1115',
-            type: 'rounded',
-          },
-          backgroundOptions: {
-            color: '#FFFFFF',
-          },
-          cornersSquareOptions: {
-            color: '#2BE090',
-            type: 'extra-rounded',
-          },
-          cornersDotOptions: {
-            color: '#2BE090',
-            type: 'dot',
-          },
-        });
-
-        // Create temporary div for QR generation
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
-        
-        qrCodeStyling.append(tempDiv);
-        
-        // Wait for QR code to render, then draw on canvas
-        setTimeout(() => {
-          const qrCanvas = tempDiv.querySelector('canvas');
-          if (qrCanvas) {
-            // Clear QR area and redraw with actual QR
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(qrX, qrY, qrSize, qrSize);
-            ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
-          }
-          document.body.removeChild(tempDiv);
-        }, 200);
-      } catch (err) {
-        console.error('Failed to generate QR for ticket:', err);
-      }
-    }, 50);
-
-    // QR label
-    ctx.fillStyle = '#EAEFF5';
-    ctx.font = 'bold 16px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Scan for Digital Pass', qrX + qrSize/2, qrY + qrSize + 35);
-
-    // Footer
-    ctx.fillStyle = '#2BE090';
-    ctx.fillRect(0, canvas.height - 70, canvas.width, 70);
-    
-    ctx.fillStyle = '#0F1115';
-    ctx.font = 'bold 18px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Keep this pass safe • Valid for swimming sessions', canvas.width/2, canvas.height - 40);
-    
-    ctx.font = '14px Inter, sans-serif';
-    ctx.fillText(`Generated: ${new Date().toLocaleDateString()}`, canvas.width/2, canvas.height - 20);
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // You could add a toast notification here
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-    }
-  };
-
-  const copyClientInfo = () => {
-    if (!passUrl) return;
-    copyToClipboard(passUrl);
-  };
-
-  const shareViaTelegram = () => {
-    if (!passUrl || !values.telegram) return;
-
-    const handle = values.telegram.replace(/^@/, '');
-    const url = `https://t.me/${handle}`;
-    window.open(url, '_blank');
-  };
-
-  const downloadQR = () => {
-    if (qrInstance.current) {
-      qrInstance.current.download({
-        name: `${values.childName.replace(/\s+/g, '_')}_swimming_pass`,
-        extension: 'png'
-      });
-    }
-  };
-
-  const downloadTicket = () => {
-    if (!ticketCanvasRef.current) return;
-    
-    const link = document.createElement('a');
-    link.download = `${values.childName.replace(/\s+/g, '_')}_swimming_ticket.png`;
-    link.href = ticketCanvasRef.current.toDataURL('image/png', 1.0);
-    link.click();
-  };
-
-  const shareTicketImage = async () => {
-    if (!ticketCanvasRef.current) return;
-    
-    try {
-      // Convert canvas to blob
-      ticketCanvasRef.current.toBlob(async (blob) => {
-        if (!blob) return;
-        
-        const file = new File([blob], `${values.childName.replace(/\s+/g, '_')}_swimming_ticket.png`, {
-          type: 'image/png'
-        });
-        
-        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: `Swimming Pass - ${values.childName}`,
-            text: `Swimming pass ticket for ${values.childName}`,
-            files: [file]
+        if (qrRef.current) {
+          qrRef.current.innerHTML = "";
+          const qrCodeStyling = new QRCodeStyling({
+            width: 200,
+            height: 200,
+            data: token,
+            dotsOptions: {
+              color: "#2be090",
+              type: "rounded",
+            },
+            backgroundOptions: {
+              color: "#1a1a1a",
+            },
+            cornersSquareOptions: {
+              color: "#2be090",
+              type: "extra-rounded",
+            },
+            cornersDotOptions: {
+              color: "#2be090",
+              type: "dot",
+            },
           });
-        } else {
-          // Fallback to download
-          downloadTicket();
+          qrCodeStyling.append(qrRef.current);
         }
-      }, 'image/png', 1.0);
-    } catch (err) {
-      console.error('Failed to share ticket image:', err);
-      downloadTicket();
+    } catch (error) {
+      console.error("Failed to load client token:", error);
     }
   };
 
-  const validateField = (name: string, value: string): string => {
-    switch (name) {
-      case 'parentName':
-        return !value.trim() ? 'Parent name is required' : '';
-      case 'childName':
-        return !value.trim() ? 'Child name is required' : '';
-      case 'phone':
-        if (value && !/^\+?[\d\s\-\(\)]+$/.test(value)) {
-          return 'Invalid phone format';
-        }
-        return '';
-      case 'telegram':
-        if (value && !/^@?[A-Za-z0-9_]{3,32}$/.test(value)) {
-          return 'Invalid telegram handle';
-        }
-        return '';
-      case 'instagram':
-        if (value) {
-          const handle = value
-            .replace(/^https?:\/\/(www\.)?instagram\.com\//, '')
-            .replace(/[\/?].*$/, '');
-          if (!/^@?[A-Za-z0-9._]{1,30}$/.test(handle)) {
-            return 'Invalid instagram handle';
-          }
-        }
-        return '';
-      default:
-        return '';
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setValues(prev => ({ ...prev, [name]: value }));
-    
-    // Clear validation error for this field
-    if (validationErrors[name]) {
-      setValidationErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const error = validateField(name, value);
-    setValidationErrors(prev => ({ ...prev, [name]: error }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // Validate all fields
-    const errors: Record<string, string> = {};
-    Object.entries(values).forEach(([name, value]) => {
-      const error = validateField(name, value);
-      if (error) errors[name] = error;
-    });
-
-    setValidationErrors(errors);
-
-    // Don't submit if there are validation errors
-    if (Object.values(errors).some(error => error)) {
-      return;
-    }
-
-    // Clean up values before submitting
-    const cleanValues = {
-      parentName: values.parentName.trim(),
-      childName: values.childName.trim(),
-      phone: values.phone.trim() || undefined,
-      telegram: values.telegram.trim().replace(/^@/, '') || undefined,
-      instagram: values.instagram
-        .trim()
-        .replace(/^@/, '')
-        .replace(/^https?:\/\/(www\.)?instagram\.com\//, '')
-        .replace(/[\/?].*$/, '') || undefined,
-    };
-
-    onSubmit(cleanValues);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onCancel();
+    try {
+      await onSave(formData);
+      onClose();
+    } catch (error) {
+      console.error("Failed to save client:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const hasValidationErrors = Object.values(validationErrors).some(error => error);
+  const handleAddPass = async () => {
+    if (!client?.id) return;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      await createPass({
+        clientId: client.id,
+        planSize: parseInt(newPassType),
+        purchasedAt: new Date().toISOString(),
+      });
+      await loadPasses();
+    } catch (error) {
+      console.error("Failed to add pass:", error);
+    }
   };
 
-  const getDaysUntilExpiry = (purchasedAt: string, validityDays: number = 30) => {
-    const purchaseDate = new Date(purchasedAt);
-    const expiryDate = new Date(purchaseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
-    const now = new Date();
-    return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    
+    if (name === "phone") {
+      setFormData(prev => ({
+        ...prev,
+        [name]: normPhone(value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value
+      }));
+    }
   };
 
   return (
-    <div className={styles.backdrop} onClick={onCancel} onKeyDown={handleKeyDown}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={styles.modal}>
+      <div className={styles.modalBody}>
+        <h2 className={styles.modalTitle}>
+          {client ? "Edit Client" : "Add New Client"}
+        </h2>
+        
         <form onSubmit={handleSubmit} className={styles.form}>
-          <h2 className={styles.title}>
-            {mode === 'create' ? t('addClient') : t('editClient')}
-          </h2>
-
-          {error && (
-            <div className={styles.errorMessage} role="alert">
-              {error}
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>First Name</label>
+              <input
+                type="text"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleInputChange}
+                className={styles.formInput}
+                placeholder="Enter first name"
+                required
+              />
             </div>
-          )}
-
-          <div className={styles.field}>
-            <label htmlFor="parentName" className={styles.label}>
-              {t('parentName')} *
-            </label>
-            <input
-              id="parentName"
-              name="parentName"
-              type="text"
-              value={values.parentName}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              disabled={submitting}
-              className={`${styles.input} ${validationErrors.parentName ? styles.inputError : ''}`}
-              maxLength={80}
-              required
-              aria-describedby={validationErrors.parentName ? 'parentName-error' : undefined}
-            />
-            {validationErrors.parentName && (
-              <div id="parentName-error" className={styles.fieldError} role="alert">
-                {validationErrors.parentName}
-              </div>
-            )}
+            
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Last Name</label>
+              <input
+                type="text"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleInputChange}
+                className={styles.formInput}
+                placeholder="Enter last name"
+                required
+              />
+            </div>
+            
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={styles.formInput}
+                placeholder="Enter email address"
+                required
+              />
+            </div>
+            
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className={styles.formInput}
+                placeholder="(555) 123-4567"
+                required
+              />
+            </div>
+            
+            <div className={`${styles.formGroup} ${styles.checkboxGroup}`}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  name="isActive"
+                  checked={formData.isActive}
+                  onChange={handleInputChange}
+                  className={styles.checkboxInput}
+                />
+                <span className={styles.checkboxCustom}></span>
+                Active Client
+              </label>
+            </div>
           </div>
 
-          <div className={styles.field}>
-            <label htmlFor="childName" className={styles.label}>
-              {t('childName')} *
-            </label>
-            <input
-              id="childName"
-              name="childName"
-              type="text"
-              value={values.childName}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              disabled={submitting}
-              className={`${styles.input} ${validationErrors.childName ? styles.inputError : ''}`}
-              maxLength={80}
-              required
-              aria-describedby={validationErrors.childName ? 'childName-error' : undefined}
-            />
-            {validationErrors.childName && (
-              <div id="childName-error" className={styles.fieldError} role="alert">
-                {validationErrors.childName}
-              </div>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="phone" className={styles.label}>
-              {t('phone')}
-            </label>
-            <input
-              id="phone"
-              name="phone"
-              type="tel"
-              value={values.phone}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              disabled={submitting}
-              className={`${styles.input} ${validationErrors.phone ? styles.inputError : ''}`}
-              placeholder="+381 60 123 4567"
-              aria-describedby={validationErrors.phone ? 'phone-error' : undefined}
-            />
-            {validationErrors.phone && (
-              <div id="phone-error" className={styles.fieldError} role="alert">
-                {validationErrors.phone}
-              </div>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="telegram" className={styles.label}>
-              {t('telegram')}
-            </label>
-            <input
-              id="telegram"
-              name="telegram"
-              type="text"
-              value={values.telegram}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              disabled={submitting}
-              className={`${styles.input} ${validationErrors.telegram ? styles.inputError : ''}`}
-              placeholder="@username"
-              aria-describedby={validationErrors.telegram ? 'telegram-error' : undefined}
-            />
-            {validationErrors.telegram && (
-              <div id="telegram-error" className={styles.fieldError} role="alert">
-                {validationErrors.telegram}
-              </div>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="instagram" className={styles.label}>
-              {t('instagram')}
-            </label>
-            <input
-              id="instagram"
-              name="instagram"
-              type="text"
-              value={values.instagram}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              disabled={submitting}
-              className={`${styles.input} ${validationErrors.instagram ? styles.inputError : ''}`}
-              placeholder="@username or instagram.com/username"
-              aria-describedby={validationErrors.instagram ? 'instagram-error' : undefined}
-            />
-            {validationErrors.instagram && (
-              <div id="instagram-error" className={styles.fieldError} role="alert">
-                {validationErrors.instagram}
-              </div>
-            )}
-          </div>
-
-          {mode === 'edit' && initial?.id && (
+          {client?.id && (
             <>
               <div className={styles.clientQrSection}>
-                <h3 className={styles.sectionTitle}>{t('clientPassCard')}</h3>
-                <p className={styles.sectionDescription}>
-                  {t('sharePassCard')}
-                </p>
-                
-                {loadingToken ? (
-                  <div className={styles.loadingQr}>
-                    <div className={styles.qrSpinner} />
-                    <p>Generating QR code...</p>
-                  </div>
-                ) : passUrl ? (
-                  <div className={styles.qrContainer}>
-                    <div className={styles.qrCodeWrapper}>
-                      <div ref={qrRef} className={styles.qrCode}></div>
-                      <div className={styles.qrOverlay}>
-                        <span className={styles.qrLabel}>Swimming Pass</span>
-                      </div>
-                    </div>
-                    
-                    <div className={styles.urlSection}>
-                      <label className={styles.urlLabel}>{t('passUrl')}</label>
-                      <div className={styles.urlContainer}>
-                        <input
-                          type="text"
-                          value={passUrl}
-                          readOnly
-                          className={styles.urlInput}
-                          onClick={(e) => e.currentTarget.select()}
-                        />
-                        <button
-                          type="button"
-                          onClick={copyClientInfo}
-                          className={styles.copyButton}
-                          title={t('copyLink')}
-                        >
-                          📋
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className={styles.qrActions}>
-                      <button
-                        type="button"
-                        onClick={shareViaTelegram}
-                        className={styles.shareButton}
-                      >
-                        <span className={styles.shareIcon}>📱</span>
-                        <span className={styles.shareText}>
-                          <span className={styles.shareLabel}>{t('shareViaTelegram')}</span>
-                          <span className={styles.shareSubtext}>{t('sendToParent')}</span>
-                        </span>
-                        <span className={styles.shareArrow}>→</span>
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={downloadQR}
-                        className={styles.downloadButton}
-                      >
-                        <span className={styles.downloadIcon}>💾</span>
-                        {t('downloadQr')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.qrError}>
-                    <span className={styles.errorIcon}>⚠️</span>
-                    Failed to generate QR code
-                  </div>
-                )}
-              </div>
-
-              <div className={styles.ticketSection}>
-                <h3 className={styles.sectionTitle}>{t('swimmingPassTicket')}</h3>
-                <p className={styles.sectionDescription}>
-                  {t('professionalTicket')}
-                </p>
-                
-                {loadingToken ? (
-                  <div className={styles.loadingTicket}>
-                    <div className={styles.ticketSpinner} />
-                    <p>Generating ticket...</p>
-                  </div>
-                ) : passUrl ? (
-                  <div className={styles.ticketContainer}>
-                    <div className={styles.ticketPreview}>
-                      <canvas
-                        ref={ticketCanvasRef}
-                        className={styles.ticketCanvas}
-                        width="800"
-                        height="500"
-                      />
-                      <div className={styles.ticketOverlay}>
-                        <span className={styles.ticketLabel}>Swimming Pass Ticket</span>
-                      </div>
-                    </div>
-                    
-                    <div className={styles.ticketActions}>
-                      <button
-                        type="button"
-                        onClick={shareTicketImage}
-                        className={styles.shareTicketButton}
-                      >
-                        <span className={styles.shareIcon}>📤</span>
-                        <span className={styles.shareText}>
-                          <span className={styles.shareLabel}>{t('shareTicket')}</span>
-                          <span className={styles.shareSubtext}>{t('sendAsImage')}</span>
-                        </span>
-                        <span className={styles.shareArrow}>→</span>
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={downloadTicket}
-                        className={styles.downloadTicketButton}
-                      >
-                        <span className={styles.downloadIcon}>🖨️</span>
-                        {t('printTicket')}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.ticketError}>
-                    <span className={styles.errorIcon}>⚠️</span>
-                    Failed to generate ticket
-                  </div>
-                )}
+                <h3 className={styles.sectionTitle}>Client QR Code</h3>
+                <div ref={qrRef} className={styles.qrContainer}></div>
               </div>
 
               <div className={styles.passesSection}>
-                <h3 className={styles.sectionTitle}>{t('activePasses')}</h3>
-                <p className={styles.sectionDescription}>
-                  {t('currentSwimmingPasses')}
-                </p>
+                <h3 className={styles.sectionTitle}>Passes</h3>
                 
-                {loadingPasses ? (
-                  <div className={styles.loadingPasses}>
-                    <div className={styles.passSpinner} />
-                    <p>{t('loadingPasses')}</p>
-                  </div>
-                ) : passes.length > 0 ? (
+                {passes.length > 0 ? (
                   <div className={styles.passesList}>
-                    {passes.map((pass) => {
-                      const daysLeft = getDaysUntilExpiry(pass.purchasedAt);
-                      const isActive = pass.remaining > 0 && daysLeft > 0;
-                      
-                      return (
-                        <div key={pass.id} className={styles.passItem}>
-                          <div className={styles.passInfo}>
-                            <div className={styles.passInfoNumbers}>
-                              <span className={styles.passRemaining}>{pass.remaining}</span>
-                              <span className={styles.passSeparator}>/</span>
-                              <span className={styles.passTotal}>{pass.planSize}</span>
-                            </div>
-                            <div className={styles.passInfoLabel}>{t('sessionsLabel')}</div>
-                          </div>
-                          
-                          <div className={styles.passDetails}>
-                            <div className={styles.passType}>
-                              {pass.type === 'subscription' ? '🎫' : '🎟️'} {t(pass.type)}
-                            </div>
-                            <div className={styles.passDate}>
-                              📅 {formatDate(pass.purchasedAt)}
-                            </div>
-                            {pass.lastVisit && (
-                              <div className={styles.passLastVisit}>
-                                🏊‍♀️ {formatDate(pass.lastVisit)}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className={styles.passStatus}>
-                            {isActive ? (
-                              <span className={styles.statusActive}>
-                                ✅ {t('activeStatus')}
-                              </span>
-                            ) : (
-                              <span className={styles.statusExpired}>
-                                ❌ {t('expiredStatus')}
-                              </span>
-                            )}
-                            <div className={styles.passExpiryInfo}>
-                              ⏰ {Math.max(0, daysLeft)} {t('daysShort')}
-                            </div>
-                          </div>
-                          
-                          <div className={styles.passProgress}>
-                            <div
-                              className={styles.passProgressBar}
-                              style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
-                            />
-                          </div>
-                          
-                          {pass.remaining > 0 && (
-                            <div className={styles.passActions}>
-                              <button
-                                type="button"
-                                className={`${styles.passActionButton} ${styles.deduct}`}
-                                onClick={() => {
-                                  setCurrentAction({
-                                    type: 'deduct',
-                                    passId: pass.id,
-                                    passInfo: {
-                                      remaining: pass.remaining,
-                                      planSize: pass.planSize,
-                                      childName: values.childName
-                                    }
-                                  });
-                                  setShowActionDialog(true);
-                                }}
-                                title={t('deductSessionsTooltip')}
-                              >
-                                <span className={styles.actionIcon}>➖</span>
-                                {t('deductSessions')}
-                              </button>
-                            </div>
-                          )}
+                    {passes.map((pass) => (
+                      <div key={pass.id} className={styles.passItem}>
+                        <div className={styles.passInfo}>
+                          <span className={styles.passRemaining}>{pass.remaining}</span>
+                          <span className={styles.passSeparator}>/</span>
+                          <span className={styles.passTotal}>{pass.total}</span>
                         </div>
-                      );
-                    })}
+                        <div className={styles.passType}>{pass.type} Pass</div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className={styles.noPasses}>
                     <span className={styles.noPassesIcon}>🎫</span>
-                    <p>{t('noActivePassesFound')}</p>
-                    
-                    <div className={styles.noPassesActions}>
-                      <button
-                        type="button"
-                        onClick={() => setShowSellPassForm(true)}
-                        className={styles.btnSellPass}
-                      >
-                        <span className={styles.addIcon}>+</span>
-                        {t('sellNewPass')}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={handleConvertLastVisit}
-                        className={styles.btnConvertVisit}
-                      >
-                        <span className={styles.convertIcon}>🔄</span>
-                        {t('convertLastVisit')}
-                      </button>
-                    </div>
+                    No passes found
                   </div>
                 )}
                 
-                <div className={styles.passesActions}>
+                <div className={styles.addPassForm}>
+                  <select
+                    value={newPassType}
+                    onChange={(e) => setNewPassType(e.target.value)}
+                    className={styles.passSelect}
+                  >
+                    <option value="5">5 Pass</option>
+                    <option value="10">10 Pass</option>
+                    <option value="20">20 Pass</option>
+                  </select>
                   <button
                     type="button"
-                    onClick={() => setShowSellPassForm(true)}
-                    className={styles.btnSellPass}
+                    onClick={handleAddPass}
+                    className={styles.btnAddPass}
                   >
-                    <span className={styles.addIcon}>+</span>
-                    {t('sellNewPass')}
+                    Add Pass
                   </button>
                 </div>
               </div>
             </>
           )}
 
-          <div className={styles.actions}>
+          <div className={styles.formActions}>
             <button
               type="button"
-              onClick={onCancel}
-              disabled={submitting}
-              className={styles.cancelButton}
+              onClick={onClose}
+              className={styles.btnSecondary}
+              disabled={isLoading}
             >
-              {t('cancel')}
+              Cancel
             </button>
             <button
               type="submit"
-              disabled={submitting || hasValidationErrors}
-              className={styles.submitButton}
+              className={styles.btnPrimary}
+              disabled={isLoading}
             >
-              {submitting ? t('saving') : t('save')}
+              {isLoading && <div className={styles.spinner}></div>}
+              {client ? "Update Client" : "Create Client"}
             </button>
           </div>
         </form>
-        
-        {showSellPassForm && initial?.id && (
-          <SellPassForm
-            open={showSellPassForm}
-            onClose={() => {
-              setShowSellPassForm(false);
-              setConvertAfterSale(null);
-            }}
-            onSuccess={handleSellPassSuccess}
-            preselectedClient={initial as ApiClient}
-            isConversion={!!convertAfterSale}
-          />
-        )}
       </div>
-      
-      {showActionDialog && currentAction && (
-        <PassActionDialog
-          isOpen={showActionDialog}
-          onClose={() => {
-            setShowActionDialog(false);
-            setCurrentAction(null);
-          }}
-          onConfirm={async (count?: number) => {
-            if (currentAction.type === 'deduct' && count) {
-              await deductPassSessions(currentAction.passId, count);
-              if (initial?.id) await loadClientPasses(initial.id as string);
-            }
-          }}
-          actionType={currentAction.type}
-          passInfo={currentAction.passInfo}
-        />
-      )}
     </div>
   );
 }
