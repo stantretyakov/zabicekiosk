@@ -276,19 +276,34 @@ export async function listPasses(q?: {
 
 export async function convertLastVisit(passId: string): Promise<void> {
   if (import.meta.env.DEV) {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     const pass = mockPasses.find(p => p.id === passId);
-    if (!pass) return;
+    if (!pass) {
+      throw new Error('Абонемент не найден');
+    }
+    
+    if (pass.remaining <= 0) {
+      throw new Error('В абонементе не осталось занятий для конвертации');
+    }
+    
     const dropinIndex = mockRedeems.findIndex(
       r => r.clientId === pass.clientId && r.kind === 'dropin'
     );
-    if (dropinIndex !== -1) {
-      const dropin = mockRedeems[dropinIndex];
-      dropin.kind = 'pass';
-      (dropin as any).passId = passId;
-      dropin.delta = -1;
-      delete dropin.priceRSD;
-      pass.remaining = Math.max(0, pass.remaining - 1);
+    
+    if (dropinIndex === -1) {
+      throw new Error('Не найдено недавнее разовое посещение для конвертации');
     }
+    
+    const dropin = mockRedeems[dropinIndex];
+    dropin.kind = 'pass';
+    (dropin as any).passId = passId;
+    dropin.delta = -1;
+    delete dropin.priceRSD;
+    pass.remaining = Math.max(0, pass.remaining - 1);
+    
+    // Update last visit time
+    pass.lastVisit = dropin.ts;
     return;
   }
   await fetchJSON(`/admin/passes/${passId}/convert-last`, { method: 'POST' });
@@ -299,18 +314,35 @@ export async function deductPassSessions(
   count: number,
 ): Promise<void> {
   if (import.meta.env.DEV) {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
     const pass = mockPasses.find(p => p.id === passId);
-    if (pass) {
-      pass.remaining = Math.max(0, pass.remaining - count);
-      mockRedeems.unshift({
-        id: `redeem-${Date.now()}`,
-        ts: new Date().toISOString(),
-        kind: 'manual',
-        clientId: pass.clientId,
-        delta: -count,
-        client: pass.client,
-      });
+    if (!pass) {
+      throw new Error('Абонемент не найден');
     }
+    
+    if (count > pass.remaining) {
+      throw new Error(`Нельзя списать больше занятий (${count}), чем осталось в абонементе (${pass.remaining})`);
+    }
+    
+    if (count <= 0) {
+      throw new Error('Количество занятий должно быть положительным числом');
+    }
+    
+    pass.remaining = Math.max(0, pass.remaining - count);
+    
+    // Add manual deduction record
+    mockRedeems.unshift({
+      id: `redeem-${Date.now()}`,
+      ts: new Date().toISOString(),
+      kind: 'manual',
+      clientId: pass.clientId,
+      delta: -count,
+      client: pass.client,
+    });
+    
+    // Update last visit time
+    pass.lastVisit = new Date().toISOString();
     return;
   }
   await fetchJSON(`/admin/passes/${passId}/deduct`, {

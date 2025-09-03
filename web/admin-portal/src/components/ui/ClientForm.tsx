@@ -175,24 +175,45 @@ export default function ClientForm({
   };
 
   const handleConvertLastVisit = async (passId: string) => {
+    if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+      return;
+    }
+    
     try {
       await convertLastVisit(passId);
       if (initial?.id) await loadClientPasses(initial.id as string);
     } catch (err) {
       console.error('Failed to convert last visit:', err);
+      alert('Ошибка при конвертации посещения. Проверьте, что у клиента есть недавнее разовое посещение.');
     }
   };
 
   const handleDeductSessions = async (passId: string) => {
-    const input = prompt(t('deductSessions'));
+    const input = prompt('Введите количество занятий для списания:');
     if (!input) return;
+    
     const count = Number(input);
-    if (!count || count <= 0) return;
+    if (!count || count <= 0 || !Number.isInteger(count)) {
+      alert('Пожалуйста, введите корректное положительное число.');
+      return;
+    }
+    
+    const pass = passes.find(p => p.id === passId);
+    if (pass && count > pass.remaining) {
+      alert(`Нельзя списать больше занятий (${count}), чем осталось в абонементе (${pass.remaining}).`);
+      return;
+    }
+    
+    if (!confirm(`Списать ${count} ${count === 1 ? 'занятие' : count < 5 ? 'занятия' : 'занятий'} с абонемента? Это действие нельзя отменить.`)) {
+      return;
+    }
+    
     try {
       await deductPassSessions(passId, count);
       if (initial?.id) await loadClientPasses(initial.id as string);
     } catch (err) {
       console.error('Failed to deduct sessions:', err);
+      alert('Ошибка при списании занятий. Попробуйте еще раз.');
     }
   };
 
@@ -826,14 +847,45 @@ export default function ClientForm({
                     {passes.map((pass) => (
                       <div key={pass.id} className={styles.passItem}>
                         <div className={styles.passInfo}>
-                          <span className={styles.passRemaining}>{pass.remaining}</span>
-                          <span className={styles.passSeparator}>/</span>
-                          <span className={styles.passTotal}>{pass.planSize}</span>
+                          <div className={styles.passInfoNumbers}>
+                            <span className={styles.passRemaining}>{pass.remaining}</span>
+                            <span className={styles.passSeparator}>/</span>
+                            <span className={styles.passTotal}>{pass.planSize}</span>
+                          </div>
+                          <div className={styles.passInfoLabel}>Занятий</div>
                         </div>
                         <div className={styles.passDetails}>
-                          <div className={styles.passType}>{pass.type}</div>
+                          <div className={styles.passType}>
+                            {pass.type === 'subscription' ? '🎫' : '🎟️'} {pass.type}
+                          </div>
                           <div className={styles.passDate}>
-                            {new Date(pass.purchasedAt).toLocaleDateString()}
+                            📅 {new Date(pass.purchasedAt).toLocaleDateString('ru-RU', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                          {pass.lastVisit && (
+                            <div className={styles.passLastVisit}>
+                              🏊‍♀️ {new Date(pass.lastVisit).toLocaleDateString('ru-RU', {
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </div>
+                          )}
+                        </div>
+                        <div className={styles.passStatus}>
+                          {pass.remaining > 0 ? (
+                            <span className={styles.statusActive}>
+                              ✅ Активен
+                            </span>
+                          ) : (
+                            <span className={styles.statusExpired}>
+                              ❌ Исчерпан
+                            </span>
+                          )}
+                          <div className={styles.passExpiryInfo}>
+                            ⏰ {Math.ceil((new Date(pass.purchasedAt).getTime() + 30 * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60 * 24))} дн.
                           </div>
                         </div>
                         <div className={styles.passProgress}>
@@ -845,19 +897,29 @@ export default function ClientForm({
                         <div className={styles.passActions}>
                           <button
                             type="button"
-                            className={styles.passActionButton}
-                            onClick={() => handleConvertLastVisit(pass.id)}
-                          >
-                            {t('convertLastVisit')}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.passActionButton}
-                            onClick={() => handleDeductSessions(pass.id)}
-                          >
-                            {t('deductSessions')}
-                          </button>
-                        </div>
+                            className={`${styles.passActionButton} ${styles.convert}`}
+                        {pass.remaining > 0 && (
+                          <div className={styles.passActions}>
+                            <button
+                              type="button"
+                              className={`${styles.passActionButton} ${styles.convert}`}
+                              onClick={() => handleConvertLastVisit(pass.id)}
+                              title="Конвертировать последнее разовое посещение в использование абонемента"
+                            >
+                              <span className={styles.actionIcon}>🔄</span>
+                              {t('convertLastVisit')}
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.passActionButton} ${styles.deduct}`}
+                              onClick={() => handleDeductSessions(pass.id)}
+                              title="Вручную списать занятия с абонемента"
+                            >
+                              <span className={styles.actionIcon}>➖</span>
+                              {t('deductSessions')}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

@@ -143,6 +143,15 @@ export default async function adminPasses(app: FastifyInstance) {
           throw err;
         }
         const pass = passSnap.data() as any;
+        
+        // Check if pass has remaining sessions
+        const remaining = pass.planSize - pass.used;
+        if (remaining <= 0) {
+          const err: any = new Error('No remaining sessions in pass');
+          err.statusCode = 400;
+          throw err;
+        }
+        
         const dropinSnap = await tx.get(
           db
             .collection('redeems')
@@ -153,10 +162,21 @@ export default async function adminPasses(app: FastifyInstance) {
         );
         const dropinDoc = dropinSnap.docs[0];
         if (!dropinDoc) {
-          const err: any = new Error('Drop-in not found');
+          const err: any = new Error('No recent drop-in visit found to convert');
           err.statusCode = 404;
           throw err;
         }
+        
+        // Check if drop-in is recent (within last 24 hours)
+        const dropinTime = dropinDoc.get('ts')?.toDate();
+        const now = new Date();
+        const hoursDiff = (now.getTime() - dropinTime.getTime()) / (1000 * 60 * 60);
+        if (hoursDiff > 24) {
+          const err: any = new Error('Drop-in visit is too old to convert (must be within 24 hours)');
+          err.statusCode = 400;
+          throw err;
+        }
+        
         tx.update(passRef, {
           used: FieldValue.increment(1),
           lastRedeemTs: dropinDoc.get('ts'),
@@ -178,7 +198,7 @@ export default async function adminPasses(app: FastifyInstance) {
     async req => {
       const { id } = z.object({ id: z.string() }).parse(req.params);
       const { count } = z
-        .object({ count: z.coerce.number().min(1) })
+        .object({ count: z.coerce.number().min(1).max(50) })
         .parse(req.body);
       const passRef = db.collection('passes').doc(id);
       await db.runTransaction(async tx => {
@@ -189,11 +209,19 @@ export default async function adminPasses(app: FastifyInstance) {
           throw err;
         }
         const pass = passSnap.data() as any;
-        if (pass.used + count > pass.planSize) {
-          const err: any = new Error('Not enough remaining visits');
+        const remaining = pass.planSize - pass.used;
+        if (count > remaining) {
+          const err: any = new Error(`Cannot deduct ${count} sessions, only ${remaining} remaining`);
           err.statusCode = 400;
           throw err;
         }
+        
+        if (pass.revoked) {
+          const err: any = new Error('Cannot deduct from revoked pass');
+          err.statusCode = 400;
+          throw err;
+        }
+        
         const now = Timestamp.now();
         tx.update(passRef, {
           used: FieldValue.increment(count),
@@ -206,6 +234,7 @@ export default async function adminPasses(app: FastifyInstance) {
           clientId: pass.clientId,
           delta: -count,
           kind: 'manual',
+          note: `Manual deduction of ${count} session${count > 1 ? 's' : ''}`,
         });
       });
       return { status: 'ok' };

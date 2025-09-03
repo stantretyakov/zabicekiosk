@@ -348,6 +348,12 @@ const translations: Record<Language, Translations> = {
     sellNewPass: 'Продать новый абонемент',
     convertLastVisit: 'Конвертировать последнее посещение',
     deductSessions: 'Списать занятия',
+    convertLastVisitTooltip: 'Конвертировать последнее разовое посещение в использование абонемента',
+    deductSessionsTooltip: 'Вручную списать занятия с абонемента',
+    sessionsLabel: 'Занятий',
+    activeStatus: 'Активен',
+    expiredStatus: 'Исчерпан',
+    daysShort: 'дн.',
 
     // Passes
     passesTitle: 'Абонементы',
@@ -597,6 +603,12 @@ const translations: Record<Language, Translations> = {
     sellNewPass: 'Sell New Pass',
     convertLastVisit: 'Convert Last Visit',
     deductSessions: 'Deduct Sessions',
+    convertLastVisitTooltip: 'Convert last drop-in visit to pass usage',
+    deductSessionsTooltip: 'Manually deduct sessions from pass',
+    sessionsLabel: 'Sessions',
+    activeStatus: 'Active',
+    expiredStatus: 'Expired',
+    daysShort: 'days',
 
     // Passes
     passesTitle: 'Passes',
