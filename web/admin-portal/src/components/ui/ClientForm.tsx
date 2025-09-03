@@ -55,6 +55,16 @@ export default function ClientForm({
   const [loadingPasses, setLoadingPasses] = useState(false);
   const [loadingToken, setLoadingToken] = useState(false);
   const [showSellPassForm, setShowSellPassForm] = useState(false);
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [currentAction, setCurrentAction] = useState<{
+    type: 'convert' | 'deduct';
+    passId: string;
+    passInfo: {
+      remaining: number;
+      planSize: number;
+      childName: string;
+    };
+  } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
   const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
