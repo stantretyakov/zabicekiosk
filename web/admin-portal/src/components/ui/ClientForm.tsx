@@ -217,6 +217,7 @@ export default function ClientForm({
   };
 
   const handleConvertLastVisit = async (passId: string) => {
+    // Always sell pass first, then convert
     setConvertAfterSale('new');
     setShowSellPassForm(true);
   };
@@ -978,26 +979,6 @@ export default function ClientForm({
                   <div className={styles.noPasses}>
                     <span className={styles.noPassesIcon}>🎫</span>
                     <p>{t('noActivePassesFound')}</p>
-                    
-                    <div className={styles.noPassesActions}>
-                      <button
-                        type="button"
-                        onClick={() => setShowSellPassForm(true)}
-                        className={styles.btnSellPass}
-                      >
-                        <span className={styles.addIcon}>+</span>
-                        {t('sellNewPass')}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => handleConvertLastVisit()}
-                        className={styles.btnConvertVisit}
-                      >
-                        <span className={styles.convertIcon}>🔄</span>
-                        {t('convertLastVisit')}
-                      </button>
-                    </div>
                     
                     <div className={styles.noPassesActions}>
                       <button
