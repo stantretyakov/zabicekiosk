@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { createPass, listPasses, getClientToken } from "../lib/api";
+import { createPass, listPasses, getClientToken } from "../../lib/api";
 import QRCodeStyling from "qr-code-styling";
 import styles from "./ClientForm.module.css";
 
