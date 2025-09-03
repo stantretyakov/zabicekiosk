@@ -919,175 +919,62 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s;
-}
-
-.noPasses p {
-  margin: 0.5rem 0;
-}
-
-.noPassesHint {
+.btnSellPass {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font);
   font-size: 0.875rem;
-  font-style: italic;
-  opacity: 0.8;
-}
-
-.passActionButton:hover::before {
-  left: 100%;
-.passActionButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(74, 214, 255, 0.4);
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
-
-.passActionButton:active {
-  transform: translateY(0);
-}
-
-.passActionButton.convert {
-  background: linear-gradient(135deg, var(--warn), rgba(255, 209, 102, 0.8));
-  color: var(--bg);
-  box-shadow: 0 2px 8px rgba(255, 209, 102, 0.2);
-  justify-content: center;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
+  text-transform: uppercase;
   letter-spacing: 0.5px;
   width: 100%;
+  justify-content: center;
 }
 
 .btnSellPass:hover {
-.passActionButton.convert:hover {
-  background: linear-gradient(135deg, #ffcc33, var(--warn));
-  box-shadow: 0 6px 20px rgba(255, 209, 102, 0.4);
-}
-
-.passActionButton.deduct {
-  background: linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8));
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
-}
-
-.passActionButton.deduct:hover {
-  background: linear-gradient(135deg, #ff5555, var(--error));
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-}
-
-.actionIcon {
-  font-size: 0.875rem;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.noPasses {
-  text-align: center;
-  padding: 2rem;
-  color: var(--muted);
-  background: var(--panel-2);
-  border-radius: var(--radius);
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-}
-
-.noPassesIcon {
-  font-size: 2rem;
-  display: block;
-  margin-bottom: 0.5rem;
-  opacity: 0.5;
-}
-
-.addPassForm {
-  margin-top: 1rem;
-}
-
-.passActions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  flex-wrap: wrap;
-}
-
-.passActionButton {
-  background: linear-gradient(135deg, var(--accent-2), rgba(74, 214, 255, 0.8));
-  color: var(--text);
-  border: none;
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  font-family: var(--font);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(74, 214, 255, 0.2);
-  flex: 1;
-  min-width: 140px;
-  justify-content: center;
-}
-
-.passActionButton::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s;
-}
-
-.passActionButton:hover::before {
-  left: 100%;
-}
-
-.passActionButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(74, 214, 255, 0.4);
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
-}
-
-.passActionButton:active {
-  transform: translateY(0);
-}
-
-.passActionButton.convert {
-  background: linear-gradient(135deg, var(--warn), rgba(255, 209, 102, 0.8));
-  color: var(--bg);
-  box-shadow: 0 2px 8px rgba(255, 209, 102, 0.2);
-}
-
-.passActionButton.convert:hover {
-  background: linear-gradient(135deg, #ffcc33, var(--warn));
-  box-shadow: 0 6px 20px rgba(255, 209, 102, 0.4);
-}
-
-.passActionButton.deduct {
-  background: linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8));
-  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.2);
-}
-
-.passActionButton.deduct:hover {
-  background: linear-gradient(135deg, #ff5555, var(--error));
-  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
-}
-
-.actionIcon {
-  font-size: 0.875rem;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
 }
 
 .addIcon {
   font-size: 1.25rem;
   font-weight: bold;
 }
+
 /* Responsive Design */
 @media (max-width: 768px) {
+  .backdrop {
+    padding: 0.5rem;
+  }
+  
+  .form {
+    padding: 1.5rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .actions {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+  
+  .cancelButton,
+  .submitButton {
+    width: 100%;
+    justify-content: center;
+  }
+  
   .passItem {
     grid-template-columns: 1fr;
     grid-template-areas: 
@@ -1113,11 +1000,6 @@
   .passActions {
     flex-direction: column;
     gap: 0.5rem;
-  }
-  
-  .passActionButton {
-    min-width: auto;
-    flex: none;
   }
   
   .passActionButton {
@@ -1184,12 +1066,6 @@
     gap: 0.75rem;
   }
   
-  .passItem {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
   .passProgress {
     width: 100%;
   }
@@ -1205,6 +1081,14 @@
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
+  .input {
+    border-width: 3px;
+  }
+  
+  .inputError {
+    border-width: 3px;
+  }
+  
   .urlInput {
     border-width: 3px;
   }
@@ -1220,6 +1104,11 @@
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal,
+  .input,
+  .submitButton,
+  .cancelButton,
   .passItem,
   .shareButton,
   .shareTicketButton,
@@ -1231,14 +1120,12 @@
   .qrSpinner,
   .passSpinner,
   .ticketSpinner {
-    transition: none;
     animation: none;
+    transition: none;
   }
   
-  .shareButton::before {
-    display: none;
-  }
-  
+  .submitButton::before,
+  .shareButton::before,
   .shareTicketButton::before {
     display: none;
   }
@@ -1291,58 +1178,4 @@
 .field:focus-within .label {
   color: var(--accent);
   transform: translateY(-2px);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .backdrop {
-    padding: 0.5rem;
-  }
-  
-  .form {
-    padding: 1.5rem;
-  }
-  
-  .title {
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .actions {
-    flex-direction: column-reverse;
-    gap: 0.75rem;
-  }
-  
-  .cancelButton,
-  .submitButton {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .input {
-    border-width: 3px;
-  }
-  
-  .inputError {
-    border-width: 3px;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  .backdrop,
-  .modal,
-  .input,
-  .submitButton,
-  .cancelButton {
-    animation: none;
-    transition: none;
-  }
-  
-  .submitButton::before {
-    display: none;
-  }
 }
