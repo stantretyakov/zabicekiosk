@@ -919,6 +919,41 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   transition: left 0.5s;
+}
+
+.passActionButton:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.passActionButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(74, 214, 255, 0.3);
+}
+
+.passActionButton.convert {
+  background: linear-gradient(135deg, var(--warn), rgba(255, 209, 102, 0.8));
+  color: var(--bg);
+}
+
+.passActionButton.convert:hover {
+  background: linear-gradient(135deg, #ffcc33, var(--warn));
+  box-shadow: 0 8px 24px rgba(255, 209, 102, 0.4);
+}
+
+.passActionButton.deduct {
+  background: linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8));
+  color: var(--text);
+}
+
+.passActionButton.deduct:hover {
+  background: linear-gradient(135deg, #ff5555, var(--error));
+  box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
+}
+
+.actionIcon {
+  font-size: 1rem;
+}
+
 .btnSellPass {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--text);
