@@ -4,6 +4,21 @@ import { getDb } from '../lib/firestore.js';
 import { requireAdmin } from '../lib/auth.js';
 import { Timestamp, FieldValue } from '@google-cloud/firestore';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function coercePositiveNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
 export default async function adminPasses(app: FastifyInstance) {
   const db = getDb();
 
@@ -96,12 +111,26 @@ export default async function adminPasses(app: FastifyInstance) {
       return { status: 'exists' };
     }
 
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settings = settingsSnap.data() as any | undefined;
+
+    let validityDays = coercePositiveNumber(body.validityDays);
+    if (settings?.passes && Array.isArray(settings.passes)) {
+      const configuredPass = settings.passes.find((p: any) => {
+        const sessions = coercePositiveNumber(p?.sessions ?? p?.planSize);
+        return sessions === body.planSize;
+      });
+      const configValidity = coercePositiveNumber(configuredPass?.validityDays);
+      if (configValidity) {
+        validityDays = configValidity;
+      }
+    }
+
+    const appliedValidityDays = validityDays ?? 30;
+
     const purchasedAt = Timestamp.fromDate(new Date(body.purchasedAt));
     const expiresAt = Timestamp.fromDate(
-      new Date(
-        purchasedAt.toDate().getTime() +
-          (body.validityDays ?? 30) * 24 * 60 * 60 * 1000,
-      )
+      new Date(purchasedAt.toDate().getTime() + appliedValidityDays * DAY_MS),
     );
 
     await db.runTransaction(async tx => {
@@ -113,6 +142,7 @@ export default async function adminPasses(app: FastifyInstance) {
         purchasedAt,
         expiresAt,
         revoked: false,
+        validityDays: appliedValidityDays,
         createdAt: FieldValue.serverTimestamp(),
       });
       const revRef = db.collection('redeems').doc();
