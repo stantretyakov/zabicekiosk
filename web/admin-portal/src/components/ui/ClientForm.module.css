@@ -950,6 +950,16 @@
   box-shadow: 0 8px 24px rgba(255, 107, 107, 0.4);
 }
 
+.passActionButton.restore {
+  background: linear-gradient(135deg, var(--accent), rgba(43, 224, 144, 0.8));
+  color: var(--bg);
+}
+
+.passActionButton.restore:hover {
+  background: linear-gradient(135deg, #3be490, var(--accent));
+  box-shadow: 0 8px 24px rgba(43, 224, 144, 0.4);
+}
+
 .actionIcon {
   font-size: 1rem;
 }

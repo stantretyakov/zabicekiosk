@@ -10,6 +10,7 @@ import {
   type SettingsResponse,
   convertLastVisit,
   deductPassSessions,
+  restorePassSessions,
 } from '../../lib/api';
 import styles from './ClientForm.module.css';
 import type { PassWithClient, Client as ApiClient } from '../../types';
@@ -59,12 +60,13 @@ export default function ClientForm({
   const [convertAfterSale, setConvertAfterSale] = useState<string | null>(null); // passId to convert after sale
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [currentAction, setCurrentAction] = useState<{
-    type: 'deduct';
+    type: 'deduct' | 'restore';
     passId: string;
     passInfo: {
       remaining: number;
       planSize: number;
       childName: string;
+      used: number;
     };
   } | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -866,6 +868,10 @@ export default function ClientForm({
                     {passes.map((pass) => {
                       const daysLeft = getDaysUntilExpiry(pass.purchasedAt);
                       const isActive = pass.remaining > 0 && daysLeft > 0;
+                      const usedSessions = pass.planSize - pass.remaining;
+                      const showConvertAction = pass.remaining > 0;
+                      const showDeductAction = pass.remaining > 0;
+                      const showRestoreAction = usedSessions > 0;
                       
                       return (
                         <div key={pass.id} className={styles.passItem}>
@@ -914,42 +920,70 @@ export default function ClientForm({
                             />
                           </div>
                           
-                          {pass.remaining > 0 && (
+                          {(showConvertAction || showDeductAction || showRestoreAction) && (
                             <div className={styles.passActions}>
-                              <button
-                                type="button"
-                                className={`${styles.passActionButton} ${styles.convert}`}
-                                onClick={() => {
-                                  if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
-                                    return;
-                                  }
-                                  performConversion(pass.id);
-                                }}
-                                title={t('convertLastVisitTooltip')}
-                              >
-                                <span className={styles.actionIcon}>🔄</span>
-                                {t('convertLastVisit')}
-                              </button>
-                              <button
-                                type="button"
-                                className={`${styles.passActionButton} ${styles.deduct}`}
-                                onClick={() => {
-                                  setCurrentAction({
-                                    type: 'deduct',
-                                    passId: pass.id,
-                                    passInfo: {
-                                      remaining: pass.remaining,
-                                      planSize: pass.planSize,
-                                      childName: values.childName
+                              {showConvertAction && (
+                                <button
+                                  type="button"
+                                  className={`${styles.passActionButton} ${styles.convert}`}
+                                  onClick={() => {
+                                    if (!confirm('Конвертировать последнее разовое посещение в использование абонемента? Это действие нельзя отменить.')) {
+                                      return;
                                     }
-                                  });
-                                  setShowActionDialog(true);
-                                }}
-                                title={t('deductSessionsTooltip')}
-                              >
-                                <span className={styles.actionIcon}>➖</span>
-                                {t('deductSessions')}
-                              </button>
+                                    performConversion(pass.id);
+                                  }}
+                                  title={t('convertLastVisitTooltip')}
+                                >
+                                  <span className={styles.actionIcon}>🔄</span>
+                                  {t('convertLastVisit')}
+                                </button>
+                              )}
+                              {showDeductAction && (
+                                <button
+                                  type="button"
+                                  className={`${styles.passActionButton} ${styles.deduct}`}
+                                  onClick={() => {
+                                    setCurrentAction({
+                                      type: 'deduct',
+                                      passId: pass.id,
+                                      passInfo: {
+                                        remaining: pass.remaining,
+                                        planSize: pass.planSize,
+                                        childName: values.childName,
+                                        used: usedSessions,
+                                      },
+                                    });
+                                    setShowActionDialog(true);
+                                  }}
+                                  title={t('deductSessionsTooltip')}
+                                >
+                                  <span className={styles.actionIcon}>➖</span>
+                                  {t('deductSessions')}
+                                </button>
+                              )}
+                              {showRestoreAction && (
+                                <button
+                                  type="button"
+                                  className={`${styles.passActionButton} ${styles.restore}`}
+                                  onClick={() => {
+                                    setCurrentAction({
+                                      type: 'restore',
+                                      passId: pass.id,
+                                      passInfo: {
+                                        remaining: pass.remaining,
+                                        planSize: pass.planSize,
+                                        childName: values.childName,
+                                        used: usedSessions,
+                                      },
+                                    });
+                                    setShowActionDialog(true);
+                                  }}
+                                  title={t('restoreSessionsTooltip')}
+                                >
+                                  <span className={styles.actionIcon}>➕</span>
+                                  {t('restoreSessions')}
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1031,6 +1065,9 @@ export default function ClientForm({
           onConfirm={async (count?: number) => {
             if (currentAction.type === 'deduct' && count) {
               await deductPassSessions(currentAction.passId, count);
+              if (initial?.id) await loadClientPasses(initial.id as string);
+            } else if (currentAction.type === 'restore' && count) {
+              await restorePassSessions(currentAction.passId, count);
               if (initial?.id) await loadClientPasses(initial.id as string);
             }
           }}
