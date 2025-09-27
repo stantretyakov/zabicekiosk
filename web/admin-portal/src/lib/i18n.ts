@@ -97,8 +97,10 @@ export interface Translations {
   sellNewPass: string;
   convertLastVisit: string;
   deductSessions: string;
+  restoreSessions: string;
   convertLastVisitTooltip: string;
   deductSessionsTooltip: string;
+  restoreSessionsTooltip: string;
   sessionsLabel: string;
   activeStatus: string;
   expiredStatus: string;
@@ -110,14 +112,19 @@ export interface Translations {
   convertVisit: string;
   deductSessionsTitle: string;
   deductSessionsDescription: string;
+  restoreSessionsTitle: string;
+  restoreSessionsDescription: string;
   sessionsRemaining: string;
   importantNote: string;
   convertWarningText: string;
   sessionsToDeduct: string;
+  sessionsToRestore: string;
   maxSessions: string;
   currentRemaining: string;
   toDeduct: string;
+  toRestore: string;
   afterDeduction: string;
+  afterRestoration: string;
   processing: string;
 
   // Passes
@@ -370,8 +377,10 @@ const translations: Record<Language, Translations> = {
     sellNewPass: 'Продать новый абонемент',
     convertLastVisit: 'Конвертировать последнее посещение',
     deductSessions: 'Списать занятия',
+    restoreSessions: 'Восстановить занятия',
     convertLastVisitTooltip: 'Конвертировать последнее разовое посещение в использование абонемента',
     deductSessionsTooltip: 'Вручную списать занятия с абонемента',
+    restoreSessionsTooltip: 'Восстановить ранее списанные занятия в абонементе',
     sessionsLabel: 'Занятий',
     activeStatus: 'Активен',
     expiredStatus: 'Исчерпан',
@@ -383,11 +392,16 @@ const translations: Record<Language, Translations> = {
     convertVisit: 'Конвертировать посещение',
     deductSessionsTitle: 'Списать занятия',
     deductSessionsDescription: 'Вручную списать занятия с абонемента клиента',
+    restoreSessionsTitle: 'Восстановить занятия',
+    restoreSessionsDescription: 'Вернуть ранее списанные занятия обратно на абонемент клиента',
     sessionsToDeduct: 'Количество занятий для списания',
+    sessionsToRestore: 'Количество занятий для восстановления',
     maxSessions: 'Максимум',
     currentRemaining: 'Сейчас осталось',
     toDeduct: 'Списать',
+    toRestore: 'Восстановить',
     afterDeduction: 'После списания',
+    afterRestoration: 'После восстановления',
     sessionsRemaining: 'занятий осталось',
     importantNote: 'Важное примечание',
     convertWarningText: 'Это действие найдет последнее разовое посещение клиента и конвертирует его в использование абонемента. Отменить нельзя.',
@@ -641,8 +655,10 @@ const translations: Record<Language, Translations> = {
     sellNewPass: 'Sell New Pass',
     convertLastVisit: 'Convert Last Visit',
     deductSessions: 'Deduct Sessions',
+    restoreSessions: 'Restore Sessions',
     convertLastVisitTooltip: 'Convert last drop-in visit to pass usage',
     deductSessionsTooltip: 'Manually deduct sessions from pass',
+    restoreSessionsTooltip: 'Restore previously deducted sessions back to the pass',
     sessionsLabel: 'Sessions',
     activeStatus: 'Active',
     expiredStatus: 'Expired',
@@ -654,11 +670,16 @@ const translations: Record<Language, Translations> = {
     convertVisit: 'Convert Visit',
     deductSessionsTitle: 'Deduct Sessions',
     deductSessionsDescription: 'Manually deduct sessions from client pass',
+    restoreSessionsTitle: 'Restore Sessions',
+    restoreSessionsDescription: 'Manually restore sessions that were previously deducted from the client pass',
     sessionsToDeduct: 'Number of sessions to deduct',
+    sessionsToRestore: 'Number of sessions to restore',
     maxSessions: 'Maximum',
     currentRemaining: 'Current remaining',
     toDeduct: 'To deduct',
+    toRestore: 'To restore',
     afterDeduction: 'After deduction',
+    afterRestoration: 'After restoration',
     sessionsRemaining: 'sessions remaining',
     importantNote: 'Important Note',
     convertWarningText: 'This action will find the last drop-in visit of the client and convert it to pass usage. This action cannot be undone.',

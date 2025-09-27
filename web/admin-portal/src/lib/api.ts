@@ -359,6 +359,48 @@ export async function deductPassSessions(
   });
 }
 
+export async function restorePassSessions(
+  passId: string,
+  count: number,
+): Promise<void> {
+  if (import.meta.env.DEV) {
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const pass = mockPasses.find(p => p.id === passId);
+    if (!pass) {
+      throw new Error('Абонемент не найден');
+    }
+
+    const used = pass.planSize - pass.remaining;
+    if (count > used) {
+      throw new Error(`Нельзя восстановить больше занятий (${count}), чем было списано (${used})`);
+    }
+
+    if (count <= 0) {
+      throw new Error('Количество занятий должно быть положительным числом');
+    }
+
+    pass.remaining = Math.min(pass.planSize, pass.remaining + count);
+
+    mockRedeems.unshift({
+      id: `redeem-${Date.now()}`,
+      ts: new Date().toISOString(),
+      kind: 'pass',
+      clientId: pass.clientId,
+      delta: count,
+      client: pass.client,
+    });
+
+    return;
+  }
+
+  await fetchJSON(`/admin/passes/${passId}/restore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ count }),
+  });
+}
+
 export async function getClientToken(id: string): Promise<{ token: string }> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {

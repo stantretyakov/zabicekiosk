@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from '../../lib/i18n';
 import styles from './PassActionDialog.module.css';
 
-export type PassActionType = 'convert' | 'deduct';
+export type PassActionType = 'convert' | 'deduct' | 'restore';
 
 export interface PassActionDialogProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ export interface PassActionDialogProps {
     remaining: number;
     planSize: number;
     childName: string;
+    used: number;
   };
 }
 
@@ -24,21 +25,28 @@ export default function PassActionDialog({
   passInfo
 }: PassActionDialogProps) {
   const { t } = useTranslation();
-  const [deductCount, setDeductCount] = useState(1);
+  const [sessionsCount, setSessionsCount] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSessionsCount(1);
+    setError(null);
+  }, [actionType, passInfo]);
+
+  const maxCount = actionType === 'restore' ? passInfo.used : passInfo.remaining;
 
   const handleConfirm = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      if (actionType === 'deduct') {
-        if (deductCount <= 0 || deductCount > passInfo.remaining) {
-          setError(`Введите число от 1 до ${passInfo.remaining}`);
+      if (actionType === 'deduct' || actionType === 'restore') {
+        if (sessionsCount <= 0 || sessionsCount > maxCount) {
+          setError(`Введите число от 1 до ${maxCount}`);
           return;
         }
-        await onConfirm(deductCount);
+        await onConfirm(sessionsCount);
       } else {
         await onConfirm();
       }
@@ -72,18 +80,31 @@ export default function PassActionDialog({
         bgColor: 'rgba(255, 209, 102, 0.1)',
         borderColor: 'rgba(255, 209, 102, 0.3)',
       };
-    } else {
+    }
+
+    if (actionType === 'restore') {
       return {
-        icon: '➖',
-        title: t('deductSessionsTitle'),
-        description: t('deductSessionsDescription'),
-        confirmText: t('deductSessions'),
+        icon: '➕',
+        title: t('restoreSessionsTitle'),
+        description: t('restoreSessionsDescription'),
+        confirmText: t('restoreSessions'),
         cancelText: t('cancel'),
-        color: 'var(--error)',
-        bgColor: 'rgba(255, 107, 107, 0.1)',
-        borderColor: 'rgba(255, 107, 107, 0.3)',
+        color: 'var(--accent)',
+        bgColor: 'rgba(43, 224, 144, 0.1)',
+        borderColor: 'rgba(43, 224, 144, 0.3)',
       };
     }
+
+    return {
+      icon: '➖',
+      title: t('deductSessionsTitle'),
+      description: t('deductSessionsDescription'),
+      confirmText: t('deductSessions'),
+      cancelText: t('cancel'),
+      color: 'var(--error)',
+      bgColor: 'rgba(255, 107, 107, 0.1)',
+      borderColor: 'rgba(255, 107, 107, 0.3)',
+    };
   };
 
   if (!isOpen) return null;
@@ -136,44 +157,53 @@ export default function PassActionDialog({
             </div>
           )}
 
-          {actionType === 'deduct' && (
+          {(actionType === 'deduct' || actionType === 'restore') && (
             <div className={styles.inputSection}>
               <label className={styles.inputLabel}>
-                {t('sessionsToDeduct')}
+                {actionType === 'deduct' ? t('sessionsToDeduct') : t('sessionsToRestore')}
               </label>
               <div className={styles.inputContainer}>
                 <input
                   type="number"
-                  value={deductCount}
+                  value={sessionsCount}
                   onChange={(e) => {
                     const value = parseInt(e.target.value) || 1;
-                    setDeductCount(Math.max(1, Math.min(value, passInfo.remaining)));
+                    const safeMax = Math.max(1, maxCount);
+                    setSessionsCount(Math.max(1, Math.min(value, safeMax)));
                     setError(null);
                   }}
                   className={styles.numberInput}
                   min="1"
-                  max={passInfo.remaining}
+                  max={maxCount}
                   autoFocus
                   disabled={loading}
                 />
                 <div className={styles.inputHint}>
-                  {t('maxSessions')}: {passInfo.remaining}
+                  {t('maxSessions')}: {maxCount}
                 </div>
               </div>
-              
+
               <div className={styles.calculationBox}>
                 <div className={styles.calculationRow}>
                   <span className={styles.calculationLabel}>{t('currentRemaining')}:</span>
                   <span className={styles.calculationValue}>{passInfo.remaining}</span>
                 </div>
                 <div className={styles.calculationRow}>
-                  <span className={styles.calculationLabel}>{t('toDeduct')}:</span>
-                  <span className={styles.calculationValue}>-{deductCount}</span>
+                  <span className={styles.calculationLabel}>
+                    {actionType === 'deduct' ? t('toDeduct') : t('toRestore')}:
+                  </span>
+                  <span className={styles.calculationValue}>
+                    {actionType === 'deduct' ? `-${sessionsCount}` : `+${sessionsCount}`}
+                  </span>
                 </div>
                 <div className={`${styles.calculationRow} ${styles.total}`}>
-                  <span className={styles.calculationLabel}>{t('afterDeduction')}:</span>
+                  <span className={styles.calculationLabel}>
+                    {actionType === 'deduct' ? t('afterDeduction') : t('afterRestoration')}:
+                  </span>
                   <span className={styles.calculationValue}>
-                    {passInfo.remaining - deductCount}
+                    {actionType === 'deduct'
+                      ? Math.max(0, passInfo.remaining - sessionsCount)
+                      : Math.min(passInfo.planSize, passInfo.remaining + sessionsCount)}
                   </span>
                 </div>
               </div>
@@ -200,7 +230,11 @@ export default function PassActionDialog({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={loading || (actionType === 'deduct' && (deductCount <= 0 || deductCount > passInfo.remaining))}
+            disabled={
+              loading ||
+              ((actionType === 'deduct' || actionType === 'restore') &&
+                (sessionsCount <= 0 || sessionsCount > maxCount))
+            }
             className={styles.confirmButton}
           >
             {loading ? (

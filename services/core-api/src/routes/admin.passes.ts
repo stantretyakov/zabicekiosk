@@ -245,13 +245,13 @@ export default async function adminPasses(app: FastifyInstance) {
           err.statusCode = 400;
           throw err;
         }
-        
+
         if (pass.revoked) {
           const err: any = new Error('Cannot deduct from revoked pass');
           err.statusCode = 400;
           throw err;
         }
-        
+
         const now = Timestamp.now();
         tx.update(passRef, {
           used: FieldValue.increment(count),
@@ -265,6 +265,54 @@ export default async function adminPasses(app: FastifyInstance) {
           delta: -count,
           kind: 'manual',
           note: `Manual deduction of ${count} session${count > 1 ? 's' : ''}`,
+        });
+      });
+      return { status: 'ok' };
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { count: number } }>(
+    '/passes/:id/restore',
+    { preHandler: requireAdmin },
+    async req => {
+      const { id } = z.object({ id: z.string() }).parse(req.params);
+      const { count } = z
+        .object({ count: z.coerce.number().min(1).max(50) })
+        .parse(req.body);
+      const passRef = db.collection('passes').doc(id);
+      await db.runTransaction(async tx => {
+        const passSnap = await tx.get(passRef);
+        if (!passSnap.exists) {
+          const err: any = new Error('Not Found');
+          err.statusCode = 404;
+          throw err;
+        }
+        const pass = passSnap.data() as any;
+        const used = typeof pass.used === 'number' ? pass.used : 0;
+        if (count > used) {
+          const err: any = new Error(`Cannot restore ${count} sessions, only ${used} used`);
+          err.statusCode = 400;
+          throw err;
+        }
+
+        if (pass.revoked) {
+          const err: any = new Error('Cannot restore to revoked pass');
+          err.statusCode = 400;
+          throw err;
+        }
+
+        tx.update(passRef, {
+          used: FieldValue.increment(-count),
+        });
+        const redeemRef = db.collection('redeems').doc();
+        const now = Timestamp.now();
+        tx.set(redeemRef, {
+          ts: now,
+          passId: passRef.id,
+          clientId: pass.clientId,
+          delta: count,
+          kind: 'manual',
+          note: `Manual restoration of ${count} session${count > 1 ? 's' : ''}`,
         });
       });
       return { status: 'ok' };
