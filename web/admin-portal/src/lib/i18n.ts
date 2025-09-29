@@ -105,6 +105,8 @@ export interface Translations {
   activeStatus: string;
   expiredStatus: string;
   daysShort: string;
+  currentActivePass: string;
+  emptyPassOverlap: string;
 
   // Pass Actions
   convertLastVisitTitle: string;
@@ -385,6 +387,8 @@ const translations: Record<Language, Translations> = {
     activeStatus: 'Активен',
     expiredStatus: 'Исчерпан',
     daysShort: 'дн.',
+    currentActivePass: 'Актуальный абонемент',
+    emptyPassOverlap: 'Есть другой абонемент без занятий, действует до {{date}}',
 
     // Pass Actions
     convertLastVisitTitle: 'Конвертировать посещение',
@@ -663,6 +667,8 @@ const translations: Record<Language, Translations> = {
     activeStatus: 'Active',
     expiredStatus: 'Expired',
     daysShort: 'days',
+    currentActivePass: 'Current pass',
+    emptyPassOverlap: 'Another pass with no sessions remains valid until {{date}}',
 
     // Pass Actions
     convertLastVisitTitle: 'Convert Visit',

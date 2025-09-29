@@ -61,14 +61,24 @@ export default async function adminPasses(app: FastifyInstance) {
         const data = d.data() as any;
         const clientSnap = await db.collection('clients').doc(data.clientId).get();
         const c = clientSnap.data() || {};
+        const validityDays = coercePositiveNumber(data.validityDays) ?? undefined;
+        const fallbackValidity = validityDays ?? 30;
+        const expiresAtIso =
+          data.expiresAt?.toDate?.().toISOString() ||
+          (data.purchasedAt
+            ? new Date(data.purchasedAt.toDate().getTime() + fallbackValidity * DAY_MS).toISOString()
+            : undefined);
+
         return {
           id: d.id,
           clientId: data.clientId,
           planSize: data.planSize,
           purchasedAt: data.purchasedAt?.toDate?.().toISOString(),
-          remaining: data.planSize - data.used,
+          remaining: Math.max(0, (Number(data.planSize) || 0) - (Number(data.used) || 0)),
           type: data.planSize === 1 ? 'single' : 'subscription',
           lastVisit: data.lastRedeemTs?.toDate?.().toISOString(),
+          validityDays,
+          expiresAt: expiresAtIso,
           client: {
             id: data.clientId,
             parentName: c.parentName,
@@ -104,11 +114,33 @@ export default async function adminPasses(app: FastifyInstance) {
       .collection('passes')
       .where('clientId', '==', body.clientId)
       .where('revoked', '==', false)
-      .limit(1)
       .get();
 
-    if (!existing.empty) {
-      return { status: 'exists' };
+    const now = new Date();
+    const conflicting = existing.docs.find(doc => {
+      const data = doc.data() as any;
+      const planSize = Number.isFinite(data?.planSize) ? Number(data.planSize) : 0;
+      const used = Number.isFinite(data?.used) ? Number(data.used) : 0;
+      const remaining = Math.max(0, planSize - used);
+      if (remaining <= 0) return false;
+
+      const expiresAt: Date | undefined = data?.expiresAt?.toDate?.();
+      if (expiresAt) {
+        return expiresAt.getTime() > now.getTime();
+      }
+
+      const purchasedAt: Date | undefined = data?.purchasedAt?.toDate?.();
+      if (!purchasedAt) {
+        return true;
+      }
+
+      const validity = coercePositiveNumber(data?.validityDays) ?? 30;
+      const fallbackExpiry = new Date(purchasedAt.getTime() + validity * DAY_MS);
+      return fallbackExpiry.getTime() > now.getTime();
+    });
+
+    if (conflicting) {
+      return { status: 'exists', conflictPassId: conflicting.id };
     }
 
     const settingsSnap = await db.collection('settings').doc('global').get();

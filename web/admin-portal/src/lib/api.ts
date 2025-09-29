@@ -198,7 +198,7 @@ export async function createPass(body: {
   purchasedAt: string;
   priceRSD?: number;
   validityDays?: number;
-}): Promise<{ status: 'created' | 'exists' }> {
+}): Promise<{ status: 'created' | 'exists'; conflictPassId?: string }> {
   // Use mock data in development mode
   if (import.meta.env.DEV) {
     await new Promise(resolve => setTimeout(resolve, 400));
@@ -208,9 +208,15 @@ export async function createPass(body: {
       throw new Error('Client not found');
     }
 
-    const existing = mockPasses.find(p => p.clientId === body.clientId && p.remaining > 0);
+    const now = Date.now();
+    const existing = mockPasses.find(p => {
+      if (p.clientId !== body.clientId) return false;
+      if (p.remaining <= 0) return false;
+      const expiry = p.expiresAt ? new Date(p.expiresAt).getTime() : new Date(p.purchasedAt).getTime() + (p.validityDays ?? 30) * 24 * 60 * 60 * 1000;
+      return expiry > now;
+    });
     if (existing) {
-      return { status: 'exists' };
+      return { status: 'exists', conflictPassId: existing.id };
     }
 
     const newPass: PassWithClient = {
@@ -221,6 +227,8 @@ export async function createPass(body: {
       remaining: body.planSize,
       type: body.planSize === 1 ? 'single' : 'subscription',
       client,
+      validityDays: body.validityDays ?? 30,
+      expiresAt: new Date(new Date(body.purchasedAt).getTime() + (body.validityDays ?? 30) * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     mockPasses.unshift(newPass);
