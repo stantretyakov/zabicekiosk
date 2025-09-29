@@ -582,12 +582,26 @@ export default function ClientForm({
     });
   };
 
-  const getDaysUntilExpiry = (purchasedAt: string, validityDays: number = 30) => {
-    const purchaseDate = new Date(purchasedAt);
-    const expiryDate = new Date(purchaseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
-    const now = new Date();
-    return Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const getPassExpiryInfo = (pass: PassWithClient) => {
+    const purchaseDate = new Date(pass.purchasedAt);
+    const validityDays = pass.validityDays ?? 30;
+    const expiryDate = pass.expiresAt
+      ? new Date(pass.expiresAt)
+      : new Date(purchaseDate.getTime() + validityDays * 24 * 60 * 60 * 1000);
+    const now = Date.now();
+    const diffMs = expiryDate.getTime() - now;
+    const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return {
+      expiryDate,
+      daysLeft,
+      isStillValid: diffMs > 0,
+    };
   };
+
+  const activePassId = passes.find(pass => {
+    const { isStillValid } = getPassExpiryInfo(pass);
+    return pass.remaining > 0 && isStillValid;
+  })?.id;
 
   return (
     <div className={styles.backdrop} onClick={onCancel} onKeyDown={handleKeyDown}>
@@ -866,15 +880,20 @@ export default function ClientForm({
                 ) : passes.length > 0 ? (
                   <div className={styles.passesList}>
                     {passes.map((pass) => {
-                      const daysLeft = getDaysUntilExpiry(pass.purchasedAt);
-                      const isActive = pass.remaining > 0 && daysLeft > 0;
+                      const { expiryDate, daysLeft, isStillValid } = getPassExpiryInfo(pass);
+                      const isActive = pass.remaining > 0 && isStillValid;
+                      const isEmptyButValid = pass.remaining <= 0 && isStillValid;
                       const usedSessions = pass.planSize - pass.remaining;
                       const showConvertAction = pass.remaining > 0;
                       const showDeductAction = pass.remaining > 0;
                       const showRestoreAction = usedSessions > 0;
-                      
+                      const isCurrent = activePassId === pass.id;
+
                       return (
-                        <div key={pass.id} className={styles.passItem}>
+                        <div
+                          key={pass.id}
+                          className={`${styles.passItem} ${isCurrent ? styles.passItemActive : ''}`}
+                        >
                           <div className={styles.passInfo}>
                             <div className={styles.passInfoNumbers}>
                               <span className={styles.passRemaining}>{pass.remaining}</span>
@@ -891,6 +910,11 @@ export default function ClientForm({
                             <div className={styles.passDate}>
                               📅 {formatDate(pass.purchasedAt)}
                             </div>
+                            {isCurrent && (
+                              <div className={styles.currentPassBadge}>
+                                🔥 {t('currentActivePass')}
+                              </div>
+                            )}
                             {pass.lastVisit && (
                               <div className={styles.passLastVisit}>
                                 🏊‍♀️ {formatDate(pass.lastVisit)}
@@ -919,7 +943,13 @@ export default function ClientForm({
                               style={{ width: `${(pass.remaining / pass.planSize) * 100}%` }}
                             />
                           </div>
-                          
+
+                          {isEmptyButValid && (
+                            <div className={styles.passOverlapNotice}>
+                              ⚠️ {t('emptyPassOverlap', { date: formatDate(expiryDate.toISOString()) })}
+                            </div>
+                          )}
+
                           {(showConvertAction || showDeductAction || showRestoreAction) && (
                             <div className={styles.passActions}>
                               {showConvertAction && (

@@ -23,6 +23,8 @@ export type Pass = {
   remaining: number;
   type: 'subscription' | 'single';
   lastVisit?: string;
+  validityDays?: number;
+  expiresAt?: string;
 };
 
 export type PassWithClient = Pass & {
