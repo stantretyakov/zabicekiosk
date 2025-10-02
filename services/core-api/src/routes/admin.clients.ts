@@ -6,6 +6,48 @@ import { FieldValue } from '@google-cloud/firestore';
 import type { Client, Paginated } from '../types.js';
 import { generateToken, hashToken } from '../lib/tokens.js';
 
+const DIACRITICS_REGEX = /\p{Diacritic}/gu;
+const NON_WORD_REGEX = /[^a-z0-9а-яё\s-]/giu;
+
+function normalizeForSearch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(DIACRITICS_REGEX, '')
+    .toLowerCase()
+    .replace(NON_WORD_REGEX, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function generateWordPrefixes(word: string): string[] {
+  const prefixes: string[] = [];
+  let current = '';
+  for (const char of word) {
+    current += char;
+    prefixes.push(current);
+  }
+  return prefixes;
+}
+
+function generateSearchTokens(parentName: string, childName: string): string[] {
+  const tokens = new Set<string>();
+
+  const addTokens = (value: string) => {
+    const normalized = normalizeForSearch(value);
+    if (!normalized) return;
+    for (const word of normalized.split(' ')) {
+      for (const prefix of generateWordPrefixes(word)) {
+        tokens.add(prefix);
+      }
+    }
+  };
+
+  addTokens(parentName);
+  addTokens(childName);
+
+  return Array.from(tokens);
+}
+
 function normalizePhone(p?: string) {
   if (!p) return undefined;
   const digits = p.replace(/\D/g, '');
@@ -91,11 +133,20 @@ export default async function adminClients(app: FastifyInstance) {
     }
 
     if (params.search) {
-      const s = params.search.toLowerCase();
-      query = query
-        .orderBy('fullNameLower')
-        .startAt(s)
-        .endAt(s + '\uf8ff');
+      const normalizedSearch = normalizeForSearch(params.search);
+      const parts = normalizedSearch.split(' ').filter(Boolean);
+      const searchToken = parts[parts.length - 1];
+
+      if (searchToken) {
+        query = query
+          .where('searchTokens', 'array-contains', searchToken)
+          .orderBy('createdAt', 'desc');
+      } else {
+        query = query.orderBy(
+          params.orderBy === 'parentName' ? 'parentName' : 'createdAt',
+          params.order,
+        );
+      }
     } else {
       query = query.orderBy(
         params.orderBy === 'parentName' ? 'parentName' : 'createdAt',
@@ -146,6 +197,7 @@ export default async function adminClients(app: FastifyInstance) {
         instagram: body.instagram ?? null,
       active: true,
       fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
+      searchTokens: generateSearchTokens(body.parentName, body.childName),
       createdAt: now,
       updatedAt: now,
       token: rawToken,
@@ -198,6 +250,7 @@ export default async function adminClients(app: FastifyInstance) {
         instagram: body.instagram ?? null,
         active: true,
         fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
+        searchTokens: generateSearchTokens(body.parentName, body.childName),
         createdAt: now,
         updatedAt: now,
         token: rawToken,
@@ -235,6 +288,7 @@ export default async function adminClients(app: FastifyInstance) {
     const parent = body.parentName ?? current.parentName;
     const child = body.childName ?? current.childName;
     update.fullNameLower = `${parent} ${child}`.toLowerCase();
+    update.searchTokens = generateSearchTokens(parent, child);
     await ref.set(update, { merge: true });
     const snap = await ref.get();
     const d = snap.data()!;
