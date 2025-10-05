@@ -132,37 +132,74 @@ export default async function adminClients(app: FastifyInstance) {
       query = query.where('active', '==', params.active === 'true');
     }
 
-    if (params.search) {
-      const normalizedSearch = normalizeForSearch(params.search);
-      const parts = normalizedSearch.split(' ').filter(Boolean);
-      const searchToken = parts[parts.length - 1];
+    const normalizedSearch = params.search ? normalizeForSearch(params.search) : undefined;
+    const searchParts = normalizedSearch?.split(' ').filter(Boolean) ?? [];
+    const searchToken = searchParts[searchParts.length - 1];
 
-      if (searchToken) {
-        query = query
-          .where('searchTokens', 'array-contains', searchToken)
-          .orderBy('createdAt', 'desc');
-      } else {
-        query = query.orderBy(
-          params.orderBy === 'parentName' ? 'parentName' : 'createdAt',
-          params.order,
-        );
-      }
-    } else {
-      query = query.orderBy(
+    const applyDefaultOrdering = () =>
+      query.orderBy(
         params.orderBy === 'parentName' ? 'parentName' : 'createdAt',
         params.order,
       );
+
+    if (params.search && searchToken) {
+      query = query.where('searchTokens', 'array-contains', searchToken).orderBy('createdAt', 'desc');
+    } else if (params.search) {
+      const fallbackSearch = params.search.trim().toLowerCase();
+      if (fallbackSearch) {
+        query = query
+          .orderBy('fullNameLower')
+          .startAt(fallbackSearch)
+          .endAt(`${fallbackSearch}\uf8ff`);
+      } else {
+        query = applyDefaultOrdering();
+      }
+    } else {
+      query = applyDefaultOrdering();
     }
 
+    let pageAnchor: FirebaseFirestore.DocumentSnapshot | undefined;
     if (params.pageToken) {
-      const snap = await db.collection('clients').doc(params.pageToken).get();
-      if (snap.exists) {
-        query = query.startAfter(snap);
+      const anchorSnap = await db.collection('clients').doc(params.pageToken).get();
+      if (anchorSnap.exists) {
+        pageAnchor = anchorSnap;
+        query = query.startAfter(anchorSnap);
       }
     }
 
-    const snap = await query.limit(params.pageSize + 1).get();
-    const docs = snap.docs;
+    let snap = await query.limit(params.pageSize + 1).get();
+    let docs = snap.docs;
+
+    if (params.search && searchToken && docs.length === 0) {
+      let fallbackQuery: FirebaseFirestore.Query = db.collection('clients');
+      if (params.active !== 'all') {
+        fallbackQuery = fallbackQuery.where('active', '==', params.active === 'true');
+      }
+      const fallbackSearch = params.search!.trim().toLowerCase();
+      if (fallbackSearch) {
+        fallbackQuery = fallbackQuery
+          .orderBy('fullNameLower')
+          .startAt(fallbackSearch)
+          .endAt(`${fallbackSearch}\uf8ff`);
+        if (pageAnchor) {
+          fallbackQuery = fallbackQuery.startAfter(pageAnchor);
+        }
+        snap = await fallbackQuery.limit(params.pageSize + 1).get();
+        docs = snap.docs;
+
+        // Backfill search tokens for documents that are missing them so future
+        // requests can rely on the token index.
+        await Promise.all(
+          docs.map(async doc => {
+            const data = doc.data();
+            if (!Array.isArray(data.searchTokens) || data.searchTokens.length === 0) {
+              const tokens = generateSearchTokens(data.parentName ?? '', data.childName ?? '');
+              await doc.ref.update({ searchTokens: tokens });
+            }
+          }),
+        );
+      }
+    }
     const items: Client[] = docs.slice(0, params.pageSize).map(d => {
       const data = d.data();
       return {
