@@ -117,12 +117,6 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const normalize = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .toLowerCase();
-
   const searchClients = async (term: string) => {
     try {
       setLoadingClients(true);
@@ -133,12 +127,7 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
         pageSize: 50,
         orderBy: 'parentName',
       });
-      const searchLower = normalize(term);
-      const filtered = data.items.filter(c =>
-        normalize(c.parentName).includes(searchLower) ||
-        normalize(c.childName).includes(searchLower),
-      );
-      setClients(filtered);
+      setClients(data.items);
       setShowDropdown(true);
     } catch (err) {
       console.error('Failed to search clients:', err);

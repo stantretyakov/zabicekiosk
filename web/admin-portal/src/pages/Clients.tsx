@@ -23,12 +23,6 @@ export default function Clients() {
     loadClients();
   }, [searchTerm, activeFilter]);
 
-  const normalize = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .toLowerCase();
-
   const loadClients = async (token?: string) => {
     try {
       setLoading(true);
@@ -39,14 +33,7 @@ export default function Clients() {
         pageToken: token,
         pageSize: 20
       });
-      const needle = trimmedSearch ? normalize(trimmedSearch) : null;
-      const items = needle
-        ? data.items.filter(client =>
-            normalize(client.parentName).includes(needle) ||
-            normalize(client.childName).includes(needle)
-          )
-        : data.items;
-      setClients(items);
+      setClients(data.items);
       setHasNextPage(!!data.nextPageToken);
       setPageToken(data.nextPageToken);
       setError(null);
