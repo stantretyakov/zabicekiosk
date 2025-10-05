@@ -126,9 +126,11 @@ export default function SellPassForm({ open, onClose, onSuccess, preselectedClie
   const searchClients = async (term: string) => {
     try {
       setLoadingClients(true);
+      const trimmedTerm = term.trim();
       const data = await listClients({
         active: 'true',
-        pageSize: 100,
+        search: trimmedTerm || undefined,
+        pageSize: 50,
         orderBy: 'parentName',
       });
       const searchLower = normalize(term);
