@@ -29,23 +29,74 @@ function generateWordPrefixes(word: string): string[] {
   return prefixes;
 }
 
-function generateSearchTokens(parentName: string, childName: string): string[] {
+type SearchableFields = {
+  parentName?: string | null;
+  childName?: string | null;
+  phone?: string | null;
+  telegram?: string | null;
+  instagram?: string | null;
+};
+
+function generateSearchTokens(fields: SearchableFields): string[] {
   const tokens = new Set<string>();
 
-  const addTokens = (value: string) => {
+  const addFromWords = (value?: string | null, options?: { includeCollapsed?: boolean }) => {
+    if (!value) return;
     const normalized = normalizeForSearch(value);
     if (!normalized) return;
-    for (const word of normalized.split(' ')) {
+
+    const words = normalized.split(' ').filter(Boolean);
+    for (const word of words) {
       for (const prefix of generateWordPrefixes(word)) {
         tokens.add(prefix);
       }
     }
+
+    if (options?.includeCollapsed && words.length > 1) {
+      const collapsed = words.join('');
+      if (collapsed) {
+        for (const prefix of generateWordPrefixes(collapsed)) {
+          tokens.add(prefix);
+        }
+      }
+    }
   };
 
-  addTokens(parentName);
-  addTokens(childName);
+  const addFromDigits = (value?: string | null) => {
+    if (!value) return;
+    const digits = value.replace(/\D/g, '');
+    if (!digits) return;
+    for (const prefix of generateWordPrefixes(digits)) {
+      tokens.add(prefix);
+    }
+  };
 
-  return Array.from(tokens);
+  addFromWords(fields.parentName);
+  addFromWords(fields.childName);
+
+  if (fields.phone) {
+    addFromDigits(fields.phone);
+    addFromWords(fields.phone);
+  }
+
+  if (fields.telegram) {
+    const handle = fields.telegram.replace(/^@/, '');
+    addFromWords(handle, { includeCollapsed: true });
+  }
+
+  if (fields.instagram) {
+    let handle: string | undefined;
+    try {
+      const url = new URL(fields.instagram);
+      const segments = url.pathname.split('/').filter(Boolean);
+      handle = segments[segments.length - 1];
+    } catch {
+      handle = fields.instagram;
+    }
+    addFromWords(handle, { includeCollapsed: true });
+  }
+
+  return Array.from(tokens).sort();
 }
 
 function normalizePhone(p?: string) {
@@ -189,15 +240,33 @@ export default async function adminClients(app: FastifyInstance) {
 
         // Backfill search tokens for documents that are missing them so future
         // requests can rely on the token index.
+        let tokensUpdated = false;
         await Promise.all(
           docs.map(async doc => {
             const data = doc.data();
-            if (!Array.isArray(data.searchTokens) || data.searchTokens.length === 0) {
-              const tokens = generateSearchTokens(data.parentName ?? '', data.childName ?? '');
-              await doc.ref.update({ searchTokens: tokens });
+            const expectedTokens = generateSearchTokens({
+              parentName: data.parentName ?? '',
+              childName: data.childName ?? '',
+              phone: data.phone ?? undefined,
+              telegram: data.telegram ?? undefined,
+              instagram: data.instagram ?? undefined,
+            });
+            const storedTokens = Array.isArray(data.searchTokens) ? data.searchTokens : [];
+            const storedSet = new Set(storedTokens);
+            const needsUpdate =
+              storedTokens.length !== expectedTokens.length ||
+              expectedTokens.some(token => !storedSet.has(token));
+            if (needsUpdate) {
+              tokensUpdated = true;
+              await doc.ref.update({ searchTokens: expectedTokens });
             }
           }),
         );
+
+        if (tokensUpdated) {
+          snap = await query.limit(params.pageSize + 1).get();
+          docs = snap.docs;
+        }
       }
     }
     const items: Client[] = docs.slice(0, params.pageSize).map(d => {
@@ -230,11 +299,17 @@ export default async function adminClients(app: FastifyInstance) {
       parentName: body.parentName.trim(),
       childName: body.childName.trim(),
       phone: body.phone ?? null,
-        telegram: body.telegram ?? null,
-        instagram: body.instagram ?? null,
+      telegram: body.telegram ?? null,
+      instagram: body.instagram ?? null,
       active: true,
       fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
-      searchTokens: generateSearchTokens(body.parentName, body.childName),
+      searchTokens: generateSearchTokens({
+        parentName: body.parentName,
+        childName: body.childName,
+        phone: body.phone,
+        telegram: body.telegram,
+        instagram: body.instagram,
+      }),
       createdAt: now,
       updatedAt: now,
       token: rawToken,
@@ -287,7 +362,13 @@ export default async function adminClients(app: FastifyInstance) {
         instagram: body.instagram ?? null,
         active: true,
         fullNameLower: `${body.parentName} ${body.childName}`.toLowerCase(),
-        searchTokens: generateSearchTokens(body.parentName, body.childName),
+        searchTokens: generateSearchTokens({
+          parentName: body.parentName,
+          childName: body.childName,
+          phone: body.phone,
+          telegram: body.telegram,
+          instagram: body.instagram,
+        }),
         createdAt: now,
         updatedAt: now,
         token: rawToken,
@@ -324,8 +405,23 @@ export default async function adminClients(app: FastifyInstance) {
     const update: any = { ...body, updatedAt: FieldValue.serverTimestamp() };
     const parent = body.parentName ?? current.parentName;
     const child = body.childName ?? current.childName;
+    const phone = (Object.prototype.hasOwnProperty.call(body, 'phone')
+      ? body.phone
+      : (current.phone ?? undefined)) ?? undefined;
+    const telegram = (Object.prototype.hasOwnProperty.call(body, 'telegram')
+      ? body.telegram
+      : (current.telegram ?? undefined)) ?? undefined;
+    const instagram = (Object.prototype.hasOwnProperty.call(body, 'instagram')
+      ? body.instagram
+      : (current.instagram ?? undefined)) ?? undefined;
     update.fullNameLower = `${parent} ${child}`.toLowerCase();
-    update.searchTokens = generateSearchTokens(parent, child);
+    update.searchTokens = generateSearchTokens({
+      parentName: parent,
+      childName: child,
+      phone,
+      telegram,
+      instagram,
+    });
     await ref.set(update, { merge: true });
     const snap = await ref.get();
     const d = snap.data()!;
