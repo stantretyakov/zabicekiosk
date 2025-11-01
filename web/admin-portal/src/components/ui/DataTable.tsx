@@ -4,7 +4,7 @@ import styles from './DataTable.module.css';
 
 export type Column<T> = {
   key: keyof T | string;
-  title: string;
+  title: React.ReactNode;
   width?: number;
   render?: (row: T) => React.ReactNode;
 };
