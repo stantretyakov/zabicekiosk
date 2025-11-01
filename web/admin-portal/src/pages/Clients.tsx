@@ -284,14 +284,33 @@ export default function Clients() {
       </div>
 
       <div className="toolbar">
-        <input
-          type="text"
-          placeholder={t('searchByName')}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{ flex: 1, minWidth: '200px' }}
-        />
-        
+        <div
+          style={{
+            flex: 1,
+            minWidth: '240px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem'
+          }}
+        >
+          <input
+            type="text"
+            placeholder={t('searchByName')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ width: '100%' }}
+          />
+          <div
+            style={{
+              fontSize: '0.75rem',
+              color: 'var(--muted)',
+              lineHeight: 1.4,
+            }}
+          >
+            {t('searchHelpClients')}
+          </div>
+        </div>
+
         <select
           value={activeFilter}
           onChange={(e) => setActiveFilter(e.target.value as 'all' | 'true' | 'false')}
