@@ -870,8 +870,17 @@ class I18nService {
     return translations[this.currentLanguage];
   }
 
-  t(key: keyof Translations): string {
-    return translations[this.currentLanguage][key];
+  t(key: keyof Translations, options?: Record<string, string | number>): string {
+    const template = translations[this.currentLanguage][key];
+
+    if (!options) {
+      return template;
+    }
+
+    return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, variable) => {
+      const value = options[variable];
+      return value !== undefined ? String(value) : match;
+    });
   }
 
   subscribe(listener: (language: Language) => void): () => void {
