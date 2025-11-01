@@ -54,6 +54,7 @@ export interface Translations {
   importClients: string;
   addClientButton: string;
   searchByName: string;
+  searchHelpClients: string;
   allClients: string;
   activeOnly: string;
   inactiveOnly: string;
@@ -335,7 +336,8 @@ const translations: Record<Language, Translations> = {
     clientsTitle: 'Клиенты',
     importClients: 'Импорт',
     addClientButton: 'Добавить клиента',
-    searchByName: 'Поиск по имени...',
+    searchByName: 'Поиск по родителю, ребенку, телефону или соцсетям...',
+    searchHelpClients: 'Ищите по имени родителя, имени ребенка, телефону, Telegram или Instagram',
     allClients: 'Все клиенты',
     activeOnly: 'Только активные',
     inactiveOnly: 'Только неактивные',
@@ -615,7 +617,8 @@ const translations: Record<Language, Translations> = {
     clientsTitle: 'Clients',
     importClients: 'Import',
     addClientButton: 'Add Client',
-    searchByName: 'Search by name...',
+    searchByName: 'Search by parent, child, phone or social handle...',
+    searchHelpClients: 'Search by parent or child name, phone number, Telegram or Instagram handles.',
     allClients: 'All Clients',
     activeOnly: 'Active Only',
     inactiveOnly: 'Inactive Only',

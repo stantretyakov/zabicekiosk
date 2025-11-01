@@ -373,16 +373,47 @@ export function filterClients(
 
   // Apply search filter
   if (filters.search) {
-    const normalize = (s: string) =>
-      s
+    const normalize = (value?: string | null) =>
+      (value ?? '')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase();
-    const searchLower = normalize(filters.search);
-    filtered = filtered.filter(client =>
-      normalize(client.parentName).includes(searchLower) ||
-      normalize(client.childName).includes(searchLower)
-    );
+    const collapse = (value: string) => value.replace(/\s+/g, ' ').trim();
+    const stripSeparators = (value: string) => value.replace(/[^a-z0-9\u0400-\u04FF]+/g, '');
+    const digitsOnly = (value?: string | null) => (value ?? '').replace(/\D+/g, '');
+
+    const searchNormalized = collapse(normalize(filters.search));
+    const searchStripped = stripSeparators(searchNormalized);
+    const searchDigits = digitsOnly(filters.search);
+
+    filtered = filtered.filter(client => {
+      const candidateValues = [
+        client.parentName,
+        client.childName,
+        client.telegram ? `@${client.telegram}` : client.telegram,
+        client.instagram,
+        client.phone,
+        client.id,
+      ];
+
+      const matchesText = searchNormalized
+        ? candidateValues.some(value => {
+            const normalized = collapse(normalize(value));
+            if (!normalized) return false;
+            const stripped = stripSeparators(normalized);
+            return (
+              normalized.includes(searchNormalized) ||
+              (!!searchStripped && stripped.includes(searchStripped))
+            );
+          })
+        : false;
+
+      const matchesDigits = searchDigits
+        ? candidateValues.some(value => digitsOnly(value).includes(searchDigits))
+        : false;
+
+      return matchesText || matchesDigits;
+    });
   }
 
   // Apply active filter
