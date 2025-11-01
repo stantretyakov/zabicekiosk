@@ -130,6 +130,29 @@ export interface Translations {
   afterRestoration: string;
   processing: string;
 
+  // Pass Renewal
+  renewPassAction: string;
+  renewSelectedAction: string;
+  renewPassTitle: string;
+  renewPassDescription: string;
+  renewSelectedTitle: string;
+  renewSelectedDescription: string;
+  renewValidityDaysLabel: string;
+  renewValidityError: string;
+  renewPriceLabel: string;
+  renewPriceHint: string;
+  renewPriceError: string;
+  renewKeepRemainingLabel: string;
+  renewKeepRemainingHelp: string;
+  renewConfirm: string;
+  renewing: string;
+  renewSuccessSingle: string;
+  renewSuccessBulk: string;
+  renewNoSelection: string;
+  renewUnknownError: string;
+  renewFailed: string;
+  renewPassTooltip: string;
+
   // Passes
   passesTitle: string;
   sellPass: string;
@@ -143,6 +166,9 @@ export interface Translations {
   subscription: string;
   single: string;
   visits: string;
+  renewalOperations: string;
+  selectAllPasses: string;
+  selectPass: string;
 
   // Sell Pass Form
   sellSwimmingPass: string;
@@ -413,6 +439,29 @@ const translations: Record<Language, Translations> = {
     convertWarningText: 'Это действие найдет последнее разовое посещение клиента и конвертирует его в использование абонемента. Отменить нельзя.',
     processing: 'Обработка...',
 
+    // Pass Renewal
+    renewPassAction: 'Продлить',
+    renewSelectedAction: 'Продлить выбранные',
+    renewPassTitle: 'Продлить абонемент {{child}}',
+    renewPassDescription: 'Продлите текущий абонемент. Остаток: {{remaining}} занятий, базовый план: {{plan}}.',
+    renewSelectedTitle: 'Массовое продление ({{count}})',
+    renewSelectedDescription: 'Продлите абонементы для {{count}} выбранных клиентов. Настройки будут применены ко всем.',
+    renewValidityDaysLabel: 'Новая длительность (дней)',
+    renewValidityError: 'Введите значение от 1 до 365 дней',
+    renewPriceLabel: 'Оплата (RSD)',
+    renewPriceHint: 'Оставьте пустым, если оплата не взималась',
+    renewPriceError: 'Сумма должна быть неотрицательным числом',
+    renewKeepRemainingLabel: 'Сохранить оставшиеся занятия',
+    renewKeepRemainingHelp: 'Оставшиеся занятия будут добавлены к новому абонементу при продлении.',
+    renewConfirm: 'Продлить',
+    renewing: 'Продление...',
+    renewSuccessSingle: 'Абонемент клиента {{child}} успешно продлен.',
+    renewSuccessBulk: 'Продлено {{success}} из {{total}} абонементов.',
+    renewNoSelection: 'Выберите хотя бы один абонемент для продления',
+    renewUnknownError: 'Неизвестная ошибка',
+    renewFailed: 'Не удалось продлить абонемент',
+    renewPassTooltip: 'Продлить этот абонемент',
+
     // Passes
     passesTitle: 'Абонементы',
     sellPass: 'Продать абонемент',
@@ -426,6 +475,9 @@ const translations: Record<Language, Translations> = {
     subscription: 'Абонемент',
     single: 'Разовое',
     visits: 'посещений',
+    renewalOperations: 'Продления',
+    selectAllPasses: 'Выбрать все абонементы',
+    selectPass: 'Выбрать абонемент',
 
     // Sell Pass Form
     sellSwimmingPass: 'Продать абонемент на плавание',
@@ -694,6 +746,29 @@ const translations: Record<Language, Translations> = {
     convertWarningText: 'This action will find the last drop-in visit of the client and convert it to pass usage. This action cannot be undone.',
     processing: 'Processing...',
 
+    // Pass Renewal
+    renewPassAction: 'Renew',
+    renewSelectedAction: 'Renew selected',
+    renewPassTitle: 'Renew pass for {{child}}',
+    renewPassDescription: 'Adjust the renewal period. Remaining: {{remaining}} sessions, base plan: {{plan}}.',
+    renewSelectedTitle: 'Bulk renewal ({{count}})',
+    renewSelectedDescription: 'Apply the same renewal settings to {{count}} selected passes.',
+    renewValidityDaysLabel: 'Validity (days)',
+    renewValidityError: 'Enter a value between 1 and 365 days',
+    renewPriceLabel: 'Payment amount (RSD)',
+    renewPriceHint: 'Leave empty if no payment was collected',
+    renewPriceError: 'Amount must be a non-negative number',
+    renewKeepRemainingLabel: 'Carry over remaining sessions',
+    renewKeepRemainingHelp: 'Remaining sessions will be added to the renewed pass balance.',
+    renewConfirm: 'Renew pass',
+    renewing: 'Renewing...',
+    renewSuccessSingle: '{{child}}\'s pass has been renewed.',
+    renewSuccessBulk: 'Renewed {{success}} of {{total}} passes.',
+    renewNoSelection: 'Select at least one pass to renew',
+    renewUnknownError: 'Unknown error',
+    renewFailed: 'Failed to renew pass',
+    renewPassTooltip: 'Renew this pass',
+
     // Passes
     passesTitle: 'Passes',
     sellPass: 'Sell Pass',
@@ -707,6 +782,9 @@ const translations: Record<Language, Translations> = {
     subscription: 'Subscription',
     single: 'Single',
     visits: 'visits',
+    renewalOperations: 'Renewals',
+    selectAllPasses: 'Select all passes',
+    selectPass: 'Select pass',
 
     // Sell Pass Form
     sellSwimmingPass: 'Sell Swimming Pass',

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { listPasses, deletePass } from '../lib/api';
+import React, { useState, useEffect, useRef } from 'react';
+import { listPasses, deletePass, renewPass, renewPasses, RenewPassOptions, RenewPassesResponse } from '../lib/api';
 import { PassWithClient } from '../types';
 import { useTranslation } from '../lib/i18n';
 import DataTable from '../components/ui/DataTable';
 import SellPassForm from '../components/ui/SellPassForm';
+import RenewPassDialog from '../components/ui/RenewPassDialog';
 
 export default function Passes() {
   const { t } = useTranslation();
@@ -14,6 +15,12 @@ export default function Passes() {
   const [pageToken, setPageToken] = useState<string | undefined>();
   const [hasNextPage, setHasNextPage] = useState(false);
   const [showSellForm, setShowSellForm] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [selectedPassIds, setSelectedPassIds] = useState<Set<string>>(new Set());
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [renewMode, setRenewMode] = useState<'single' | 'bulk'>('single');
+  const [targetPass, setTargetPass] = useState<PassWithClient | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadPasses();
@@ -30,6 +37,7 @@ export default function Passes() {
       setHasNextPage(!!data.nextPageToken);
       setPageToken(data.nextPageToken);
       setError(null);
+      setSelectedPassIds(new Set());
     } catch (err: any) {
       setError(err.message || 'Failed to load passes');
       console.error(err);
@@ -40,8 +48,9 @@ export default function Passes() {
 
   const handleDeletePass = async (id: string) => {
     if (!confirm('Are you sure you want to revoke this pass?')) return;
-    
+
     try {
+      setStatusMessage(null);
       await deletePass(id);
       await loadPasses();
     } catch (err: any) {
@@ -69,6 +78,90 @@ export default function Passes() {
     return parent.includes(searchLower) || child.includes(searchLower);
   });
 
+  const selectedCount = selectedPassIds.size;
+  const allVisibleSelected = filteredPasses.length > 0 && filteredPasses.every(pass => selectedPassIds.has(pass.id));
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    const someSelected = filteredPasses.some(pass => selectedPassIds.has(pass.id));
+    selectAllRef.current.indeterminate = someSelected && !allVisibleSelected;
+  }, [filteredPasses, selectedPassIds, allVisibleSelected]);
+
+  const toggleSelect = (passId: string) => {
+    setSelectedPassIds(prev => {
+      const next = new Set(prev);
+      if (next.has(passId)) {
+        next.delete(passId);
+      } else {
+        next.add(passId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = () => {
+    const visibleIds = filteredPasses.map(pass => pass.id);
+    const allSelected = visibleIds.every(id => selectedPassIds.has(id));
+    setSelectedPassIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        visibleIds.forEach(id => next.delete(id));
+      } else {
+        visibleIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const openRenewDialogForPass = (pass: PassWithClient) => {
+    setRenewMode('single');
+    setTargetPass(pass);
+    setShowRenewDialog(true);
+  };
+
+  const openRenewDialogForSelection = () => {
+    if (selectedCount === 0) return;
+    setRenewMode('bulk');
+    setTargetPass(null);
+    setShowRenewDialog(true);
+  };
+
+  const handleRenewConfirm = async (options: RenewPassOptions) => {
+    try {
+      setStatusMessage(null);
+      setError(null);
+      if (renewMode === 'single' && targetPass) {
+        await renewPass(targetPass.id, options);
+        setStatusMessage(t('renewSuccessSingle', { child: targetPass.client.childName }));
+      } else if (renewMode === 'bulk') {
+        const passIds = Array.from(selectedPassIds);
+        if (passIds.length === 0) {
+          throw new Error(t('renewNoSelection'));
+        }
+        const res: RenewPassesResponse = await renewPasses(passIds, options);
+        const success = res.results.filter(r => r.status === 'renewed').length;
+        setStatusMessage(t('renewSuccessBulk', { success, total: res.results.length }));
+        const failed = res.results.filter(r => r.status === 'error');
+        if (failed.length > 0) {
+          setError(
+            failed
+              .map(item => `${item.passId}: ${item.message || t('renewUnknownError')}`)
+              .join('; '),
+          );
+        } else {
+          setError(null);
+        }
+        setSelectedPassIds(new Set());
+      }
+      await loadPasses();
+    } catch (err: any) {
+      setStatusMessage(null);
+      const message = err?.message || t('renewFailed');
+      setError(message);
+      throw err;
+    }
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -90,6 +183,29 @@ export default function Passes() {
   };
 
   const columns = [
+    {
+      key: 'select',
+      title: (
+        <input
+          type="checkbox"
+          ref={selectAllRef}
+          checked={allVisibleSelected}
+          onChange={toggleSelectAllVisible}
+          aria-label={t('selectAllPasses')}
+        />
+      ),
+      width: 48,
+      render: (pass: PassWithClient) => (
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <input
+            type="checkbox"
+            checked={selectedPassIds.has(pass.id)}
+            onChange={() => toggleSelect(pass.id)}
+            aria-label={t('selectPass')}
+          />
+        </div>
+      ),
+    },
     {
       key: 'client',
       title: t('client'),
@@ -192,23 +308,42 @@ export default function Passes() {
       key: 'actions',
       title: t('actions'),
       render: (pass: PassWithClient) => (
-        <button
-          onClick={() => handleDeletePass(pass.id)}
-          style={{
-            padding: '0.5rem 1rem',
-            background: 'linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8))',
-            color: 'var(--text)',
-            border: 'none',
-            borderRadius: 'var(--radius)',
-            fontSize: '0.75rem',
-            fontWeight: '600',
-            cursor: 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          {t('revoke')}
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            onClick={() => openRenewDialogForPass(pass)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, var(--accent-2), rgba(43, 224, 144, 0.6))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            {t('renewPassAction')}
+          </button>
+          <button
+            onClick={() => handleDeletePass(pass.id)}
+            style={{
+              padding: '0.5rem 1rem',
+              background: 'linear-gradient(135deg, var(--error), rgba(255, 107, 107, 0.8))',
+              color: 'var(--text)',
+              border: 'none',
+              borderRadius: 'var(--radius)',
+              fontSize: '0.75rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            {t('revoke')}
+          </button>
+        </div>
       )
     }
   ];
@@ -259,11 +394,46 @@ export default function Passes() {
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{ flex: 1, minWidth: '200px' }}
         />
+        <button
+          onClick={openRenewDialogForSelection}
+          disabled={selectedCount === 0}
+          style={{
+            padding: '0.5rem 1rem',
+            background: 'linear-gradient(135deg, var(--accent), var(--accent-2))',
+            color: 'var(--text)',
+            border: 'none',
+            borderRadius: 'var(--radius)',
+            fontSize: '0.75rem',
+            fontWeight: '600',
+            cursor: selectedCount === 0 ? 'not-allowed' : 'pointer',
+            opacity: selectedCount === 0 ? 0.6 : 1,
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {t('renewSelectedAction')}
+          {selectedCount > 0 ? ` (${selectedCount})` : ''}
+        </button>
       </div>
 
       {error && (
         <div className="error">
           {error}
+        </div>
+      )}
+
+      {statusMessage && (
+        <div
+          style={{
+            marginBottom: '1rem',
+            padding: '0.75rem 1rem',
+            borderRadius: 'var(--radius)',
+            background: 'rgba(43, 224, 144, 0.12)',
+            border: '1px solid rgba(43, 224, 144, 0.35)',
+            color: 'var(--text)'
+          }}
+        >
+          {statusMessage}
         </div>
       )}
 
@@ -281,6 +451,23 @@ export default function Passes() {
         onClose={() => setShowSellForm(false)}
         onSuccess={handleSellSuccess}
       />
+      {showRenewDialog && (
+        <RenewPassDialog
+          open={showRenewDialog}
+          mode={renewMode}
+          pass={renewMode === 'single' ? targetPass ?? undefined : undefined}
+          selectedCount={renewMode === 'bulk' ? selectedCount : undefined}
+          onClose={() => {
+            setShowRenewDialog(false);
+            setTargetPass(null);
+          }}
+          onConfirm={async (options: RenewPassOptions) => {
+            await handleRenewConfirm(options);
+            setShowRenewDialog(false);
+            setTargetPass(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -17,6 +17,8 @@ const API_BASE_URL = (() => {
   return base.endsWith('/api/v1') ? base : `${base}/api/v1`;
 })();
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
   const headers = new Headers(init?.headers);
@@ -35,6 +37,32 @@ export async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T>
     throw new Error(`Expected JSON, got: ${ct || 'unknown'}; first 120 chars: ${text.slice(0,120)}`);
   }
   return res.json() as Promise<T>;
+}
+
+export interface RenewPassOptions {
+  validityDays?: number;
+  priceRSD?: number;
+  keepRemaining?: boolean;
+}
+
+export interface RenewPassResponse {
+  status: 'ok';
+  renewedAt: string;
+  expiresAt: string;
+  validityDays: number;
+  carriedOver: number;
+  planSizeDelta: number;
+}
+
+export interface RenewPassesResponse {
+  status: 'ok';
+  renewedCount: number;
+  results: {
+    passId: string;
+    status: 'renewed' | 'error';
+    message?: string;
+    expiresAt?: string;
+  }[];
 }
 
 export async function listClients(q: {
@@ -219,16 +247,22 @@ export async function createPass(body: {
       return { status: 'exists', conflictPassId: existing.id };
     }
 
+    const validityDays = body.validityDays ?? 30;
+    const expiresAt = new Date(new Date(body.purchasedAt).getTime() + validityDays * DAY_MS).toISOString();
+
     const newPass: PassWithClient = {
       id: `pass-${Date.now()}`,
       clientId: body.clientId,
       planSize: body.planSize,
+      basePlanSize: body.planSize,
       purchasedAt: body.purchasedAt,
       remaining: body.planSize,
       type: body.planSize === 1 ? 'single' : 'subscription',
       client,
-      validityDays: body.validityDays ?? 30,
-      expiresAt: new Date(new Date(body.purchasedAt).getTime() + (body.validityDays ?? 30) * 24 * 60 * 60 * 1000).toISOString(),
+      validityDays,
+      expiresAt,
+      renewedAt: body.purchasedAt,
+      renewalCount: 0,
     };
 
     mockPasses.unshift(newPass);
@@ -406,6 +440,115 @@ export async function restorePassSessions(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ count }),
+  });
+}
+
+function applyMockRenewal(pass: PassWithClient, options: RenewPassOptions): RenewPassResponse {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const basePlanSize = pass.basePlanSize ?? pass.planSize;
+  const validityDays = options.validityDays ?? pass.validityDays ?? 30;
+  const existingExpiryMs = pass.expiresAt ? new Date(pass.expiresAt).getTime() : 0;
+  const baseDate = existingExpiryMs > now.getTime() ? new Date(existingExpiryMs) : now;
+  const expiresAtIso = new Date(baseDate.getTime() + validityDays * DAY_MS).toISOString();
+  const carryOver = options.keepRemaining ? pass.remaining : 0;
+
+  pass.planSize = basePlanSize + carryOver;
+  pass.basePlanSize = basePlanSize;
+  pass.remaining = pass.planSize;
+  pass.purchasedAt = nowIso;
+  pass.validityDays = validityDays;
+  pass.expiresAt = expiresAtIso;
+  pass.renewedAt = nowIso;
+  pass.renewalCount = (pass.renewalCount ?? 0) + 1;
+
+  const noteParts = [
+    `Продление: +${basePlanSize} занятий на ${validityDays} дн.`,
+  ];
+  if (carryOver > 0) {
+    noteParts.push(`перенесено ${carryOver} занятий`);
+  }
+  if (typeof options.priceRSD === 'number' && Number.isFinite(options.priceRSD)) {
+    noteParts.push(`оплата ${options.priceRSD} RSD`);
+  }
+  const noteBase = noteParts.join(', ');
+
+  mockRedeems.unshift({
+    id: `redeem-${Date.now()}`,
+    ts: nowIso,
+    kind: 'renewal',
+    clientId: pass.clientId,
+    delta: basePlanSize,
+    priceRSD: options.priceRSD,
+    client: pass.client,
+    note: noteBase,
+  });
+
+  return {
+    status: 'ok',
+    renewedAt: nowIso,
+    expiresAt: expiresAtIso,
+    validityDays,
+    carriedOver: carryOver,
+    planSizeDelta: basePlanSize,
+  };
+}
+
+export async function renewPass(
+  passId: string,
+  options: RenewPassOptions = {},
+): Promise<RenewPassResponse> {
+  if (import.meta.env.DEV) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    const pass = mockPasses.find(p => p.id === passId);
+    if (!pass) {
+      throw new Error('Абонемент не найден');
+    }
+
+    return applyMockRenewal(pass, options);
+  }
+
+  return fetchJSON<RenewPassResponse>(`/admin/passes/${passId}/renew`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options),
+  });
+}
+
+export async function renewPasses(
+  passIds: string[],
+  options: RenewPassOptions = {},
+): Promise<RenewPassesResponse> {
+  if (import.meta.env.DEV) {
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    const results = passIds.map(passId => {
+      try {
+        const pass = mockPasses.find(p => p.id === passId);
+        if (!pass) {
+          throw new Error('Абонемент не найден');
+        }
+        const renewal = applyMockRenewal(pass, options);
+        return { passId, status: 'renewed' as const, expiresAt: renewal.expiresAt };
+      } catch (err: any) {
+        return {
+          passId,
+          status: 'error' as const,
+          message: err?.message || 'Не удалось продлить абонемент',
+        };
+      }
+    });
+
+    const renewedCount = results.filter(r => r.status === 'renewed').length;
+
+    return { status: 'ok', renewedCount, results };
+  }
+
+  return fetchJSON<RenewPassesResponse>(`/admin/passes/renew`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passIds, ...options }),
   });
 }
 

@@ -19,12 +19,15 @@ export type Pass = {
   id: string;
   clientId: string;
   planSize: number;
+  basePlanSize?: number;
   purchasedAt: string;
   remaining: number;
   type: 'subscription' | 'single';
   lastVisit?: string;
   validityDays?: number;
   expiresAt?: string;
+  renewedAt?: string;
+  renewalCount?: number;
 };
 
 export type PassWithClient = Pass & {
@@ -39,6 +42,7 @@ export type Redeem = {
   delta?: number;
   priceRSD?: number;
   client?: Client;
+  note?: string;
 };
 
 export type Stats = {

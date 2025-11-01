@@ -19,6 +19,134 @@ function coercePositiveNumber(value: unknown): number | null {
   return null;
 }
 
+type RenewalOptions = {
+  validityDays?: number | null;
+  priceRSD?: number | null;
+  keepRemaining?: boolean | null;
+};
+
+function resolveValidityDays(
+  requested: number | null | undefined,
+  pass: any,
+  settings: any,
+): number {
+  const requestedValid = coercePositiveNumber(requested);
+  if (requestedValid) return requestedValid;
+
+  const passValidity = coercePositiveNumber(pass?.validityDays);
+  if (passValidity) return passValidity;
+
+  const basePlanSize = coercePositiveNumber(pass?.basePlanSize ?? pass?.planSize);
+  if (settings?.passes && Array.isArray(settings.passes) && basePlanSize) {
+    const configuredPass = settings.passes.find((p: any) => {
+      const sessions = coercePositiveNumber(p?.sessions ?? p?.planSize);
+      return sessions === basePlanSize;
+    });
+    const configuredValidity = coercePositiveNumber(configuredPass?.validityDays);
+    if (configuredValidity) {
+      return configuredValidity;
+    }
+  }
+
+  return 30;
+}
+
+function buildRenewalNote(
+  validityDays: number,
+  basePlanSize: number,
+  carriedOver: number,
+  priceRSD?: number | null,
+): string {
+  const parts = [
+    `Renewed pass: +${basePlanSize} session${basePlanSize === 1 ? '' : 's'} for ${validityDays} day${
+      validityDays === 1 ? '' : 's'
+    }`,
+  ];
+  if (carriedOver > 0) {
+    parts.push(`carried over ${carriedOver} session${carriedOver === 1 ? '' : 's'}`);
+  }
+  if (typeof priceRSD === 'number' && Number.isFinite(priceRSD)) {
+    parts.push(`payment ${priceRSD} RSD`);
+  }
+  return parts.join(', ');
+}
+
+async function renewPassDocument(
+  tx: FirebaseFirestore.Transaction,
+  db: FirebaseFirestore.Firestore,
+  passRef: FirebaseFirestore.DocumentReference,
+  pass: any,
+  options: RenewalOptions,
+  settings: any,
+) {
+  const basePlanSize =
+    coercePositiveNumber(pass?.basePlanSize ?? pass?.planSize) ??
+    coercePositiveNumber(pass?.planSize);
+  if (!basePlanSize) {
+    const err: any = new Error('Pass has no plan size to renew');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const validityDays = resolveValidityDays(options.validityDays, pass, settings);
+  const keepRemaining = !!options.keepRemaining;
+  const used = Number.isFinite(pass?.used) ? Number(pass.used) : 0;
+  const planSize = Number.isFinite(pass?.planSize) ? Number(pass.planSize) : basePlanSize;
+  const carriedOver = keepRemaining ? Math.max(0, planSize - used) : 0;
+  const totalPlanSize = basePlanSize + carriedOver;
+
+  const now = Timestamp.now();
+  const nowDate = now.toDate();
+  const expiresAtDate: Date | undefined = pass?.expiresAt?.toDate?.();
+  const baseDate =
+    expiresAtDate && expiresAtDate.getTime() > nowDate.getTime() ? expiresAtDate : nowDate;
+  const newExpiresAt = new Date(baseDate.getTime() + validityDays * DAY_MS);
+
+  const updateData: Record<string, any> = {
+    planSize: totalPlanSize,
+    basePlanSize,
+    used: 0,
+    purchasedAt: now,
+    expiresAt: Timestamp.fromDate(newExpiresAt),
+    validityDays,
+    revoked: false,
+    renewedAt: now,
+    renewalCount: FieldValue.increment(1),
+    lastRedeemTs: FieldValue.delete(),
+    lastEventId: FieldValue.delete(),
+  };
+
+  tx.update(passRef, updateData);
+
+  const priceRSD =
+    typeof options.priceRSD === 'number' && Number.isFinite(options.priceRSD)
+      ? options.priceRSD
+      : undefined;
+
+  const redeemData: Record<string, any> = {
+    ts: now,
+    passId: passRef.id,
+    clientId: pass.clientId,
+    delta: basePlanSize,
+    kind: 'renewal',
+    note: buildRenewalNote(validityDays, basePlanSize, carriedOver, priceRSD),
+  };
+
+  if (typeof priceRSD === 'number') {
+    redeemData.priceRSD = priceRSD;
+  }
+
+  tx.set(db.collection('redeems').doc(), redeemData);
+
+  return {
+    expiresAt: Timestamp.fromDate(newExpiresAt),
+    renewedAt: now,
+    validityDays,
+    carriedOver,
+    basePlanSize,
+  };
+}
+
 export default async function adminPasses(app: FastifyInstance) {
   const db = getDb();
 
@@ -63,6 +191,7 @@ export default async function adminPasses(app: FastifyInstance) {
         const c = clientSnap.data() || {};
         const validityDays = coercePositiveNumber(data.validityDays) ?? undefined;
         const fallbackValidity = validityDays ?? 30;
+        const basePlanSize = coercePositiveNumber(data.basePlanSize) ?? undefined;
         const expiresAtIso =
           data.expiresAt?.toDate?.().toISOString() ||
           (data.purchasedAt
@@ -73,12 +202,15 @@ export default async function adminPasses(app: FastifyInstance) {
           id: d.id,
           clientId: data.clientId,
           planSize: data.planSize,
+          basePlanSize: basePlanSize ?? (Number.isFinite(data.planSize) ? Number(data.planSize) : undefined),
           purchasedAt: data.purchasedAt?.toDate?.().toISOString(),
           remaining: Math.max(0, (Number(data.planSize) || 0) - (Number(data.used) || 0)),
           type: data.planSize === 1 ? 'single' : 'subscription',
           lastVisit: data.lastRedeemTs?.toDate?.().toISOString(),
           validityDays,
           expiresAt: expiresAtIso,
+          renewedAt: data.renewedAt?.toDate?.().toISOString(),
+          renewalCount: typeof data.renewalCount === 'number' ? data.renewalCount : 0,
           client: {
             id: data.clientId,
             parentName: c.parentName,
@@ -170,12 +302,14 @@ export default async function adminPasses(app: FastifyInstance) {
       tx.set(passRef, {
         clientId: body.clientId,
         planSize: body.planSize,
+        basePlanSize: body.planSize,
         used: 0,
         purchasedAt,
         expiresAt,
         revoked: false,
         validityDays: appliedValidityDays,
         createdAt: FieldValue.serverTimestamp(),
+        renewalCount: 0,
       });
       const revRef = db.collection('redeems').doc();
       tx.set(revRef, {
@@ -190,6 +324,106 @@ export default async function adminPasses(app: FastifyInstance) {
 
     return { status: 'created' };
   });
+
+  app.post<{ Params: { id: string }; Body: RenewalOptions }>(
+    '/passes/:id/renew',
+    { preHandler: requireAdmin },
+    async req => {
+      const { id } = z.object({ id: z.string() }).parse(req.params);
+      const body = z
+        .object({
+          validityDays: z.coerce.number().min(1).max(365).optional(),
+          priceRSD: z.coerce.number().optional(),
+          keepRemaining: z.boolean().optional(),
+        })
+        .partial()
+        .parse((req.body as any) ?? {});
+
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const settings = settingsSnap.data() as any | undefined;
+
+      const result = await db.runTransaction(async tx => {
+        const passRef = db.collection('passes').doc(id);
+        const passSnap = await tx.get(passRef);
+        if (!passSnap.exists) {
+          const err: any = new Error('Not Found');
+          err.statusCode = 404;
+          throw err;
+        }
+        const pass = passSnap.data() as any;
+        return renewPassDocument(tx, db, passRef, pass, body, settings);
+      });
+
+      return {
+        status: 'ok',
+        renewedAt: result.renewedAt.toDate().toISOString(),
+        expiresAt: result.expiresAt.toDate().toISOString(),
+        validityDays: result.validityDays,
+        carriedOver: result.carriedOver,
+        planSizeDelta: result.basePlanSize,
+      };
+    },
+  );
+
+  app.post<{ Body: RenewalOptions & { passIds: string[] } }>(
+    '/passes/renew',
+    { preHandler: requireAdmin },
+    async req => {
+      const body = z
+        .object({
+          passIds: z.array(z.string()).min(1),
+          validityDays: z.coerce.number().min(1).max(365).optional(),
+          priceRSD: z.coerce.number().optional(),
+          keepRemaining: z.boolean().optional(),
+        })
+        .parse(req.body ?? {});
+
+      const settingsSnap = await db.collection('settings').doc('global').get();
+      const settings = settingsSnap.data() as any | undefined;
+
+      const results: Array<{
+        passId: string;
+        status: 'renewed' | 'error';
+        message?: string;
+        expiresAt?: string;
+      }> = [];
+
+      for (const passId of body.passIds) {
+        try {
+          const renewal = await db.runTransaction(async tx => {
+            const passRef = db.collection('passes').doc(passId);
+            const passSnap = await tx.get(passRef);
+            if (!passSnap.exists) {
+              const err: any = new Error('Not Found');
+              err.statusCode = 404;
+              throw err;
+            }
+            const pass = passSnap.data() as any;
+            return renewPassDocument(tx, db, passRef, pass, body, settings);
+          });
+          results.push({
+            passId,
+            status: 'renewed',
+            expiresAt: renewal.expiresAt.toDate().toISOString(),
+          });
+        } catch (err: any) {
+          results.push({
+            passId,
+            status: 'error',
+            message: err?.message || 'Failed to renew pass',
+          });
+        }
+      }
+
+      const renewedCount = results.filter(r => r.status === 'renewed').length;
+
+      return {
+        status: 'ok',
+        renewedCount,
+        results,
+      };
+    },
+  );
 
   app.post<{ Params: { id: string } }>(
     '/passes/:id/convert-last',

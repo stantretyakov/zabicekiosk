@@ -50,6 +50,7 @@ export default async function adminRedeems(app: FastifyInstance) {
           clientId: data.clientId,
           delta: data.delta,
           priceRSD: data.priceRSD,
+          note: data.note,
           client,
         };
       })

@@ -1,5 +1,48 @@
 import { Client, PassWithClient, Redeem } from '../types';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function computeExpiry(purchasedAt: string, validityDays = 30): string {
+  return new Date(new Date(purchasedAt).getTime() + validityDays * DAY_MS).toISOString();
+}
+
+function makeMockPass(config: {
+  id: string;
+  clientIndex: number;
+  planSize: number;
+  remaining: number;
+  purchasedDaysAgo: number;
+  lastVisitDaysAgo?: number;
+  type?: 'subscription' | 'single';
+  validityDays?: number;
+  renewalCount?: number;
+}): PassWithClient {
+  const purchasedAt = new Date(Date.now() - config.purchasedDaysAgo * DAY_MS).toISOString();
+  const validityDays = config.validityDays ?? 30;
+  const expiresAt = computeExpiry(purchasedAt, validityDays);
+  const lastVisit =
+    typeof config.lastVisitDaysAgo === 'number'
+      ? new Date(Date.now() - config.lastVisitDaysAgo * DAY_MS).toISOString()
+      : undefined;
+  const type = config.type ?? (config.planSize === 1 ? 'single' : 'subscription');
+
+  return {
+    id: config.id,
+    clientId: mockClients[config.clientIndex].id,
+    planSize: config.planSize,
+    basePlanSize: config.planSize,
+    purchasedAt,
+    validityDays,
+    expiresAt,
+    remaining: config.remaining,
+    type,
+    lastVisit,
+    renewedAt: purchasedAt,
+    renewalCount: config.renewalCount ?? 0,
+    client: mockClients[config.clientIndex],
+  };
+}
+
 // Mock clients data for development
 export const mockClients: Client[] = [
   {
@@ -157,124 +200,102 @@ export const mockClients: Client[] = [
 
 // Mock passes data
 export const mockPasses: PassWithClient[] = [
-  {
+  makeMockPass({
     id: 'pass-1',
-    clientId: 'client-1',
+    clientIndex: 0,
     planSize: 10,
-    purchasedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 7,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[0],
-  },
-  {
+    purchasedDaysAgo: 20,
+    lastVisitDaysAgo: 3,
+  }),
+  makeMockPass({
     id: 'pass-2',
-    clientId: 'client-2',
+    clientIndex: 1,
     planSize: 5,
-    purchasedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 1,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[1],
-  },
-  {
+    purchasedDaysAgo: 15,
+    lastVisitDaysAgo: 1,
+  }),
+  makeMockPass({
     id: 'pass-3',
-    clientId: 'client-3',
+    clientIndex: 2,
     planSize: 1,
-    purchasedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 1,
+    purchasedDaysAgo: 2,
     type: 'single',
-    client: mockClients[2],
-  },
-  {
+  }),
+  makeMockPass({
     id: 'pass-4',
-    clientId: 'client-4',
+    clientIndex: 3,
     planSize: 20,
-    purchasedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 5,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[3],
-  },
-  {
+    purchasedDaysAgo: 40,
+    lastVisitDaysAgo: 2,
+  }),
+  makeMockPass({
     id: 'pass-5',
-    clientId: 'client-6',
+    clientIndex: 5,
     planSize: 8,
-    purchasedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 6,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[5],
-  },
-  {
+    purchasedDaysAgo: 10,
+    lastVisitDaysAgo: 1,
+  }),
+  makeMockPass({
     id: 'pass-6',
-    clientId: 'client-7',
+    clientIndex: 6,
     planSize: 15,
-    purchasedAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 12,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[6],
-  },
-  {
+    purchasedDaysAgo: 25,
+    lastVisitDaysAgo: 4,
+  }),
+  makeMockPass({
     id: 'pass-7',
-    clientId: 'client-8',
+    clientIndex: 7,
     planSize: 10,
-    purchasedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 3,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[7],
-  },
-  {
+    purchasedDaysAgo: 30,
+    lastVisitDaysAgo: 5,
+  }),
+  makeMockPass({
     id: 'pass-8',
-    clientId: 'client-10',
+    clientIndex: 9,
     planSize: 5,
-    purchasedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 4,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[9],
-  },
-  {
+    purchasedDaysAgo: 8,
+    lastVisitDaysAgo: 2,
+  }),
+  makeMockPass({
     id: 'pass-9',
-    clientId: 'client-11',
+    clientIndex: 10,
     planSize: 12,
-    purchasedAt: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 9,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[10],
-  },
-  {
+    purchasedDaysAgo: 18,
+    lastVisitDaysAgo: 3,
+  }),
+  makeMockPass({
     id: 'pass-10',
-    clientId: 'client-12',
+    clientIndex: 11,
     planSize: 6,
-    purchasedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 5,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[11],
-  },
-  {
+    purchasedDaysAgo: 5,
+    lastVisitDaysAgo: 1,
+  }),
+  makeMockPass({
     id: 'pass-11',
-    clientId: 'client-14',
+    clientIndex: 13,
     planSize: 1,
-    purchasedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 1,
+    purchasedDaysAgo: 3,
     type: 'single',
-    client: mockClients[13],
-  },
-  {
+  }),
+  makeMockPass({
     id: 'pass-12',
-    clientId: 'client-15',
+    clientIndex: 14,
     planSize: 10,
-    purchasedAt: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000).toISOString(),
     remaining: 8,
-    type: 'subscription',
-    lastVisit: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    client: mockClients[14],
-  },
+    purchasedDaysAgo: 22,
+    lastVisitDaysAgo: 2,
+  }),
 ];
 
 // Mock redeems data
