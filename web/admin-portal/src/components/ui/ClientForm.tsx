@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import QRCodeStyling from 'qr-code-styling';
 import SellPassForm from './SellPassForm';
 import PassActionDialog from './PassActionDialog';
+import RenewPassDialog from './RenewPassDialog';
 import { useTranslation } from '../../lib/i18n';
 import {
   getClientToken,
@@ -11,6 +12,8 @@ import {
   convertLastVisit,
   deductPassSessions,
   restorePassSessions,
+  renewPass,
+  type RenewPassOptions,
 } from '../../lib/api';
 import styles from './ClientForm.module.css';
 import type { PassWithClient, Client as ApiClient } from '../../types';
@@ -69,6 +72,8 @@ export default function ClientForm({
       used: number;
     };
   } | null>(null);
+  const [showRenewDialog, setShowRenewDialog] = useState(false);
+  const [renewTarget, setRenewTarget] = useState<PassWithClient | null>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const qrInstance = useRef<QRCodeStyling | null>(null);
   const ticketCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -216,6 +221,12 @@ export default function ClientForm({
       console.error('Failed to convert last visit:', err);
       throw err;
     }
+  };
+
+  const handleRenewPass = async (options: RenewPassOptions) => {
+    if (!renewTarget) return;
+    await renewPass(renewTarget.id, options);
+    if (initial?.id) await loadClientPasses(initial.id as string);
   };
 
 
@@ -887,6 +898,7 @@ export default function ClientForm({
                       const showConvertAction = pass.remaining > 0;
                       const showDeductAction = pass.remaining > 0;
                       const showRestoreAction = usedSessions > 0;
+                      const showRenewAction = true;
                       const isCurrent = activePassId === pass.id;
 
                       return (
@@ -950,8 +962,20 @@ export default function ClientForm({
                             </div>
                           )}
 
-                          {(showConvertAction || showDeductAction || showRestoreAction) && (
+                          {(showRenewAction || showConvertAction || showDeductAction || showRestoreAction) && (
                             <div className={styles.passActions}>
+                              <button
+                                type="button"
+                                className={`${styles.passActionButton} ${styles.renew}`}
+                                onClick={() => {
+                                  setRenewTarget(pass);
+                                  setShowRenewDialog(true);
+                                }}
+                                title={t('renewPassTooltip')}
+                              >
+                                <span className={styles.actionIcon}>♻️</span>
+                                {t('renewPassAction')}
+                              </button>
                               {showConvertAction && (
                                 <button
                                   type="button"
@@ -1083,8 +1107,20 @@ export default function ClientForm({
             isConversion={!!convertAfterSale}
           />
         )}
+        {showRenewDialog && renewTarget && (
+          <RenewPassDialog
+            open={showRenewDialog}
+            mode="single"
+            pass={renewTarget}
+            onClose={() => {
+              setShowRenewDialog(false);
+              setRenewTarget(null);
+            }}
+            onConfirm={handleRenewPass}
+          />
+        )}
       </div>
-      
+
       {showActionDialog && currentAction && (
         <PassActionDialog
           isOpen={showActionDialog}

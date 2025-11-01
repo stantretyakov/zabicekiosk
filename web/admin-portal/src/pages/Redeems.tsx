@@ -57,6 +57,7 @@ export default function Redeems() {
       case 'pass': return '🎫';
       case 'dropin': return '💰';
       case 'purchase': return '🛒';
+      case 'renewal': return '♻️';
       default: return '📋';
     }
   };
@@ -66,6 +67,7 @@ export default function Redeems() {
       case 'pass': return 'var(--accent)';
       case 'dropin': return 'var(--warn)';
       case 'purchase': return 'var(--accent-2)';
+      case 'renewal': return 'var(--accent-2)';
       default: return 'var(--muted)';
     }
   };
@@ -124,20 +126,33 @@ export default function Redeems() {
       key: 'value',
       title: t('value'),
       render: (redeem: Redeem) => (
-        <div style={{
-          padding: '0.5rem 1rem',
-          borderRadius: 'var(--radius)',
-          background: redeem.kind === 'pass' 
-            ? 'linear-gradient(135deg, rgba(43, 224, 144, 0.1), rgba(43, 224, 144, 0.05))'
-            : 'linear-gradient(135deg, rgba(255, 209, 102, 0.1), rgba(255, 209, 102, 0.05))',
-          border: `1px solid ${redeem.kind === 'pass' ? 'var(--accent)' : 'var(--warn)'}`,
-          fontWeight: '600',
-          textAlign: 'center'
-        }}>
-          {redeem.kind === 'pass' 
-            ? `${Math.abs(redeem.delta || 0)} ${t('visits')}`
-            : `${redeem.priceRSD || 0} RSD`
-          }
+        <div>
+          <div style={{
+            padding: '0.5rem 1rem',
+            borderRadius: 'var(--radius)',
+            background: redeem.kind === 'pass' || redeem.kind === 'renewal'
+              ? 'linear-gradient(135deg, rgba(43, 224, 144, 0.1), rgba(43, 224, 144, 0.05))'
+              : 'linear-gradient(135deg, rgba(255, 209, 102, 0.1), rgba(255, 209, 102, 0.05))',
+            border: `1px solid ${redeem.kind === 'pass' || redeem.kind === 'renewal' ? 'var(--accent)' : 'var(--warn)'}`,
+            fontWeight: '600',
+            textAlign: 'center'
+          }}>
+            {redeem.kind === 'pass'
+              ? `${Math.abs(redeem.delta || 0)} ${t('visits')}`
+              : redeem.kind === 'renewal'
+                ? `+${Math.abs(redeem.delta || 0)} ${t('visits')}`
+                : `${redeem.priceRSD || 0} RSD`
+            }
+          </div>
+          {redeem.note && (
+            <div style={{
+              marginTop: '0.35rem',
+              fontSize: '0.75rem',
+              color: 'var(--muted)'
+            }}>
+              {redeem.note}
+            </div>
+          )}
         </div>
       )
     },
@@ -197,6 +212,7 @@ export default function Redeems() {
           <option value="pass">{t('passRedeems')}</option>
           <option value="dropin">{t('dropInPayments')}</option>
           <option value="purchase">{t('passPurchases')}</option>
+          <option value="renewal">{t('renewalOperations')}</option>
         </select>
       </div>
 
