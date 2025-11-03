@@ -15,39 +15,50 @@ help:
 	@echo "Targets:"
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
-## install: Install all dependencies
+## install: Install all dependencies (uses npm workspaces)
 install:
 	npm install
-	cd services/core-api && npm install
-	cd services/booking-api && npm install
-	cd web/admin-portal && npm install
-	cd web/kiosk-pwa && npm install
-	cd web/parent-web && npm install
 
-## dev: Start development servers
+## dev: Start all development servers concurrently
 dev:
-	@echo "Starting development servers..."
-	@echo "Core API: http://localhost:3001"
-	@echo "Booking API: http://localhost:3002"
-	@echo "Admin Portal: http://localhost:3000"
+	@echo "Starting development servers with concurrently..."
+	@echo "  Core API:      http://localhost:3001"
+	@echo "  Booking API:   http://localhost:3002"
+	@echo "  Admin Portal:  http://localhost:3000"
+	@echo "  Kiosk PWA:     http://localhost:5173"
+	@echo "  Parent Web:    http://localhost:5174"
+	@echo ""
 	npm run dev
+
+## dev-core-api: Start only core-api dev server
+dev-core-api:
+	npm run dev:core-api
+
+## dev-booking-api: Start only booking-api dev server
+dev-booking-api:
+	npm run dev:booking-api
+
+## dev-admin-portal: Start only admin-portal dev server
+dev-admin-portal:
+	npm run dev:admin-portal
+
+## dev-kiosk-pwa: Start only kiosk-pwa dev server
+dev-kiosk-pwa:
+	npm run dev:kiosk-pwa
+
+## dev-parent-web: Start only parent-web dev server
+dev-parent-web:
+	npm run dev:parent-web
 
 ## build: Build all services and web apps
 build:
 	@echo "Building all projects..."
-	cd services/core-api && npm run build
-	cd services/booking-api && npm run build
-	cd web/admin-portal && npm run build
-	cd web/kiosk-pwa && npm run build
-	cd web/parent-web && npm run build
+	npm run build --workspaces --if-present
 
 ## test: Run all tests
 test:
 	@echo "Running tests..."
-	cd services/core-api && npm test
-	cd services/booking-api && npm test
-	cd web/admin-portal && npm test
-	cd web/kiosk-pwa && npm test
+	npm run test --workspaces --if-present
 
 ## test-coverage: Run tests with coverage
 test-coverage:
@@ -59,29 +70,17 @@ test-coverage:
 ## lint: Lint all code
 lint:
 	@echo "Linting code..."
-	cd services/core-api && npm run lint
-	cd services/booking-api && npm run lint
-	cd web/admin-portal && npm run lint
-	cd web/kiosk-pwa && npm run lint
-	cd web/parent-web && npm run lint
+	npm run lint --workspaces --if-present
 
 ## format: Format all code with Prettier
 format:
 	@echo "Formatting code..."
-	cd services/core-api && npm run format
-	cd services/booking-api && npm run format
-	cd web/admin-portal && npm run format
-	cd web/kiosk-pwa && npm run format
-	cd web/parent-web && npm run format
+	npm run format --workspaces --if-present
 
 ## typecheck: Run TypeScript type checking
 typecheck:
 	@echo "Type checking..."
-	cd services/core-api && npm run typecheck
-	cd services/booking-api && npm run typecheck
-	cd web/admin-portal && npm run typecheck
-	cd web/kiosk-pwa && npm run typecheck
-	cd web/parent-web && npm run typecheck
+	npm run typecheck --workspaces --if-present
 
 ## quality: Run all quality checks (lint, typecheck, build, test)
 quality: lint typecheck build test
