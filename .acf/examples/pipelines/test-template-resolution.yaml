@@ -1,0 +1,34 @@
+# Test Template Resolution
+# Test pipeline to verify template resolution works correctly
+
+version: "1.0"
+pipeline_id: "test-template-resolution-v1"
+name: "Test Template Resolution"
+workspace_id: "workspace-test-001"
+project_id: "project-test-001"
+
+execution:
+  mode: "brave"
+  timeout_minutes: 30
+  estimated_cost_units: 5
+  estimated_duration_minutes: 2
+
+steps:
+  - id: "collect_twitter"
+    type: "crawler"
+    method: "crawler_twitter_profile"
+    inputs:
+      username:
+        from: "alice_crypto"
+    outputs:
+      profile: "twitter_profile_data"
+
+  - id: "analyze_sentiment"
+    type: "ml_model"
+    model: "sentiment_analysis_v1"
+    inputs:
+      texts:
+        from: "{{collect_twitter.recent_posts[*].text}}"
+    outputs:
+      sentiment_scores: "sentiment_results"
+    depends_on: ["collect_twitter"]

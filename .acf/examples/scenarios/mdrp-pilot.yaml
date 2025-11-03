@@ -1,0 +1,166 @@
+# MDRP Pilot Scenario
+# Media Data Research Platform: 100 keywords monitoring (scaled from 11k production)
+# Target: 1M requests/month for single enterprise client
+#
+# NOTE: This scenario uses ADVANCED template syntax not yet implemented:
+# - {{step.*.field}} - Loop aggregation wildcard (use explicit aggregation step for now)
+# - | filter() / | count() - Jinja2 filters (use separate filtering steps for now)
+# See: docs/guides/template-resolution.md for currently supported syntax
+
+version: "1.0"
+pipeline_id: "mdrp-pilot-monitoring"
+name: "MDRP Keyword Monitoring (100 Keywords)"
+workspace_id: "workspace-enterprise-001"
+project_id: "project-threat-monitoring-q4"
+
+execution:
+  mode: "brave"  # Autonomous execution for continuous monitoring
+  timeout_minutes: 120
+  estimated_cost_units: 50
+  estimated_duration_minutes: 30
+  schedule: "0 */1 * * *"  # Every 1 hour (production: down from 24h to 1h cycles)
+
+inputs:
+  keywords:
+    - "bank account sale"
+    - "credit card dump"
+    - "data breach"
+    - "insider threat"
+    - "ransomware"
+    # ... (100 keywords total, truncated for example)
+
+  platforms:
+    - twitter
+    - facebook
+    - telegram
+    - reddit
+
+  monitoring_config:
+    sentiment_analysis: true
+    entity_extraction: true
+    threat_scoring: true
+    real_time_alerts: true
+
+steps:
+  # Keyword Monitoring Loop (100 keywords × 4 platforms = 400 searches)
+  - id: "monitor_keywords"
+    type: "loop"
+    iterate_over: "{{input.keywords}}"
+    loop_variable: "keyword"
+    max_parallel: 10  # Parallel execution for throughput
+    steps:
+      - id: "search_twitter"
+        type: "crawler"
+        method: "crawler_twitter_search"
+        inputs:
+          query:
+            from: "{{keyword}}"
+          max_results: 100
+        outputs:
+          results: "twitter_results_{{keyword}}"
+
+      - id: "search_facebook"
+        type: "crawler"
+        method: "crawler_facebook_search"
+        inputs:
+          query:
+            from: "{{keyword}}"
+          max_results: 100
+        outputs:
+          results: "facebook_results_{{keyword}}"
+
+  # ML Processing for Threat Detection
+  - id: "analyze_sentiment_batch"
+    type: "ml_model"
+    model: "sentiment_analysis_v1"
+    inputs:
+      texts:
+        from: "{{monitor_keywords.*.results}}"  # Aggregate all results
+    outputs:
+      sentiment_scores: "batch_sentiment"
+    depends_on: ["monitor_keywords"]
+
+  - id: "extract_threat_entities"
+    type: "ml_model"
+    model: "ner_v1"
+    inputs:
+      texts:
+        from: "{{monitor_keywords.*.results}}"
+    outputs:
+      entities: "threat_entities"
+    depends_on: ["monitor_keywords"]
+
+  # Threat Scoring and Filtering
+  - id: "score_threats"
+    type: "function"
+    method: "threat_scoring_algorithm"
+    inputs:
+      sentiment_data:
+        from: "{{analyze_sentiment_batch.sentiment_scores}}"
+      entity_data:
+        from: "{{extract_threat_entities.entities}}"
+      keywords:
+        from: "{{input.keywords}}"
+    outputs:
+      threat_scores: "scored_threats"
+    depends_on: ["analyze_sentiment_batch", "extract_threat_entities"]
+
+  # Real-Time Alerting (High-Priority Threats)
+  - id: "send_alerts"
+    type: "function"
+    method: "real_time_alert_webhook"
+    inputs:
+      high_priority_threats:
+        from: "{{score_threats.threat_scores | filter(score > 0.8)}}"
+    check:
+      boolean: "{{score_threats.threat_scores | count(score > 0.8) > 0}}"
+      run: "send_alerts"
+    depends_on: ["score_threats"]
+
+  # Data Storage (Bronze → Silver → Gold)
+  - id: "store_bronze"
+    type: "data_transform"
+    asset: "bronze_mdrp_raw"
+    inputs:
+      raw_data:
+        from: "{{monitor_keywords.*.results}}"
+    outputs:
+      bronze_path: "s3a://bronze/mdrp/{{execution.run_id}}"
+    depends_on: ["monitor_keywords"]
+
+  - id: "transform_silver"
+    type: "data_transform"
+    asset: "silver_mdrp_cleaned"
+    inputs:
+      bronze_data:
+        from: "{{store_bronze.bronze_path}}"
+      sentiment_data:
+        from: "{{analyze_sentiment_batch.sentiment_scores}}"
+      entity_data:
+        from: "{{extract_threat_entities.entities}}"
+    outputs:
+      silver_path: "s3a://silver/mdrp/{{execution.run_id}}"
+    depends_on: ["store_bronze", "analyze_sentiment_batch", "extract_threat_entities"]
+
+  - id: "aggregate_gold"
+    type: "data_transform"
+    asset: "gold_mdrp_threat_indicators"
+    inputs:
+      silver_data:
+        from: "{{transform_silver.silver_path}}"
+      threat_scores:
+        from: "{{score_threats.threat_scores}}"
+    outputs:
+      gold_path: "s3a://gold/mdrp/threat_indicators/{{execution.run_id}}"
+    depends_on: ["transform_silver", "score_threats"]
+
+# Metadata
+metadata:
+  client: "Enterprise Client (11k keywords in production)"
+  use_case: "Threat Monitoring (MDRP Pilot)"
+  scale_target: "1M requests/month (single client)"
+  cycle_frequency: "1-hour (production requirement, down from 24h)"
+  pilot_keywords: 100
+  production_keywords: 11000
+  platforms: 4
+  estimated_monthly_requests: 240000  # 100 keywords × 4 platforms × 30 days × 24 cycles/day ÷ 5 (batching)

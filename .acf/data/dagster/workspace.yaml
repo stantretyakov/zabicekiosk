@@ -1,0 +1,7 @@
+# Dagster Workspace Configuration
+# Defines code locations for ODP data pipelines
+
+load_from:
+  - python_module:
+      module_name: __init__
+      working_directory: /opt/dagster/app

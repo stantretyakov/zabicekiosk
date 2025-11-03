@@ -1,0 +1,228 @@
+# CrimeWall Social Graph Extraction Scenario
+# Entity Relationship Mapping: 5 seed profiles → extract network → build Neo4j graph
+# Addresses performance issue: graph rendering failures with thousands of entities
+#
+# NOTE: This scenario uses ADVANCED template syntax not yet implemented:
+# - {{step.*.field}} - Loop aggregation wildcard (use explicit aggregation step for now)
+# - | filter() - Jinja2 filter syntax (use separate filtering steps for now)
+# See: docs/guides/template-resolution.md for currently supported syntax
+
+version: "1.0"
+pipeline_id: "crimewall-social-graph-extraction"
+name: "Social Graph Analysis (CrimeWall Investigation)"
+workspace_id: "workspace-law-enforcement-001"
+project_id: "project-organized-crime-q4"
+
+execution:
+  mode: "safe"  # Requires approval for law enforcement investigations
+  timeout_minutes: 180
+  estimated_cost_units: 75
+  estimated_duration_minutes: 45
+
+inputs:
+  seed_profiles:
+    - platform: "facebook"
+      user_id: "suspect_001"
+    - platform: "facebook"
+      user_id: "suspect_002"
+    - platform: "twitter"
+      username: "suspect_003"
+    - platform: "linkedin"
+      profile_url: "https://linkedin.com/in/suspect_004"
+    - platform: "twitter"
+      username: "suspect_005"
+
+  extraction_depth: 2  # How many degrees of separation
+  min_interaction_threshold: 5  # Minimum interactions to qualify as relationship
+
+steps:
+  # Phase 1: Seed Profile Collection
+  - id: "collect_seed_profiles"
+    type: "loop"
+    iterate_over: "{{input.seed_profiles}}"
+    loop_variable: "profile"
+    max_parallel: 5
+    steps:
+      - id: "fetch_profile"
+        type: "crawler"
+        method: "crawler_{{profile.platform}}_profile"
+        inputs:
+          target:
+            from: "{{profile.user_id || profile.username || profile.profile_url}}"
+        outputs:
+          profile_data: "seed_profile_{{profile.platform}}_{{profile.user_id}}"
+
+      - id: "extract_connections"
+        type: "crawler"
+        method: "crawler_{{profile.platform}}_connections"
+        inputs:
+          target:
+            from: "{{profile.user_id || profile.username}}"
+          max_connections: 500
+        outputs:
+          connections: "connections_{{profile.platform}}_{{profile.user_id}}"
+        depends_on: ["fetch_profile"]
+
+  # Phase 2: First-Degree Network Expansion
+  - id: "analyze_first_degree"
+    type: "function"
+    method: "relationship_scoring"
+    inputs:
+      seed_profiles:
+        from: "{{collect_seed_profiles.*.profile_data}}"
+      connections:
+        from: "{{collect_seed_profiles.*.connections}}"
+      min_threshold:
+        from: "{{input.min_interaction_threshold}}"
+    outputs:
+      first_degree_network: "first_degree_entities"
+    depends_on: ["collect_seed_profiles"]
+
+  # Phase 3: Second-Degree Expansion (if depth >= 2)
+  - id: "expand_second_degree"
+    type: "loop"
+    iterate_over: "{{analyze_first_degree.first_degree_network | filter(score > 0.7)}}"
+    loop_variable: "entity"
+    max_parallel: 10
+    check:
+      boolean: "{{input.extraction_depth >= 2}}"
+      run: "expand_second_degree"
+    steps:
+      - id: "fetch_secondary"
+        type: "crawler"
+        method: "crawler_{{entity.platform}}_profile"
+        inputs:
+          target:
+            from: "{{entity.id}}"
+        outputs:
+          profile_data: "secondary_profile_{{entity.id}}"
+
+      - id: "extract_secondary_connections"
+        type: "crawler"
+        method: "crawler_{{entity.platform}}_connections"
+        inputs:
+          target:
+            from: "{{entity.id}}"
+          max_connections: 200
+        outputs:
+          connections: "secondary_connections_{{entity.id}}"
+        depends_on: ["fetch_secondary"]
+
+  # Phase 4: Entity Resolution (De-duplication across platforms)
+  - id: "resolve_entities"
+    type: "function"
+    method: "entity_resolution_algorithm"
+    inputs:
+      seed_profiles:
+        from: "{{collect_seed_profiles.*.profile_data}}"
+      first_degree:
+        from: "{{analyze_first_degree.first_degree_network}}"
+      second_degree:
+        from: "{{expand_second_degree.*.profile_data}}"
+    outputs:
+      resolved_entities: "unique_entities"
+    depends_on: ["analyze_first_degree", "expand_second_degree"]
+
+  # Phase 5: Face Recognition for Cross-Platform Matching
+  - id: "match_faces"
+    type: "ml_model"
+    model: "face_recognition_v3"
+    inputs:
+      images:
+        from: "{{resolve_entities.resolved_entities | map(profile_picture)}}"
+    outputs:
+      face_matches: "cross_platform_face_matches"
+    depends_on: ["resolve_entities"]
+    resources:
+      gpu: 1
+      memory: "8Gi"
+
+  # Phase 6: Relationship Graph Construction
+  - id: "build_relationship_graph"
+    type: "function"
+    method: "graph_builder"
+    inputs:
+      entities:
+        from: "{{resolve_entities.resolved_entities}}"
+      relationships:
+        from: "{{analyze_first_degree.first_degree_network}}"
+      face_matches:
+        from: "{{match_faces.face_matches}}"
+    outputs:
+      graph_data: "relationship_graph"
+    depends_on: ["resolve_entities", "match_faces"]
+
+  # Phase 7: Store in Neo4j (Graph Database)
+  - id: "load_to_neo4j"
+    type: "function"
+    method: "neo4j_bulk_import"
+    inputs:
+      graph_data:
+        from: "{{build_relationship_graph.graph_data}}"
+      database: "crimewall_investigations"
+      workspace_id:
+        from: "{{workspace_id}}"
+    outputs:
+      neo4j_ids: "graph_node_ids"
+    depends_on: ["build_relationship_graph"]
+
+  # Phase 8: Data Lake Storage (Medallion Architecture)
+  - id: "store_bronze"
+    type: "data_transform"
+    asset: "bronze_crimewall_raw"
+    inputs:
+      seed_data:
+        from: "{{collect_seed_profiles.*.profile_data}}"
+      first_degree_data:
+        from: "{{analyze_first_degree.first_degree_network}}"
+      second_degree_data:
+        from: "{{expand_second_degree.*.profile_data}}"
+    outputs:
+      bronze_path: "s3a://bronze/crimewall/{{execution.run_id}}"
+    depends_on: ["collect_seed_profiles", "analyze_first_degree"]
+
+  - id: "transform_silver"
+    type: "data_transform"
+    asset: "silver_crimewall_entities"
+    inputs:
+      bronze_data:
+        from: "{{store_bronze.bronze_path}}"
+      resolved_entities:
+        from: "{{resolve_entities.resolved_entities}}"
+    outputs:
+      silver_path: "s3a://silver/crimewall/{{execution.run_id}}"
+    depends_on: ["store_bronze", "resolve_entities"]
+
+  - id: "aggregate_gold"
+    type: "data_transform"
+    asset: "gold_crimewall_social_network"
+    inputs:
+      silver_data:
+        from: "{{transform_silver.silver_path}}"
+      graph_data:
+        from: "{{build_relationship_graph.graph_data}}"
+    outputs:
+      gold_path: "s3a://gold/crimewall/social_networks/{{execution.run_id}}"
+    depends_on: ["transform_silver", "build_relationship_graph"]
+
+  # Phase 9: Generate Investigation Report
+  - id: "generate_report"
+    type: "output"
+    format: "graph_visualization"
+    template: "social_network_investigation_v1"
+    delivery:
+      method: "secure_download"
+      encryption: true
+    depends_on: ["load_to_neo4j", "aggregate_gold"]
+
+# Metadata
+metadata:
+  client: "Law Enforcement Agency"
+  use_case: "Organized Crime Investigation (CrimeWall)"
+  problem_solved: "Graph rendering performance issue (thousands of entities)"
+  solution: "Backend graph construction in Neo4j, serve vectors/data via API"
+  seed_profiles: 5
+  expected_entities: "500-2000"
+  expected_relationships: "2000-10000"
+  graph_database: "Neo4j"
+  visualization: "Backend-rendered, served via API"
