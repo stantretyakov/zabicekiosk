@@ -1,4 +1,0 @@
-temporalio==1.5.1
-httpx==0.25.2
-redis==5.0.1
-pydantic==2.5.0
