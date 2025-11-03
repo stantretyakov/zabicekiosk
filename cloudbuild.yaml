@@ -2,6 +2,13 @@ availableSecrets:
   secretManager:
     - versionName: projects/$PROJECT_ID/secrets/token-secret/versions/latest
       env: 'TOKEN_SECRET'
+    # CI/CD Monitor secrets
+    - versionName: projects/$PROJECT_ID/secrets/cicd-monitor-github-token/versions/latest
+      env: 'GITHUB_TOKEN'
+    - versionName: projects/$PROJECT_ID/secrets/cicd-monitor-anthropic-api-key/versions/latest
+      env: 'ANTHROPIC_API_KEY'
+    - versionName: projects/$PROJECT_ID/secrets/cicd-monitor-gcp-credentials/versions/latest
+      env: 'GCP_SERVICE_ACCOUNT_KEY'
 
 steps:
   - id: cancel-previous-builds
@@ -348,9 +355,63 @@ options:
   logging: CLOUD_LOGGING_ONLY       # или NONE
   default_logs_bucket_behavior: REGIONAL_USER_OWNED_BUCKET
 
+  # ============================================================
+  # CI/CD MONITOR - Auto-create tasks on failure
+  # ============================================================
+  - id: cicd-monitor-on-failure
+    name: node:20
+    entrypoint: bash
+    secretEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GCP_SERVICE_ACCOUNT_KEY']
+    env:
+      - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
+    args:
+      - -c
+      - |
+        set -e
+
+        echo "🔍 CI/CD Monitor: Checking build status..."
+
+        # Setup GCP authentication (for Cloud Admin operations)
+        echo "$$GCP_SERVICE_ACCOUNT_KEY" > /tmp/gcp-key.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json || echo "⚠️ GCP auth failed"
+
+        # Verify Cloud Admin access
+        echo "🔧 Verifying Cloud Admin access..."
+        gcloud projects describe $$PROJECT_ID --format='value(projectId)' 2>/dev/null || echo "Warning: Limited GCP access"
+
+        # Install cicd-monitor from source
+        cd /workspace/tools/cicd-monitor
+        npm install --production
+        npm run build
+        npm link
+
+        cd /workspace
+
+        # Run analysis with Cloud Admin capabilities
+        echo "🤖 Analyzing build $$BUILD_ID..."
+        zabice-cicd-monitor analyze \
+          --build-id="$$BUILD_ID" \
+          --project-id="$$PROJECT_ID" \
+          --pr-number="${_PR_NUMBER}" \
+          --branch="${_BRANCH_NAME}" \
+          --create-tasks \
+          --notify \
+          --provision-resources || echo "⚠️ cicd-monitor failed, continuing..."
+
+        # Clean up credentials
+        rm -f /tmp/gcp-key.json
+
+        echo "✅ CI/CD Monitor completed"
+
+    # CRITICAL: Run even if previous steps failed
+    waitFor: ['-']
+
 substitutions:
   _REGION: europe-west3
   _FIRESTORE_DATABASE_ID: "zabicedb"
+  _PR_NUMBER: ""
+  _BRANCH_NAME: ""
 
 tags:
   - zabicekiosk
