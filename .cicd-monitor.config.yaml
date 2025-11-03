@@ -1,0 +1,115 @@
+# CI/CD Monitor Configuration
+# Configuration for automatic build monitoring and task generation
+
+monitor:
+  # Mode: watch (real-time) | analyze (post-mortem) | disabled
+  mode: watch
+
+  # Use Pub/Sub for real-time notifications (recommended over polling)
+  use_pubsub: true
+  pubsub_subscription: cicd-monitor-builds
+
+  # Fallback polling settings (if Pub/Sub not available)
+  polling:
+    initial_interval_ms: 5000
+    max_interval_ms: 30000
+    backoff_multiplier: 1.5
+
+auto_fix:
+  enabled: true
+  max_retries: 3
+
+  # Create draft PR with fixes (future feature)
+  create_fix_pr: false
+
+notifications:
+  # Post comments on PRs when builds fail
+  pr_comment: true
+
+  # Future integrations
+  slack: false
+  email: false
+
+analysis:
+  # Claude model for error analysis
+  ai_model: claude-3-5-sonnet-20241022
+
+  # Maximum number of source files to include in analysis context
+  max_context_files: 10
+
+  # Temperature for Claude (0.0 = deterministic, 1.0 = creative)
+  temperature: 0.0
+
+  # Skip AI analysis for known error patterns (faster, cheaper)
+  skip_known_patterns: true
+
+task_creation:
+  enabled: true
+
+  # Priority assignment rules based on error type
+  priority_rules:
+    deployment-error: blocker
+    migration-error: critical
+    build-error: critical
+    test-failure: high
+    typecheck-error: high
+    lint-error: high
+
+  # Agent routing rules based on error type and project
+  agent_routing:
+    lint-error:
+      services: typescript-engineer
+      web: react-engineer
+
+    typecheck-error:
+      services: typescript-engineer
+      web: react-engineer
+
+    test-failure:
+      default: test-engineer
+
+    build-error:
+      services: typescript-engineer
+      web: react-engineer
+
+    deployment-error:
+      default: devops
+
+    migration-error:
+      default: database-engineer
+
+  # Git commit settings for task files
+  commit:
+    branch: main
+    author_name: CI/CD Monitor Bot
+    author_email: cicd-monitor@zabicekiosk.app
+    message_template: "task: auto-create {taskId} from {errorType} in build {buildId}"
+
+rate_limits:
+  # Maximum API calls per minute
+  github_api_per_minute: 30
+  cloudbuild_api_per_minute: 60
+  claude_api_per_minute: 10
+
+  # Maximum tasks created per PR (prevent spam)
+  max_tasks_per_pr: 5
+
+  # Minimum time between analyses of same build (seconds)
+  analysis_cooldown_seconds: 300
+
+logging:
+  level: info  # debug | info | warn | error
+  format: json  # json | pretty
+
+  # Log to Cloud Logging (in addition to console)
+  cloud_logging: true
+
+# Repository settings
+repository:
+  owner: stantretyakov
+  repo: zabicekiosk
+
+# GCP settings
+gcp:
+  project_id: zabicekiosk
+  region: europe-west3

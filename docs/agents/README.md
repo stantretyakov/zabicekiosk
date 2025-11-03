@@ -26,6 +26,7 @@ The Agent Manifest System provides specialized AI agents for zabicekiosk develop
 |-------|-----------------|------------------|
 | **database-engineer** | Firestore + Firebase | Database schema design, Firestore collections, security rules, data modeling, query optimization |
 | **devops** | Firebase + GCP + GitHub Actions | Deployment automation, CI/CD pipelines, Firebase hosting, Cloud Run deployment, environment configuration |
+| **cicd-monitor** | Cloud Build + GitHub + Claude API | CI/CD monitoring, build failure detection, automatic task creation, AI-powered error analysis, agent routing |
 
 ### Quality & Process
 
@@ -59,6 +60,7 @@ The Agent Manifest System provides specialized AI agents for zabicekiosk develop
 | Task creation | task-engineer | "Create task for session management" |
 | Process improvement | retro | "Analyze why tasks keep failing review" |
 | Quality gates | precommit | "Set up TypeScript pre-commit hooks" |
+| Build monitoring | cicd-monitor | "Monitor builds and auto-create fix tasks" |
 
 ---
 
@@ -129,6 +131,7 @@ Agent-specific quality requirements and commands.
 | task-engineer | `task-engineer.md` | Task creation, backlog management |
 | retro | `retro.md` | Process improvement, retrospectives |
 | precommit | `precommit.md` | Pre-commit hooks, quality gates |
+| cicd-monitor | `cicd-monitor.md` | Build monitoring, error analysis, task automation |
 
 ---
 
