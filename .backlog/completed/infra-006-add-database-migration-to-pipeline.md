@@ -392,35 +392,156 @@ Ready for testing in dev environment:
 
 ## Version Control Log
 
-<!-- database-engineer updates this when committing -->
+**Commit**: c5e2865
+**Branch**: claude/activate-tasks-011CUmPpA5h6g9DGmXfA22Bx
+**Message**: ci: add database migration and verification to pipeline
+
+**Files Modified**:
+- `cloudbuild.yaml` - Added Secret Manager access, verification step, and migration step
+- `README.md` - Updated pipeline architecture and added database integrity documentation
+- `services/core-api/scripts/README.md` - Added CI/CD integration documentation
+- `.backlog/completed/infra-006-add-database-migration-to-pipeline.md` - Task moved to completed
 
 ## Evidence of Completion
 
-<!-- Paste evidence showing migration working in pipeline -->
+### 1. Secret Manager Configuration Added
 
-```bash
-# Cloud Build with database migration
-$ gcloud builds submit
-
-Step #10 - "verify-database-integrity":
-🔍 Verifying database integrity...
-✅ Clients: 1,234 total, 0 with issues
-✅ Passes: 2,456 total, 0 with issues
-✅ Database integrity: PASSED
-
-Step #11 - "build-and-deploy-core-api":
-✓ Deployed to Cloud Run
-
-Step #12 - "migrate-database-post-deployment":
-🔧 Running database migration...
-✓ Repaired searchTokens for 156 clients
-✓ All clients now have optimized tokens
-✅ Database migration completed successfully
-
-Step #13 - "verify-database-integrity-post-migration":
-🔍 Re-verifying database integrity...
-✅ Database integrity: PASSED
+`cloudbuild.yaml` (lines 1-4):
+```yaml
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/token-secret/versions/latest
+      env: 'TOKEN_SECRET'
 ```
+
+### 2. Database Verification Step (Pre-Deployment)
+
+`cloudbuild.yaml` (lines 199-222):
+```yaml
+# ============================================================
+# DATABASE VERIFICATION (Before deployment)
+# ============================================================
+- id: verify-database-integrity
+  name: node:20
+  entrypoint: bash
+  dir: services/core-api
+  secretEnv: ['TOKEN_SECRET']
+  args:
+    - -c
+    - |
+      echo "🔍 Verifying database integrity before deployment..."
+      export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+      export FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
+      npm run verify:data-integrity
+
+      if [ $? -ne 0 ]; then
+        echo "❌ Database verification FAILED!"
+        echo "Critical issues found. Blocking deployment."
+        exit 1
+      fi
+
+      echo "✅ Database verification PASSED - deployment can proceed"
+  waitFor: ['quality-gate-core-api-build']
+```
+
+### 3. Database Migration Step (Post-Deployment)
+
+`cloudbuild.yaml` (lines 315-345):
+```yaml
+# ============================================================
+# DATABASE MIGRATION (After deployment)
+# ============================================================
+- id: migrate-database-post-deployment
+  name: node:20
+  entrypoint: bash
+  dir: services/core-api
+  secretEnv: ['TOKEN_SECRET']
+  args:
+    - -c
+    - |
+      echo "🔧 Running database migration (post-deployment)..."
+      export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
+      export FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
+
+      # Run repair script to optimize searchTokens and fix inconsistencies
+      npm run repair:data-integrity
+
+      echo ""
+      echo "🔍 Re-verifying database integrity after migration..."
+      npm run verify:data-integrity
+
+      if [ $? -ne 0 ]; then
+        echo "⚠️  Post-migration verification failed!"
+        echo "Database may have inconsistencies - manual review recommended."
+        # Don't fail the build, but log warning
+        exit 0
+      else
+        echo "✅ Database migration completed successfully"
+      fi
+  waitFor: ['build-and-deploy-core-api']
+```
+
+### 4. Core API Deployment Updated
+
+`cloudbuild.yaml` (line 239):
+```yaml
+waitFor: ['quality-gate-core-api-build', 'verify-database-integrity']
+```
+
+Deployment now waits for database verification to pass before proceeding.
+
+### 5. Documentation Updated
+
+**README.md**:
+- Added "Database Integrity in Pipeline" section
+- Updated pipeline architecture diagram
+- Documented service account permissions
+- Added manual database operations commands
+
+**services/core-api/scripts/README.md**:
+- Added "Integration with CI/CD" section
+- Documented automated pipeline flow
+- Added CI/CD behavior for failures
+- Documented service account requirements
+- Added environment variables documentation
+
+### Ready for Testing
+
+The pipeline is now ready to be tested. Before deploying:
+
+1. **Create TOKEN_SECRET in Secret Manager**:
+```bash
+echo -n "your-secret-token" | gcloud secrets create token-secret \
+  --data-file=- \
+  --replication-policy="automatic"
+```
+
+2. **Grant Cloud Build Permissions**:
+```bash
+PROJECT_ID="zabicekiosk"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+SERVICE_ACCOUNT="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/datastore.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+3. **Submit Build**:
+```bash
+gcloud builds submit --config=cloudbuild.yaml
+```
+
+**Expected Pipeline Behavior**:
+1. Quality gates run for all services/apps
+2. Database verification runs (exits 1 if issues found, blocks deployment)
+3. If verification passes, deployments proceed
+4. After core-api deployment, database migration runs
+5. Post-migration verification confirms database is healthy
 
 ## References
 
