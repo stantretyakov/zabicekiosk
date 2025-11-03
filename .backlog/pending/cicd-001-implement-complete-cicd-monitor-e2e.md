@@ -33,23 +33,62 @@ gcloud iam service-accounts create cicd-monitor \
   --project=zabicekiosk
 ```
 
-### 1.2. Grant IAM Permissions
+### 1.2. Grant IAM Permissions (Cloud Admin Mode)
+
+**Enhanced permissions for resource provisioning, configuration, and infrastructure management**:
 
 ```bash
-# Cloud Build viewer (read build status)
+# Cloud Build - Full control (read/write builds, trigger builds)
 gcloud projects add-iam-policy-binding zabicekiosk \
   --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-  --role="roles/cloudbuild.builds.viewer"
+  --role="roles/cloudbuild.builds.editor"
 
-# Cloud Logging viewer (read build logs)
+# Cloud Logging - Full access (read logs, write logs, configure log sinks)
 gcloud projects add-iam-policy-binding zabicekiosk \
   --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-  --role="roles/logging.viewer"
+  --role="roles/logging.admin"
 
-# Pub/Sub subscriber (for real-time build notifications)
+# Pub/Sub - Full control (create topics, subscriptions, publish, subscribe)
 gcloud projects add-iam-policy-binding zabicekiosk \
   --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-  --role="roles/pubsub.subscriber"
+  --role="roles/pubsub.admin"
+
+# Secret Manager - Admin (create secrets, manage versions, grant access)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.admin"
+
+# IAM - Security Admin (grant roles, manage service accounts)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/iam.securityAdmin"
+
+# Service Account - Admin (create service accounts, manage keys)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/iam.serviceAccountAdmin"
+
+# Cloud Run - Admin (deploy services, manage revisions)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+# Compute - Instance Admin (for infrastructure provisioning)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/compute.instanceAdmin.v1"
+
+# Storage - Admin (manage Cloud Storage buckets)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# Monitoring - Metric Writer (write custom metrics)
+gcloud projects add-iam-policy-binding zabicekiosk \
+  --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --role="roles/monitoring.metricWriter"
+
+echo "✅ cicd-monitor service account has Cloud Admin permissions"
 ```
 
 ### 1.3. Create Pub/Sub Subscription
@@ -139,7 +178,103 @@ gcloud secrets add-iam-policy-binding cicd-monitor-anthropic-api-key \
 
 ---
 
-### 1.5. Download Service Account Key (Local Dev)
+#### Secret 3: GCP Service Account Key (Cloud Admin)
+
+**Purpose**: Allow cicd-monitor agent to provision GCP resources, configure infrastructure, and read logs.
+
+**Steps to create**:
+
+1. **Create service account key** (already created in step 1.1):
+   ```bash
+   gcloud iam service-accounts keys create cicd-monitor-gcp-key.json \
+     --iam-account=cicd-monitor@zabicekiosk.iam.gserviceaccount.com \
+     --project=zabicekiosk
+   ```
+
+2. **Store in Secret Manager**:
+   ```bash
+   # Upload service account key to Secret Manager
+   gcloud secrets create cicd-monitor-gcp-credentials \
+     --data-file=cicd-monitor-gcp-key.json \
+     --replication-policy="automatic" \
+     --project=zabicekiosk
+
+   # Grant access to Cloud Build service account
+   gcloud secrets add-iam-policy-binding cicd-monitor-gcp-credentials \
+     --member="serviceAccount:120039745928@cloudbuild.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor" \
+     --project=zabicekiosk
+
+   # Clean up local key file (IMPORTANT!)
+   shred -u cicd-monitor-gcp-key.json
+   ```
+
+3. **Verify**:
+   ```bash
+   gcloud secrets versions access latest --secret=cicd-monitor-gcp-credentials --project=zabicekiosk > /tmp/test-key.json
+   gcloud auth activate-service-account --key-file=/tmp/test-key.json
+   gcloud projects list  # Should show zabicekiosk project
+   shred -u /tmp/test-key.json
+   ```
+
+**⚠️ USER ACTION REQUIRED**:
+
+You need to manually upload the service account key to Secret Manager via GCP Console:
+
+1. Go to: https://console.cloud.google.com/security/secret-manager?project=zabicekiosk
+2. Click "CREATE SECRET"
+3. Name: `cicd-monitor-gcp-credentials`
+4. Secret value: Paste the entire JSON content from the service account key file
+5. Click "CREATE SECRET"
+
+**Alternative: Upload via gcloud (if you have the key)**:
+```bash
+# If you have the service account key locally
+gcloud secrets create cicd-monitor-gcp-credentials \
+  --data-file=/path/to/cicd-monitor-key.json \
+  --project=zabicekiosk
+
+# Grant access
+gcloud secrets add-iam-policy-binding cicd-monitor-gcp-credentials \
+  --member="serviceAccount:120039745928@cloudbuild.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=zabicekiosk
+```
+
+---
+
+### 1.5. Provision Infrastructure Resources
+
+**Agent can now provision infrastructure automatically**:
+
+```bash
+# Create Pub/Sub topic for build events (if not exists)
+gcloud pubsub topics create cloud-builds --project=zabicekiosk || echo "Topic already exists"
+
+# Create subscription for cicd-monitor
+gcloud pubsub subscriptions create cicd-monitor-builds \
+  --topic=cloud-builds \
+  --ack-deadline=60 \
+  --message-retention-duration=7d \
+  --project=zabicekiosk || echo "Subscription already exists"
+
+# Create log sink for build failures (optional)
+gcloud logging sinks create cicd-monitor-build-failures \
+  pubsub.googleapis.com/projects/zabicekiosk/topics/build-failures \
+  --log-filter='resource.type="build" AND severity>=ERROR' \
+  --project=zabicekiosk || echo "Sink already exists"
+
+# Grant Pub/Sub publisher to log sink service account
+LOG_SINK_SA=$(gcloud logging sinks describe cicd-monitor-build-failures --format='value(writerIdentity)' --project=zabicekiosk)
+gcloud pubsub topics add-iam-policy-binding build-failures \
+  --member="$LOG_SINK_SA" \
+  --role="roles/pubsub.publisher" \
+  --project=zabicekiosk || true
+
+echo "✅ Infrastructure resources provisioned"
+```
+
+### 1.6. Download Service Account Key (Local Dev)
 
 ```bash
 # For local development only
@@ -149,20 +284,32 @@ gcloud iam service-accounts keys create tools/cicd-monitor/cicd-monitor-key.json
 
 # Verify key is ignored by git
 grep -q "cicd-monitor-key.json" .gitignore || echo "tools/cicd-monitor/cicd-monitor-key.json" >> .gitignore
+
+echo "✅ Service account key downloaded for local development"
 ```
 
-### 1.6. Verify Secrets
+### 1.7. Verify Secrets and Resources
 
 ```bash
-# Verify secrets exist
+# Verify all secrets exist
 gcloud secrets list --project=zabicekiosk | grep cicd-monitor
 
 # Test access (should not error)
 gcloud secrets versions access latest --secret=cicd-monitor-github-token --project=zabicekiosk > /dev/null && echo "✅ GitHub token accessible"
 gcloud secrets versions access latest --secret=cicd-monitor-anthropic-api-key --project=zabicekiosk > /dev/null && echo "✅ Claude API key accessible"
+gcloud secrets versions access latest --secret=cicd-monitor-gcp-credentials --project=zabicekiosk > /dev/null && echo "✅ GCP credentials accessible"
 
-# Test Pub/Sub subscription
+# Test Pub/Sub resources
+gcloud pubsub topics describe cloud-builds --project=zabicekiosk
 gcloud pubsub subscriptions describe cicd-monitor-builds --project=zabicekiosk
+
+# Verify service account permissions
+gcloud projects get-iam-policy zabicekiosk \
+  --flatten="bindings[].members" \
+  --filter="bindings.members:serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+  --format="table(bindings.role)"
+
+echo "✅ All secrets and resources verified"
 ```
 
 ---
@@ -371,6 +518,8 @@ availableSecrets:
       env: 'GITHUB_TOKEN'
     - versionName: projects/$PROJECT_ID/secrets/cicd-monitor-anthropic-api-key/versions/latest
       env: 'ANTHROPIC_API_KEY'
+    - versionName: projects/$PROJECT_ID/secrets/cicd-monitor-gcp-credentials/versions/latest
+      env: 'GCP_SERVICE_ACCOUNT_KEY'
 
 steps:
   # ... all existing steps ...
@@ -381,7 +530,7 @@ steps:
   - id: cicd-monitor-on-failure
     name: node:20
     entrypoint: bash
-    secretEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY']
+    secretEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GCP_SERVICE_ACCOUNT_KEY']
     env:
       - 'GOOGLE_CLOUD_PROJECT=$PROJECT_ID'
     args:
@@ -391,6 +540,15 @@ steps:
 
         echo "🔍 CI/CD Monitor: Checking build status..."
 
+        # Setup GCP authentication (for resource provisioning)
+        echo "$GCP_SERVICE_ACCOUNT_KEY" > /tmp/gcp-key.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+        gcloud auth activate-service-account --key-file=/tmp/gcp-key.json
+
+        # Verify agent can provision resources
+        echo "🔧 Verifying Cloud Admin access..."
+        gcloud projects describe $PROJECT_ID --format='value(projectId)' || echo "Warning: Limited GCP access"
+
         # Install cicd-monitor from source
         cd /workspace/tools/cicd-monitor
         npm install --production
@@ -399,7 +557,7 @@ steps:
 
         cd /workspace
 
-        # Run analysis
+        # Run analysis (with Cloud Admin capabilities)
         echo "🤖 Analyzing build $BUILD_ID..."
         zabice-cicd-monitor analyze \
           --build-id="$BUILD_ID" \
@@ -407,7 +565,11 @@ steps:
           --pr-number="${_PR_NUMBER:-}" \
           --branch="${_BRANCH_NAME:-}" \
           --create-tasks \
-          --notify || echo "⚠️  cicd-monitor failed, continuing..."
+          --notify \
+          --provision-resources || echo "⚠️  cicd-monitor failed, continuing..."
+
+        # Clean up credentials
+        shred -u /tmp/gcp-key.json
 
         echo "✅ CI/CD Monitor completed"
 
@@ -492,11 +654,23 @@ After test build fails:
 ### Infrastructure (devops)
 
 - [ ] Service account `cicd-monitor@zabicekiosk.iam.gserviceaccount.com` created
-- [ ] IAM permissions granted (cloudbuild.builds.viewer, logging.viewer, pubsub.subscriber)
+- [ ] IAM permissions granted (Cloud Admin roles):
+  - [ ] cloudbuild.builds.editor
+  - [ ] logging.admin
+  - [ ] pubsub.admin
+  - [ ] secretmanager.admin
+  - [ ] iam.securityAdmin
+  - [ ] iam.serviceAccountAdmin
+  - [ ] run.admin
+  - [ ] compute.instanceAdmin.v1
+  - [ ] storage.admin
+  - [ ] monitoring.metricWriter
 - [ ] Pub/Sub subscription `cicd-monitor-builds` created
+- [ ] Infrastructure resources provisioned (topics, subscriptions, log sinks)
 - [ ] Secret `cicd-monitor-github-token` created and accessible
 - [ ] Secret `cicd-monitor-anthropic-api-key` created and accessible
-- [ ] Both secrets accessible by Cloud Build SA (120039745928@cloudbuild)
+- [ ] Secret `cicd-monitor-gcp-credentials` created and accessible (Service Account Key)
+- [ ] All 3 secrets accessible by Cloud Build SA (120039745928@cloudbuild)
 - [ ] Service account key downloaded for local dev
 
 ### CLI Tool (typescript-engineer)
@@ -521,9 +695,11 @@ After test build fails:
 ### Pipeline Integration (devops)
 
 - [ ] `cloudbuild.yaml` updated with cicd-monitor step
-- [ ] Secrets passed via `secretEnv` and `availableSecrets`
+- [ ] All 3 secrets passed via `secretEnv` and `availableSecrets`
+- [ ] GCP credentials activated in step for Cloud Admin access
 - [ ] Step configured with `waitFor: ['-']`
 - [ ] Substitution variables added (_PR_NUMBER, _BRANCH_NAME)
+- [ ] `--provision-resources` flag added to CLI command
 
 ### End-to-End Test
 
@@ -603,6 +779,78 @@ gcloud secrets add-iam-policy-binding cicd-monitor-anthropic-api-key \
 ```bash
 gcloud secrets versions access latest --secret=cicd-monitor-anthropic-api-key --project=zabicekiosk
 ```
+
+---
+
+### 3. GCP Service Account Key (Cloud Admin)
+
+**Purpose**: Allows cicd-monitor agent to provision GCP resources, configure infrastructure, and read infrastructure logs.
+
+**⚠️ USER ACTION REQUIRED**:
+
+You need to manually create and upload the service account key to Secret Manager.
+
+**Option A: Via GCP Console (Recommended)**
+
+1. **Create Service Account Key**:
+   - Go to: https://console.cloud.google.com/iam-admin/serviceaccounts?project=zabicekiosk
+   - Find service account: `cicd-monitor@zabicekiosk.iam.gserviceaccount.com`
+   - Click "KEYS" tab
+   - Click "ADD KEY" → "Create new key" → "JSON"
+   - Download the JSON key file
+
+2. **Upload to Secret Manager**:
+   - Go to: https://console.cloud.google.com/security/secret-manager?project=zabicekiosk
+   - Click "CREATE SECRET"
+   - Name: `cicd-monitor-gcp-credentials`
+   - Secret value: Paste the entire JSON content from the downloaded key file
+   - Click "CREATE SECRET"
+
+3. **Grant Access**:
+   ```bash
+   gcloud secrets add-iam-policy-binding cicd-monitor-gcp-credentials \
+     --member="serviceAccount:120039745928@cloudbuild.gserviceaccount.com" \
+     --role="roles/secretmanager.secretAccessor" \
+     --project=zabicekiosk
+   ```
+
+**Option B: Via gcloud CLI**
+
+```bash
+# 1. Create service account key
+gcloud iam service-accounts keys create /tmp/cicd-monitor-key.json \
+  --iam-account=cicd-monitor@zabicekiosk.iam.gserviceaccount.com \
+  --project=zabicekiosk
+
+# 2. Upload to Secret Manager
+gcloud secrets create cicd-monitor-gcp-credentials \
+  --data-file=/tmp/cicd-monitor-key.json \
+  --replication-policy="automatic" \
+  --project=zabicekiosk
+
+# 3. Grant access to Cloud Build
+gcloud secrets add-iam-policy-binding cicd-monitor-gcp-credentials \
+  --member="serviceAccount:120039745928@cloudbuild.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=zabicekiosk
+
+# 4. Clean up (IMPORTANT!)
+shred -u /tmp/cicd-monitor-key.json
+```
+
+**Verify**:
+```bash
+# Check secret exists
+gcloud secrets describe cicd-monitor-gcp-credentials --project=zabicekiosk
+
+# Test authentication
+gcloud secrets versions access latest --secret=cicd-monitor-gcp-credentials --project=zabicekiosk > /tmp/test-key.json
+gcloud auth activate-service-account --key-file=/tmp/test-key.json
+gcloud projects describe zabicekiosk --format='value(projectId)'
+shred -u /tmp/test-key.json
+```
+
+**🔗 Create key here**: https://console.cloud.google.com/iam-admin/serviceaccounts?project=zabicekiosk
 
 ---
 

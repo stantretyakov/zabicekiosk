@@ -8,7 +8,7 @@
 
 ## ⚠️ REQUIRED: Fill Secrets First
 
-Before the system works, you MUST create and fill 2 secrets:
+Before the system works, you MUST create and fill 3 secrets:
 
 ### 1. GitHub Token
 
@@ -68,9 +68,43 @@ gcloud secrets versions access latest --secret=cicd-monitor-anthropic-api-key --
 
 ---
 
+### 3. **GCP Service Account Key (Cloud Admin)**
+
+**Create key via console**:
+🔗 https://console.cloud.google.com/iam-admin/serviceaccounts?project=zabicekiosk
+
+**Steps**:
+1. Find service account: `cicd-monitor@zabicekiosk.iam.gserviceaccount.com`
+2. Click "KEYS" tab → "ADD KEY" → "Create new key" → "JSON"
+3. Download the JSON key file
+
+**Upload to Secret Manager**:
+🔗 https://console.cloud.google.com/security/secret-manager?project=zabicekiosk
+
+**Steps**:
+1. Click "CREATE SECRET"
+2. Name: `cicd-monitor-gcp-credentials`
+3. Secret value: Paste entire JSON content
+4. Click "CREATE SECRET"
+
+**After creating secret, run**:
+```bash
+gcloud secrets add-iam-policy-binding cicd-monitor-gcp-credentials \
+  --member="serviceAccount:120039745928@cloudbuild.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor" \
+  --project=zabicekiosk
+```
+
+**Verify**:
+```bash
+gcloud secrets describe cicd-monitor-gcp-credentials --project=zabicekiosk
+```
+
+---
+
 ## 📋 Implementation Checklist
 
-### Phase 1: Infrastructure (devops) - 2-3 hours
+### Phase 1: Infrastructure (devops) - 3-4 hours
 
 - [ ] Create service account
   ```bash
@@ -79,19 +113,27 @@ gcloud secrets versions access latest --secret=cicd-monitor-anthropic-api-key --
     --project=zabicekiosk
   ```
 
-- [ ] Grant IAM permissions
+- [ ] Grant IAM permissions (Cloud Admin mode)
   ```bash
+  # Full list of roles in task file: cicd-001
+  # Key roles:
   gcloud projects add-iam-policy-binding zabicekiosk \
     --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-    --role="roles/cloudbuild.builds.viewer"
+    --role="roles/cloudbuild.builds.editor"
 
   gcloud projects add-iam-policy-binding zabicekiosk \
     --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-    --role="roles/logging.viewer"
+    --role="roles/logging.admin"
 
   gcloud projects add-iam-policy-binding zabicekiosk \
     --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
-    --role="roles/pubsub.subscriber"
+    --role="roles/pubsub.admin"
+
+  gcloud projects add-iam-policy-binding zabicekiosk \
+    --member="serviceAccount:cicd-monitor@zabicekiosk.iam.gserviceaccount.com" \
+    --role="roles/secretmanager.admin"
+
+  # ... (see full task for 6 more roles)
   ```
 
 - [ ] Create Pub/Sub subscription
@@ -103,6 +145,7 @@ gcloud secrets versions access latest --secret=cicd-monitor-anthropic-api-key --
 
 - [ ] ⚠️ Create GitHub token (see above)
 - [ ] ⚠️ Create Claude API key (see above)
+- [ ] ⚠️ Create GCP service account key and upload to Secret Manager (see above)
 
 - [ ] Download service account key (for local dev)
   ```bash
