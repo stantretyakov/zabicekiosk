@@ -8,7 +8,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "tsc -p tsconfig.json --noEmit",
-    "gcp-build": "npm run build"
+    "gcp-build": "npm run build",
+    "verify:data-integrity": "tsx scripts/verify-data-integrity.ts",
+    "repair:data-integrity": "tsx scripts/repair-data-integrity.ts",
+    "repair:data-integrity:dry-run": "tsx scripts/repair-data-integrity.ts --dry-run"
   },
   "dependencies": {
     "@fastify/cors": "^8.3.0",
