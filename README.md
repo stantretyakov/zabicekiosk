@@ -177,6 +177,12 @@ make quality
 └──────────┬──────────┘
            │
            v
+┌─────────────────────┐
+│ Database Verify     │
+│ (Pre-deployment)    │
+└──────────┬──────────┘
+           │
+           v
     ┌──────┴──────┐
     │   Pass?     │
     └──┬──────┬───┘
@@ -186,8 +192,71 @@ make quality
        v      v
   ┌────────┐ ┌────────┐
   │ Deploy │ │ Block  │
-  └────────┘ └────────┘
+  └────┬───┘ └────────┘
+       │
+       v
+┌─────────────────────┐
+│ Database Migration  │
+│ (Post-deployment)   │
+└─────────────────────┘
 ```
+
+### Database Integrity in Pipeline
+
+The CI/CD pipeline includes automated database verification and migration steps:
+
+**Pre-Deployment Verification** (Fail-Fast):
+- Runs BEFORE any deployment
+- Verifies database integrity (clients, passes, redeems)
+- Checks searchTokens, tokenHashes, foreign keys
+- **Blocks deployment if critical issues found**
+
+**Post-Deployment Migration** (Data Optimization):
+- Runs AFTER successful deployment
+- Repairs searchTokens for optimized search
+- Fixes fullNameLower for case-insensitive search
+- Updates tokenHashes if needed
+- Re-verifies database after migration
+
+**Service Account Permissions**:
+
+The Cloud Build service account requires these IAM roles:
+- `roles/datastore.user` - Read/write Firestore data
+- `roles/secretmanager.secretAccessor` - Access TOKEN_SECRET
+- `roles/run.admin` - Deploy to Cloud Run
+- `roles/storage.admin` - Access Cloud Storage for artifacts
+
+To grant permissions:
+
+```bash
+PROJECT_ID="your-project-id"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+SERVICE_ACCOUNT="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/datastore.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+**Manual Database Operations**:
+
+```bash
+# Verify database integrity
+cd services/core-api
+export GOOGLE_CLOUD_PROJECT="your-project-id"
+export TOKEN_SECRET="your-secret"
+npm run verify:data-integrity
+
+# Repair database (dry-run first)
+npm run repair:data-integrity:dry-run
+npm run repair:data-integrity
+```
+
+See `services/core-api/scripts/README.md` for detailed documentation.
 
 ### Quality Gate Failures
 

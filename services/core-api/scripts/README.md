@@ -258,17 +258,97 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"
 
 ## Integration with CI/CD
 
-These scripts can be integrated into CI/CD pipelines:
+These scripts are integrated into the Cloud Build pipeline (`cloudbuild.yaml`):
 
+### Automated Pipeline Flow
+
+**1. Pre-Deployment Verification** (Step: `verify-database-integrity`):
 ```yaml
-# Example GitHub Actions
-- name: Verify Data Integrity
-  run: |
-    cd services/core-api
-    npm run verify:data-integrity
-  env:
-    GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT }}
-    TOKEN_SECRET: ${{ secrets.TOKEN_SECRET }}
+- id: verify-database-integrity
+  name: node:20
+  dir: services/core-api
+  secretEnv: ['TOKEN_SECRET']
+  args:
+    - -c
+    - |
+      npm run verify:data-integrity
+      # Exits with code 1 if issues found - BLOCKS deployment
+```
+
+**2. Deployment** (Only if verification passes):
+- Core API deployed to Cloud Run
+- Booking API deployed to Cloud Run
+- Web apps deployed to Firebase Hosting
+
+**3. Post-Deployment Migration** (Step: `migrate-database-post-deployment`):
+```yaml
+- id: migrate-database-post-deployment
+  name: node:20
+  dir: services/core-api
+  secretEnv: ['TOKEN_SECRET']
+  args:
+    - -c
+    - |
+      npm run repair:data-integrity
+      npm run verify:data-integrity
+```
+
+### CI/CD Behavior
+
+**If Pre-Deployment Verification Fails**:
+- ❌ Deployment is BLOCKED
+- ❌ Build fails with exit code 1
+- 🛑 Database issues must be fixed before deployment
+
+**If Post-Deployment Migration Fails**:
+- ✅ Deployment already completed (services are live)
+- ⚠️  Warning logged but build continues
+- 📝 Manual review recommended
+
+### Service Account Requirements
+
+The Cloud Build service account needs:
+- `roles/datastore.user` - Read/write Firestore
+- `roles/secretmanager.secretAccessor` - Access TOKEN_SECRET
+
+Grant permissions:
+```bash
+PROJECT_ID="zabicekiosk"
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+SERVICE_ACCOUNT="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/datastore.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SERVICE_ACCOUNT}" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+### Environment Variables in Pipeline
+
+The following environment variables are automatically provided by Cloud Build:
+- `GOOGLE_CLOUD_PROJECT` - Set to `$PROJECT_ID`
+- `FIRESTORE_DATABASE_ID` - Set to `$_FIRESTORE_DATABASE_ID` (substitution variable)
+- `TOKEN_SECRET` - Retrieved from Secret Manager
+
+### Manual Runs (Outside Pipeline)
+
+If running manually (not in Cloud Build):
+
+```bash
+# Local with emulator
+export FIRESTORE_EMULATOR_HOST="localhost:8080"
+export GOOGLE_CLOUD_PROJECT="zabicekiosk"
+export TOKEN_SECRET="test-secret"
+npm run verify:data-integrity
+
+# Against production (requires authentication)
+gcloud auth application-default login
+export GOOGLE_CLOUD_PROJECT="zabicekiosk"
+export TOKEN_SECRET=$(gcloud secrets versions access latest --secret=token-secret)
+npm run verify:data-integrity
 ```
 
 ## References
