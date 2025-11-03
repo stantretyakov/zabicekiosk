@@ -112,6 +112,109 @@ make quality
 - Backend services: >80% test coverage
 - Frontend apps: >70% test coverage
 
+## CI/CD Pipeline
+
+### Quality Gates
+
+All code must pass quality gates before deployment. The CI/CD pipeline enforces the following checks:
+
+**For TypeScript Backend Services** (core-api, booking-api):
+- ESLint: No errors or warnings
+- TypeScript typecheck: No type errors
+- Tests: Jest with >80% coverage
+- Build: Successful compilation
+
+**For React Frontend Apps** (admin-portal, kiosk-pwa, parent-web):
+- ESLint: No errors or warnings
+- TypeScript typecheck: No type errors
+- Tests: Jest with >70% coverage
+- Build: Successful Vite build
+
+### Running Quality Gates Locally
+
+```bash
+# Backend services
+cd services/core-api
+npm run lint && npm run typecheck && npm test && npm run build
+
+# Frontend apps
+cd web/admin-portal
+npm run lint && npm run typecheck && npm test && npm run build
+
+# All projects
+make quality
+```
+
+### Deployment Process
+
+**GitHub Actions Workflows**:
+1. Push to `main` branch
+2. Quality gates run automatically (lint, typecheck, test, build)
+3. If ALL gates pass - Deploy to Cloud Run / Firebase Hosting
+4. If ANY gate fails - Deployment blocked, fix issues
+
+**Cloud Build (GCP)**:
+1. Submit build to Google Cloud Build
+2. Quality gates run for all services and apps
+3. If all pass - Deploy to Cloud Run and Firebase Hosting
+4. If any fail - Build fails, no deployment
+
+### Pipeline Architecture
+
+```
+┌─────────────────────┐
+│   Code Push/Submit  │
+└──────────┬──────────┘
+           │
+           v
+┌─────────────────────┐
+│  Quality Gates      │
+│  ├─ Install deps    │
+│  ├─ Lint            │
+│  ├─ TypeCheck       │
+│  ├─ Test (coverage) │
+│  └─ Build           │
+└──────────┬──────────┘
+           │
+           v
+    ┌──────┴──────┐
+    │   Pass?     │
+    └──┬──────┬───┘
+       │      │
+      Yes     No
+       │      │
+       v      v
+  ┌────────┐ ┌────────┐
+  │ Deploy │ │ Block  │
+  └────────┘ └────────┘
+```
+
+### Quality Gate Failures
+
+If quality gates fail:
+1. **Check logs**: Review CI/CD logs for specific errors
+2. **Fix locally**: Run the failing command locally to reproduce
+3. **Test**: Ensure all quality gates pass locally
+4. **Push**: Commit and push fixes
+5. **Verify**: Confirm pipeline passes
+
+### Bypassing Quality Gates
+
+**WARNING**: Quality gates should NEVER be bypassed.
+
+If absolutely necessary:
+- `[skip ci]` in commit message (skips CI entirely)
+- `--no-verify` flag (skips pre-commit hooks only, NOT CI)
+
+**Note**: Bypassing quality gates can lead to broken deployments.
+
+### Performance Targets
+
+- Quality gates: <5 minutes total
+- Test execution: <2 minutes per service/app
+- Build time: <2 minutes per service/app
+- Total pipeline time: <15 minutes
+
 ## Common Commands
 
 ```bash

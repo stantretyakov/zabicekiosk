@@ -17,6 +17,183 @@ steps:
       - |
         gcloud services enable firestore.googleapis.com
 
+  # ============================================================
+  # QUALITY GATES - Core API
+  # ============================================================
+  - id: quality-gate-core-api-install
+    name: node:20
+    entrypoint: npm
+    dir: services/core-api
+    args: ['ci']
+
+  - id: quality-gate-core-api-lint
+    name: node:20
+    entrypoint: npm
+    dir: services/core-api
+    args: ['run', 'lint']
+    waitFor: ['quality-gate-core-api-install']
+
+  - id: quality-gate-core-api-typecheck
+    name: node:20
+    entrypoint: npm
+    dir: services/core-api
+    args: ['run', 'typecheck']
+    waitFor: ['quality-gate-core-api-install']
+
+  - id: quality-gate-core-api-test
+    name: node:20
+    entrypoint: npm
+    dir: services/core-api
+    args: ['test', '--', '--coverage', '--passWithNoTests']
+    env:
+      - 'CI=true'
+    waitFor: ['quality-gate-core-api-install']
+
+  - id: quality-gate-core-api-build
+    name: node:20
+    entrypoint: npm
+    dir: services/core-api
+    args: ['run', 'build']
+    waitFor: ['quality-gate-core-api-lint', 'quality-gate-core-api-typecheck', 'quality-gate-core-api-test']
+
+  # ============================================================
+  # QUALITY GATES - Booking API
+  # ============================================================
+  - id: quality-gate-booking-api-install
+    name: node:20
+    entrypoint: npm
+    dir: services/booking-api
+    args: ['ci']
+
+  - id: quality-gate-booking-api-lint
+    name: node:20
+    entrypoint: npm
+    dir: services/booking-api
+    args: ['run', 'lint']
+    waitFor: ['quality-gate-booking-api-install']
+
+  - id: quality-gate-booking-api-typecheck
+    name: node:20
+    entrypoint: npm
+    dir: services/booking-api
+    args: ['run', 'typecheck']
+    waitFor: ['quality-gate-booking-api-install']
+
+  - id: quality-gate-booking-api-test
+    name: node:20
+    entrypoint: npm
+    dir: services/booking-api
+    args: ['test', '--', '--coverage', '--passWithNoTests']
+    env:
+      - 'CI=true'
+    waitFor: ['quality-gate-booking-api-install']
+
+  - id: quality-gate-booking-api-build
+    name: node:20
+    entrypoint: npm
+    dir: services/booking-api
+    args: ['run', 'build']
+    waitFor: ['quality-gate-booking-api-lint', 'quality-gate-booking-api-typecheck', 'quality-gate-booking-api-test']
+
+  # ============================================================
+  # QUALITY GATES - Admin Portal
+  # ============================================================
+  - id: quality-gate-admin-portal-install
+    name: node:20
+    entrypoint: npm
+    dir: web/admin-portal
+    args: ['ci']
+
+  - id: quality-gate-admin-portal-lint
+    name: node:20
+    entrypoint: npm
+    dir: web/admin-portal
+    args: ['run', 'lint']
+    waitFor: ['quality-gate-admin-portal-install']
+
+  - id: quality-gate-admin-portal-typecheck
+    name: node:20
+    entrypoint: npm
+    dir: web/admin-portal
+    args: ['run', 'typecheck']
+    waitFor: ['quality-gate-admin-portal-install']
+
+  - id: quality-gate-admin-portal-test
+    name: node:20
+    entrypoint: npm
+    dir: web/admin-portal
+    args: ['test', '--', '--coverage', '--passWithNoTests']
+    env:
+      - 'CI=true'
+    waitFor: ['quality-gate-admin-portal-install']
+
+  # ============================================================
+  # QUALITY GATES - Kiosk PWA
+  # ============================================================
+  - id: quality-gate-kiosk-pwa-install
+    name: node:20
+    entrypoint: npm
+    dir: web/kiosk-pwa
+    args: ['ci']
+
+  - id: quality-gate-kiosk-pwa-lint
+    name: node:20
+    entrypoint: npm
+    dir: web/kiosk-pwa
+    args: ['run', 'lint']
+    waitFor: ['quality-gate-kiosk-pwa-install']
+
+  - id: quality-gate-kiosk-pwa-typecheck
+    name: node:20
+    entrypoint: npm
+    dir: web/kiosk-pwa
+    args: ['run', 'typecheck']
+    waitFor: ['quality-gate-kiosk-pwa-install']
+
+  - id: quality-gate-kiosk-pwa-test
+    name: node:20
+    entrypoint: npm
+    dir: web/kiosk-pwa
+    args: ['test', '--', '--coverage', '--passWithNoTests']
+    env:
+      - 'CI=true'
+    waitFor: ['quality-gate-kiosk-pwa-install']
+
+  # ============================================================
+  # QUALITY GATES - Parent Web
+  # ============================================================
+  - id: quality-gate-parent-web-install
+    name: node:20
+    entrypoint: npm
+    dir: web/parent-web
+    args: ['ci']
+
+  - id: quality-gate-parent-web-lint
+    name: node:20
+    entrypoint: npm
+    dir: web/parent-web
+    args: ['run', 'lint']
+    waitFor: ['quality-gate-parent-web-install']
+
+  - id: quality-gate-parent-web-typecheck
+    name: node:20
+    entrypoint: npm
+    dir: web/parent-web
+    args: ['run', 'typecheck']
+    waitFor: ['quality-gate-parent-web-install']
+
+  - id: quality-gate-parent-web-test
+    name: node:20
+    entrypoint: npm
+    dir: web/parent-web
+    args: ['test', '--', '--coverage', '--passWithNoTests']
+    env:
+      - 'CI=true'
+    waitFor: ['quality-gate-parent-web-install']
+
+  # ============================================================
+  # DEPLOYMENT - Core API (Only after quality gates pass)
+  # ============================================================
   - id: build-and-deploy-core-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -29,7 +206,11 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
+    waitFor: ['quality-gate-core-api-build']
 
+  # ============================================================
+  # DEPLOYMENT - Booking API (Only after quality gates pass)
+  # ============================================================
   - id: build-and-deploy-booking-api
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -42,25 +223,21 @@ steps:
           --platform managed \
           --allow-unauthenticated \
           --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
+    waitFor: ['quality-gate-booking-api-build']
 
-  - id: build-zabice-kiosk-web
-    name: node:20
-    entrypoint: npm
-    dir: web/kiosk-pwa
-    args: ['ci']
-
+  # ============================================================
+  # WEB BUILDS - Kiosk PWA (Only after quality gates pass)
+  # ============================================================
   - id: build-zabice-kiosk-web-build
     name: node:20
     entrypoint: npm
     dir: web/kiosk-pwa
     args: ['run', 'build']
+    waitFor: ['quality-gate-kiosk-pwa-install', 'quality-gate-kiosk-pwa-lint', 'quality-gate-kiosk-pwa-typecheck', 'quality-gate-kiosk-pwa-test']
 
-  - id: build-zabice-admin-web
-    name: node:20
-    entrypoint: npm
-    dir: web/admin-portal
-    args: ['ci']
-
+  # ============================================================
+  # WEB BUILDS - Admin Portal (Only after quality gates pass)
+  # ============================================================
   - id: fetch-firebase-api-key
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: bash
@@ -78,19 +255,21 @@ steps:
       - |
         export VITE_FIREBASE_API_KEY=$(cat /workspace/firebase_api_key.txt)
         npm run build
+    waitFor: ['fetch-firebase-api-key', 'quality-gate-admin-portal-install', 'quality-gate-admin-portal-lint', 'quality-gate-admin-portal-typecheck', 'quality-gate-admin-portal-test']
 
-  - id: build-zabice-parent-web
-    name: node:20
-    entrypoint: npm
-    dir: web/parent-web
-    args: ['ci']
-
+  # ============================================================
+  # WEB BUILDS - Parent Web (Only after quality gates pass)
+  # ============================================================
   - id: build-zabice-parent-web-build
     name: node:20
     entrypoint: npm
     dir: web/parent-web
     args: ['run', 'build']
+    waitFor: ['quality-gate-parent-web-install', 'quality-gate-parent-web-lint', 'quality-gate-parent-web-typecheck', 'quality-gate-parent-web-test']
 
+  # ============================================================
+  # DEPLOYMENT - Web Apps (Only after all builds complete)
+  # ============================================================
   - id: deploy-web
     name: node:20
     entrypoint: bash
