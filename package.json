@@ -1,0 +1,33 @@
+{
+  "name": "zabicekiosk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kiosk and admin application for online accounting and booking of infant swimming exercises",
+  "workspaces": [
+    "services/core-api",
+    "services/booking-api",
+    "web/admin-portal",
+    "web/kiosk-pwa",
+    "web/parent-web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n core-api,booking-api,admin-portal,kiosk-pwa,parent-web -c blue,magenta,green,cyan,yellow \"npm run dev --workspace=services/core-api\" \"npm run dev --workspace=services/booking-api\" \"npm run dev --workspace=web/admin-portal\" \"npm run dev --workspace=web/kiosk-pwa\" \"npm run dev --workspace=web/parent-web\"",
+    "dev:core-api": "npm run dev --workspace=services/core-api",
+    "dev:booking-api": "npm run dev --workspace=services/booking-api",
+    "dev:admin-portal": "npm run dev --workspace=web/admin-portal",
+    "dev:kiosk-pwa": "npm run dev --workspace=web/kiosk-pwa",
+    "dev:parent-web": "npm run dev --workspace=web/parent-web",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "npm run format --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
