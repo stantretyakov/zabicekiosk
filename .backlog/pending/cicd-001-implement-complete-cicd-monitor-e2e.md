@@ -108,9 +108,34 @@ gcloud pubsub subscriptions add-iam-policy-binding cicd-monitor-builds \
   --project=zabicekiosk
 ```
 
-### 1.4. Create Secrets in Secret Manager
+### 1.4. Create Secrets in Secret Manager (Automated Setup)
 
-**⚠️ REQUIRED: You must fill these secrets before pipeline will work!**
+**⚠️ AUTOMATED: Agent will create secret placeholders, you fill the values!**
+
+**Quick Setup**:
+```bash
+# Run automated setup script
+./scripts/setup-secrets.sh
+
+# This will:
+# 1. Create 3 secret placeholders in Secret Manager
+# 2. Grant access to Cloud Build service account
+# 3. Show you links to fill the actual values
+```
+
+**After setup, fill secrets via GCP Console** (links will be shown by script):
+- cicd-monitor-github-token → Your GitHub token
+- cicd-monitor-anthropic-api-key → Your Claude API key
+- cicd-monitor-gcp-credentials → Service account JSON key
+
+**Verify secrets are filled**:
+```bash
+./scripts/verify-secrets.sh
+```
+
+---
+
+**Manual Steps** (if automated setup fails):
 
 #### Secret 1: GitHub Token
 
@@ -857,10 +882,14 @@ shred -u /tmp/test-key.json
 ## Quick Start Commands
 
 ```bash
-# Phase 1: Infrastructure (devops)
+# Phase 0: Setup Secrets (USER ACTION)
 cd /home/user/zabicekiosk
-# Run all gcloud commands from section "Phase 1"
-# ⚠️ Fill secrets manually (see Secrets Checklist)
+./scripts/setup-secrets.sh
+# Follow instructions to fill secrets in GCP Console
+./scripts/verify-secrets.sh  # Verify secrets are filled
+
+# Phase 1: Infrastructure (devops - AUTOMATED)
+# Agent will run all gcloud commands from section "Phase 1"
 
 # Phase 2: CLI Tool (typescript-engineer)
 cd tools/cicd-monitor
