@@ -94,6 +94,7 @@ export default async function adminKiosks(app: FastifyInstance) {
       return { message: 'Invalid PIN' };
     }
     const { kioskId, adminPin: _adminPin, ...config } = body;
+    void _adminPin;
     await db
       .collection('kiosks')
       .doc(kioskId)
