@@ -154,6 +154,15 @@ interface IntegrityReport {
   };
 }
 
+type IssueSeverity = 'CRITICAL' | 'MAJOR' | 'MINOR';
+
+interface AggregatedIssue {
+  category: string;
+  count: number;
+  severity: IssueSeverity;
+  samples: string[];
+}
+
 // Verification functions
 async function verifyClientsCollection(): Promise<ClientIntegrityIssue[]> {
   console.log('🔍 Verifying clients collection...');
@@ -364,6 +373,99 @@ async function generateIntegrityReport(): Promise<IntegrityReport> {
 }
 
 function printReport(report: IntegrityReport) {
+  const aggregateIssues = <T extends { issues: string[] }>(
+    issues: T[],
+    getId: (issue: T) => string,
+  ): AggregatedIssue[] => {
+    const map = new Map<string, AggregatedIssue>();
+
+    const determineSeverity = (message: string): IssueSeverity => {
+      const normalized = message.toLowerCase();
+      if (
+        normalized.includes('orphaned') ||
+        normalized.includes('token hash mismatch') ||
+        normalized.includes('missing token') ||
+        normalized.includes('missing clientid') ||
+        normalized.includes('missing parentname') ||
+        normalized.includes('missing childname')
+      ) {
+        return 'CRITICAL';
+      }
+      if (
+        normalized.includes('missing') ||
+        normalized.includes('invalid') ||
+        normalized.includes('exceeds') ||
+        normalized.includes('too large')
+      ) {
+        return 'MAJOR';
+      }
+      return 'MINOR';
+    };
+
+    for (const issue of issues) {
+      for (const message of issue.issues) {
+        const severity = determineSeverity(message);
+        const existing = map.get(message);
+        if (existing) {
+          existing.count += 1;
+          if (existing.samples.length < 3) {
+            existing.samples.push(getId(issue));
+          }
+        } else {
+          map.set(message, {
+            category: message,
+            count: 1,
+            severity,
+            samples: [getId(issue)],
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  };
+
+  const clientAggregates = aggregateIssues(report.clientIssues, issue => issue.clientId);
+  const passAggregates = aggregateIssues(report.passIssues, issue => issue.passId);
+  const redeemAggregates = aggregateIssues(report.redeemIssues, issue => issue.redeemId);
+
+  const severityWeight: Record<IssueSeverity, number> = {
+    CRITICAL: 5,
+    MAJOR: 3,
+    MINOR: 1,
+  };
+
+  const totalRiskScore = [...clientAggregates, ...passAggregates, ...redeemAggregates].reduce(
+    (score, aggregate) => score + aggregate.count * severityWeight[aggregate.severity],
+    0,
+  );
+
+  const riskLevel = (() => {
+    if (report.summary.totalIssues === 0) return 'LOW (no issues detected)';
+    if (totalRiskScore <= 5) return 'LOW';
+    if (totalRiskScore <= 15) return 'MODERATE';
+    return 'HIGH';
+  })();
+
+  const printAggregatedIssues = (title: string, aggregates: AggregatedIssue[]) => {
+    if (aggregates.length === 0) {
+      console.log(`   ${title}: none`);
+      return;
+    }
+
+    console.log(`   ${title}:`);
+    for (const aggregate of aggregates.slice(0, 5)) {
+      const sampleIds = aggregate.samples.join(', ');
+      const sampleSuffix = sampleIds ? `; samples: ${sampleIds}` : '';
+      console.log(
+        `      - [${aggregate.severity}] ${aggregate.category} (count: ${aggregate.count}${sampleSuffix})`,
+      );
+    }
+    if (aggregates.length > 5) {
+      console.log(`      ... and ${aggregates.length - 5} more categories`);
+    }
+  };
+
   console.log('');
   console.log('═══════════════════════════════════════════════════════════════');
   console.log('                    INTEGRITY REPORT');
@@ -387,6 +489,10 @@ function printReport(report: IntegrityReport) {
     `   Redeems with issues: ${report.summary.redeemsWithIssues} / ${report.totalRedeems}`,
   );
   console.log('');
+  console.log('🛡️  Risk Assessment:');
+  console.log(`   Level: ${riskLevel}`);
+  console.log(`   Weighted score: ${totalRiskScore}`);
+  console.log('');
 
   if (report.summary.totalIssues === 0) {
     console.log('✅ DATABASE INTEGRITY: PASSED');
@@ -394,6 +500,12 @@ function printReport(report: IntegrityReport) {
   } else {
     console.log('❌ DATABASE INTEGRITY: FAILED');
     console.log(`   Total issues: ${report.summary.totalIssues}`);
+    console.log('');
+
+    console.log('🔎 Issue Breakdown:');
+    printAggregatedIssues('Client issue categories', clientAggregates);
+    printAggregatedIssues('Pass issue categories', passAggregates);
+    printAggregatedIssues('Redeem issue categories', redeemAggregates);
     console.log('');
 
     if (report.clientIssues.length > 0) {
