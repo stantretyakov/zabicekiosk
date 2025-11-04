@@ -220,9 +220,9 @@ steps:
           exit 1
         fi
 
-        REPORT_PATH="reports/integrity-report-latest.json"
-        if [ -f "$REPORT_PATH" ]; then
-          TOTAL_ISSUES=$(node -e "const report = require('./$REPORT_PATH'); process.stdout.write(String(report?.summary?.totalIssues ?? 0));")
+        INTEGRITY_REPORT_FILE="${_INTEGRITY_REPORT_FILE:-reports/integrity-report-latest.json}"
+        if [ -f "$INTEGRITY_REPORT_FILE" ]; then
+          TOTAL_ISSUES=$(node -e "const path = require('path'); const target = path.isAbsolute('$INTEGRITY_REPORT_FILE') ? '$INTEGRITY_REPORT_FILE' : path.join(process.cwd(), '$INTEGRITY_REPORT_FILE'); const report = require(target); process.stdout.write(String(report?.summary?.totalIssues ?? 0));")
           if [ "$TOTAL_ISSUES" -gt 0 ]; then
             echo "⚠️ Database verification completed with $TOTAL_ISSUES issues. Deployment will continue."
           else
@@ -363,6 +363,7 @@ options:
 substitutions:
   _REGION: europe-west3
   _FIRESTORE_DATABASE_ID: "zabicedb"
+  _INTEGRITY_REPORT_FILE: "reports/integrity-report-latest.json"
 
 tags:
   - zabicekiosk
