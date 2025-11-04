@@ -1,6 +1,6 @@
 import { FastifyRequest } from 'fastify';
 
-export async function verifyIdToken(token: string) {
+export async function verifyIdToken(_token: string) {
   // TODO: verify Identity Platform token
   return { uid: 'demo', role: 'admin' } as const;
 }
