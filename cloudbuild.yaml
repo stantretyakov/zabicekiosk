@@ -206,6 +206,9 @@ steps:
     args:
       - -c
       - |
+        echo "📦 Ensuring dependencies are installed for verification..."
+        npm ci
+
         echo "🔍 Verifying database integrity before deployment..."
         export GOOGLE_CLOUD_PROJECT=$PROJECT_ID
         export FIRESTORE_DATABASE_ID=$_FIRESTORE_DATABASE_ID
