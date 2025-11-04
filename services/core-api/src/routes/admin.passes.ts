@@ -51,20 +51,10 @@ function resolveValidityDays(
   return 30;
 }
 
-function buildRenewalNote(
-  validityDays: number,
-  basePlanSize: number,
-  carriedOver: number,
-  priceRSD?: number | null,
-): string {
+function buildRenewalNote(validityDays: number, priceRSD?: number | null): string {
   const parts = [
-    `Renewed pass: +${basePlanSize} session${basePlanSize === 1 ? '' : 's'} for ${validityDays} day${
-      validityDays === 1 ? '' : 's'
-    }`,
+    `Renewed pass: extended for ${validityDays} day${validityDays === 1 ? '' : 's'}`,
   ];
-  if (carriedOver > 0) {
-    parts.push(`carried over ${carriedOver} session${carriedOver === 1 ? '' : 's'}`);
-  }
   if (typeof priceRSD === 'number' && Number.isFinite(priceRSD)) {
     parts.push(`payment ${priceRSD} RSD`);
   }
@@ -79,21 +69,7 @@ async function renewPassDocument(
   options: RenewalOptions,
   settings: any,
 ) {
-  const basePlanSize =
-    coercePositiveNumber(pass?.basePlanSize ?? pass?.planSize) ??
-    coercePositiveNumber(pass?.planSize);
-  if (!basePlanSize) {
-    const err: any = new Error('Pass has no plan size to renew');
-    err.statusCode = 400;
-    throw err;
-  }
-
   const validityDays = resolveValidityDays(options.validityDays, pass, settings);
-  const keepRemaining = !!options.keepRemaining;
-  const used = Number.isFinite(pass?.used) ? Number(pass.used) : 0;
-  const planSize = Number.isFinite(pass?.planSize) ? Number(pass.planSize) : basePlanSize;
-  const carriedOver = keepRemaining ? Math.max(0, planSize - used) : 0;
-  const totalPlanSize = basePlanSize + carriedOver;
 
   const now = Timestamp.now();
   const nowDate = now.toDate();
@@ -103,17 +79,11 @@ async function renewPassDocument(
   const newExpiresAt = new Date(baseDate.getTime() + validityDays * DAY_MS);
 
   const updateData: Record<string, any> = {
-    planSize: totalPlanSize,
-    basePlanSize,
-    used: 0,
-    purchasedAt: now,
     expiresAt: Timestamp.fromDate(newExpiresAt),
     validityDays,
     revoked: false,
     renewedAt: now,
     renewalCount: FieldValue.increment(1),
-    lastRedeemTs: FieldValue.delete(),
-    lastEventId: FieldValue.delete(),
   };
 
   tx.update(passRef, updateData);
@@ -127,9 +97,9 @@ async function renewPassDocument(
     ts: now,
     passId: passRef.id,
     clientId: pass.clientId,
-    delta: basePlanSize,
+    delta: 0,
     kind: 'renewal',
-    note: buildRenewalNote(validityDays, basePlanSize, carriedOver, priceRSD),
+    note: buildRenewalNote(validityDays, priceRSD),
   };
 
   if (typeof priceRSD === 'number') {
@@ -142,8 +112,8 @@ async function renewPassDocument(
     expiresAt: Timestamp.fromDate(newExpiresAt),
     renewedAt: now,
     validityDays,
-    carriedOver,
-    basePlanSize,
+    carriedOver: 0,
+    planSizeDelta: 0,
   };
 }
 
@@ -360,7 +330,7 @@ export default async function adminPasses(app: FastifyInstance) {
         expiresAt: result.expiresAt.toDate().toISOString(),
         validityDays: result.validityDays,
         carriedOver: result.carriedOver,
-        planSizeDelta: result.basePlanSize,
+        planSizeDelta: result.planSizeDelta,
       };
     },
   );
