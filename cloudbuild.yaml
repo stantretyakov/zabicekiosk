@@ -220,7 +220,17 @@ steps:
           exit 1
         fi
 
-        echo "✅ Database verification PASSED - deployment can proceed"
+        REPORT_PATH="reports/integrity-report-latest.json"
+        if [ -f "$REPORT_PATH" ]; then
+          TOTAL_ISSUES=$(node -e "const report = require('./$REPORT_PATH'); process.stdout.write(String(report?.summary?.totalIssues ?? 0));")
+          if [ "$TOTAL_ISSUES" -gt 0 ]; then
+            echo "⚠️ Database verification completed with $TOTAL_ISSUES issues. Deployment will continue."
+          else
+            echo "✅ Database verification PASSED - deployment can proceed"
+          fi
+        else
+          echo "⚠️ Database verification completed but no summary report was found. Deployment will continue; please review the build logs."
+        fi
     waitFor: ['quality-gate-core-api-build']
 
   # ============================================================

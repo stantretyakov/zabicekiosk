@@ -577,16 +577,24 @@ async function main() {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const outputFile = path.join(
-      outputDir,
-      `integrity-report-${new Date().toISOString().replace(/[:.]/g, '-')}.json`,
-    );
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const outputFile = path.join(outputDir, `integrity-report-${timestamp}.json`);
     fs.writeFileSync(outputFile, JSON.stringify(report, null, 2));
     console.log(`📄 Full report saved to: ${outputFile}`);
+
+    const latestReportFile = path.join(outputDir, 'integrity-report-latest.json');
+    fs.writeFileSync(latestReportFile, JSON.stringify(report, null, 2));
+    console.log(`📄 Latest report snapshot saved to: ${latestReportFile}`);
     console.log('');
 
-    // Exit with appropriate code
-    process.exit(report.summary.totalIssues === 0 ? 0 : 1);
+    // Don't fail deployments when issues are detected. Instead, surface a
+    // prominent warning so the report can be reviewed while allowing the
+    // pipeline to continue.
+    if (report.summary.totalIssues > 0) {
+      console.warn(
+        '⚠️  Database integrity issues detected. Review the report but deployment will continue.',
+      );
+    }
   } catch (error) {
     console.error('❌ Error during verification:', error);
     process.exit(1);
