@@ -12,9 +12,20 @@ const db = new Firestore({
 });
 
 // Token functions (copied from src/lib/tokens.ts)
+const tokenSecret = process.env.TOKEN_SECRET;
+const canVerifyTokenHashes = Boolean(tokenSecret);
+
+if (!canVerifyTokenHashes) {
+  console.warn(
+    '⚠️  TOKEN_SECRET environment variable is not set. Token hash verification will be skipped.',
+  );
+}
+
 function hashToken(token: string): string {
-  const secret = process.env.TOKEN_SECRET || '';
-  return crypto.createHmac('sha256', secret).update(token).digest('hex');
+  if (!tokenSecret) {
+    throw new Error('TOKEN_SECRET environment variable is required to hash tokens.');
+  }
+  return crypto.createHmac('sha256', tokenSecret).update(token).digest('hex');
 }
 
 // Search token generation (copied from src/routes/admin.clients.ts)
@@ -165,7 +176,7 @@ async function verifyClientsCollection(): Promise<ClientIntegrityIssue[]> {
       if (!data.tokenHash) clientIssues.push('Missing tokenHash');
 
       // Check token-tokenHash consistency
-      if (data.token && data.tokenHash) {
+      if (canVerifyTokenHashes && data.token && data.tokenHash) {
         const expectedHash = hashToken(data.token);
         if (data.tokenHash !== expectedHash) {
           clientIssues.push(
