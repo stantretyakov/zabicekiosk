@@ -446,28 +446,21 @@ export async function restorePassSessions(
 function applyMockRenewal(pass: PassWithClient, options: RenewPassOptions): RenewPassResponse {
   const now = new Date();
   const nowIso = now.toISOString();
-  const basePlanSize = pass.basePlanSize ?? pass.planSize;
   const validityDays = options.validityDays ?? pass.validityDays ?? 30;
   const existingExpiryMs = pass.expiresAt ? new Date(pass.expiresAt).getTime() : 0;
   const baseDate = existingExpiryMs > now.getTime() ? new Date(existingExpiryMs) : now;
   const expiresAtIso = new Date(baseDate.getTime() + validityDays * DAY_MS).toISOString();
-  const carryOver = options.keepRemaining ? pass.remaining : 0;
+  const planSize = typeof pass.planSize === 'number' ? pass.planSize : pass.basePlanSize ?? 0;
+  const used = typeof pass.used === 'number' ? pass.used : 0;
+  const remaining = Math.max(0, planSize - used);
 
-  pass.planSize = basePlanSize + carryOver;
-  pass.basePlanSize = basePlanSize;
-  pass.remaining = pass.planSize;
-  pass.purchasedAt = nowIso;
+  pass.remaining = remaining;
   pass.validityDays = validityDays;
   pass.expiresAt = expiresAtIso;
   pass.renewedAt = nowIso;
   pass.renewalCount = (pass.renewalCount ?? 0) + 1;
 
-  const noteParts = [
-    `Продление: +${basePlanSize} занятий на ${validityDays} дн.`,
-  ];
-  if (carryOver > 0) {
-    noteParts.push(`перенесено ${carryOver} занятий`);
-  }
+  const noteParts = [`Продление: срок увеличен на ${validityDays} дн.`];
   if (typeof options.priceRSD === 'number' && Number.isFinite(options.priceRSD)) {
     noteParts.push(`оплата ${options.priceRSD} RSD`);
   }
@@ -478,7 +471,7 @@ function applyMockRenewal(pass: PassWithClient, options: RenewPassOptions): Rene
     ts: nowIso,
     kind: 'renewal',
     clientId: pass.clientId,
-    delta: basePlanSize,
+    delta: 0,
     priceRSD: options.priceRSD,
     client: pass.client,
     note: noteBase,
@@ -489,8 +482,8 @@ function applyMockRenewal(pass: PassWithClient, options: RenewPassOptions): Rene
     renewedAt: nowIso,
     expiresAt: expiresAtIso,
     validityDays,
-    carriedOver: carryOver,
-    planSizeDelta: basePlanSize,
+    carriedOver: 0,
+    planSizeDelta: 0,
   };
 }
 
