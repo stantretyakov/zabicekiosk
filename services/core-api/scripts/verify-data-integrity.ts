@@ -597,7 +597,16 @@ async function main() {
     }
   } catch (error) {
     console.error('❌ Error during verification:', error);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    try {
+      await db.terminate();
+    } catch (shutdownError) {
+      console.warn('⚠️  Failed to terminate Firestore client cleanly:', shutdownError);
+      if (!process.exitCode || process.exitCode === 0) {
+        process.exitCode = 1;
+      }
+    }
   }
 }
 
